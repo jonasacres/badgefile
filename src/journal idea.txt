@@ -1,0 +1,23 @@
+Motivation: it may be desirable to operate the badgefile software in multiple locations. At check-in we want to use a laptop to confirm arrivals. It is possible that access to a central badgefile server could become interrupted during this time. Or, we might wish to have two laptops to process people in parallel.
+
+Blindly merging two spreadsheets or databases is challenging. For instance, someone might come to one station and check in; then return and ask for a change to their name or city. If these changes happen in different locations, then when the two copies merge, there will be no easy way to referree which row is correct.
+
+If changes are stored in a journal, then each node can record the timestamp of its changes to a textfile, and append as they go along. Since the log is append-only, merges are very easy and can be done without conflict. Since each entry is timestamped, merges can be placed into correct order, and both peers can rederive an identical badgefile by rebuilding either from scratch or a known checkpoint prior to the first difference.
+
+This also allows auditability, since we can tell when and where a change was made.
+
+The journal is a flat textfile in the following format
+
+timestamp json_obj
+
+timestamp: YYYY-mm-dd HH:MM:SS Z
+json_obj:
+  timestamp (copied to make things easy)
+  table (string, identifies the table being updated, like 'attendees')
+  id (integer, identifies the row being affected. yes we set this even for insert!)
+  source (string, "reglist"/"payment"/etc or "manual")
+  source_revision (string hash, or null if manual)
+  action (string, "insert", "update", "delete")
+  data (object containing fields to insert/modify. omit for "delete")
+
+the ONLY entity that touches the underlying sqlite3 database takes its orders exclusively from this journal file, AND NOTHING ELSE.
