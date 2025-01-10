@@ -1,4 +1,7 @@
 def run_check(attendee):
+  if not attendee.is_participant():
+    return None
+  
   if attendee.info()["rank_playing"].lower() not in ["use aga rank", "not playing in any tournaments"]:
-    return { "msg": "Attendee wants to override AGA rank" }
+    return { "msg": "Rank override requested" }
   return None

@@ -5,6 +5,7 @@ from .report_manager import ReportManager
 from .reglist import Reglist
 from .activity_list import ActivityList
 from .tdlist import TDList
+from .issue_sheet import IssueSheet
 
 # Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress.
 class Badgefile:
@@ -26,6 +27,8 @@ class Badgefile:
     self.ensure_consistency()
     for attendee in self.attendees():
       attendee.scan_issues()
+    
+    IssueSheet(self).generate("reports/issue_sheet.csv")
 
   def lookup_attendee(self, badgefile_id):
     for attendee in self.attendees():

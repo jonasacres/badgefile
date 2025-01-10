@@ -10,7 +10,9 @@ from .database import Database
 from .issue_manager import IssueManager
 from .id_manager import IdManager
 from .reglist import Reglist
+from .activity_list import ActivityList
 from .activity import Activity
+from .util import util
 
 
 class Attendee:
@@ -25,11 +27,20 @@ class Attendee:
     return self._badgefile
   
   def latest_reglist(self):
+    # need this accessor for our issue checks to access latest raw reglist
     return Reglist.latest()
+  
+  def latest_activity_list(self):
+    # need this accessor for our issue checks to access latest raw reglist
+    return ActivityList.latest()
 
   def load_db_row(self, row):
     self._info.update(row)
     return self
+  
+  def effective_rank(self):
+    # TODO: allow rank override
+    return self._info.get('aga_rating', None)
 
   def load_reglist_row(self, row, sync=True):
     rowinfo = row.info()
@@ -60,6 +71,14 @@ class Attendee:
   def invalidate_activities(self):
     self._activities = None
 
+  def phone(self):
+    phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
+    for key in phone_keys:
+      if self._info[key] != None and self._info[key] != "":
+        print(f"{key} -> {self._info[key]}")
+        return util.standardize_phone(self._info[key])
+    return None
+
   def party(self, include_cancelled=False):
     party = [x for x in self._badgefile.attendees() if x.primary() == self.primary()]
 
@@ -78,6 +97,34 @@ class Attendee:
   
   def is_cancelled(self):
     return self.info()["status"].lower() == "cancelled"
+  
+  def is_participant(self):
+    return "aga member" in self._info["regtype"].lower()
+  
+  def tournaments(self):
+    tournament_str = str(self._info['tournaments']).lower()
+    if tournament_str == "none":
+      return []
+    
+    raw_tournaments = tournament_str.split(",")
+    tournaments = []
+
+    for rt in raw_tournaments:
+      if "die hard" in rt:
+        tournaments.append("diehard")
+      elif "women" in rt:
+        tournaments.append("womens")
+      elif "masters" in rt:
+        tournaments.append("masters")
+      elif "senior" in rt:
+        tournaments.append("seniors")
+      elif "open" in rt:
+        tournaments.append("open")
+      else:
+        print(f"Unknown tournament option: {rt}")
+        tournaments.append(rt)
+      
+    return tournaments
   
   def activities(self):
     if self._activities == None:
@@ -266,22 +313,24 @@ class Attendee:
     sys.path.append(str(project_root))
 
 
-    # Iterate over all Python files in the directory
-    for filename in os.listdir(issue_dir):
-      if filename.endswith(".py"):
-        file_path = os.path.join(issue_dir, filename)
-      
-      # Dynamically import the script
-      issue_type = filename[:-3]  # Strip .py extension
-      spec = importlib.util.spec_from_file_location(issue_type, file_path)
-      module = importlib.util.module_from_spec(spec)
-      spec.loader.exec_module(module)
-      
-      # Check for a function named 'run_check' and execute it
-      if hasattr(module, "run_check"):
-        issue_data = module.run_check(self)
-        if issue_data is not None:  # Only collect non-None results
-          current_issues[issue_type] = issue_data
+    if not self.is_cancelled():
+      # Run all the issue check scripts, but only for non-cancelled attendees
+      # (thus cancelled attendees have no outstanding issues)
+      for filename in os.listdir(issue_dir):
+        if filename.endswith(".py"):
+          file_path = os.path.join(issue_dir, filename)
+        
+        # Dynamically import the script
+        issue_type = filename[:-3]  # Strip .py extension
+        spec = importlib.util.spec_from_file_location(issue_type, file_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        # Check for a function named 'run_check' and execute it
+        if hasattr(module, "run_check"):
+          issue_data = module.run_check(self)
+          if issue_data is not None:  # Only collect non-None results
+            current_issues[issue_type] = issue_data
 
     existing_issues = self.open_issues()
     new_issues = list(current_issues.keys() - existing_issues.keys())

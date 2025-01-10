@@ -97,14 +97,15 @@ class TDList:
   # TODO: this appears in 3 places without alteration. REALLY should have a common util class in this project!
   def translate_value(self, field, raw_value):
     if "phone" in field or field == "postcode":
-      return raw_value # ensure these remain as strings, even if they happen to have been written exclusively with numerics
+      return raw_value  # Ensure these remain as strings, even if numeric
     elif raw_value == "":
       return None  # Blank string becomes None
-    elif raw_value.replace(".", "", 1).isdigit():
+    elif raw_value.replace("-", "", 1).replace(".", "", 1).isdigit() and (raw_value.count("-") <= 1 and raw_value.find("-") in {-1, 0}):
       # Check if it's a float or int
       return float(raw_value) if "." in raw_value else int(raw_value)
     else:
       return raw_value  # Use the original string if it's not numeric
+
     
   def path(self):
     if self._path is None:

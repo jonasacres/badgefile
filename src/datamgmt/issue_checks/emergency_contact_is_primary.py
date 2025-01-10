@@ -19,7 +19,7 @@ def check_name(attendee):
 
   if attendee.info()['emergency_contact_name'].lower() in match_names:
     return {
-      "msg": "Attendee emergency contact matches primary attendee name",
+      "msg": "Emergency contact matches primary attendee name",
       "match_type": "name",
       "primary_id": primary_info["badgefile_id"]
     }
@@ -37,7 +37,7 @@ def check_phone(attendee):
     pri_phone = standardize_phone(pri_info[field])
     if att_phone == pri_phone:
       return {
-        "msg": "Attendee emergency contact matches primary registrant phone",
+        "msg": "Emergency contact matches primary registrant phone",
         "match_type": "phone",
         "primary_id": attendee.primary().id(),
       }

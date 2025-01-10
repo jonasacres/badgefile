@@ -6,8 +6,8 @@ def run_check(attendee):
   dob = attendee.date_of_birth()
 
   if dob >= cutoff:
-    has_youth_form = True # TODO: get a way to access this. apparently there will be a Google Sheet?
+    has_youth_form = False # TODO: get a way to access this. apparently there will be a Google Sheet?
     if not has_youth_form:
-      return {'msg': "Attendee must have youth form on file to attend Congress."}
+      return {'msg': "Youth form required"}
   
   return None

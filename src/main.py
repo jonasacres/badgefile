@@ -22,6 +22,12 @@ from datamgmt.reglist import Reglist
 from datamgmt.badgefile import Badgefile
 from datamgmt.activity_list import ActivityList
 from datamgmt.tdlist import TDList
+import sys
+
+def download():
+  Reglist.download()
+  ActivityList.download()
+  TDList.download()
 
 def update():
   if Reglist.latest() == None:
@@ -33,6 +39,9 @@ def update():
   bf = Badgefile()
   bf.update()
 
+
+if "download" in sys.argv:
+  download()
 update()
 
 # ANALYSIS TASK

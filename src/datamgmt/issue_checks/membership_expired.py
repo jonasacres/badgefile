@@ -5,9 +5,18 @@ def run_check(attendee):
   expdate = attendee.membership_expiration()
   if expdate is None:
     return None
-  cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
-  if expdate > cutoff:
-    return None
   
-  return {'msg': 'Attendee must renew AGA membership prior to Congress'}
+  congress_start_cutoff = datetime.strptime("2025-07-13", "%Y-%m-%d")
+  congress_end_cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
+  processing_cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
+  expdate_fmt = expdate.strftime("%m/%d/%Y")
+  
+  if expdate < congress_start_cutoff:
+    return f"AGA membership expires prior to Congress ({expdate_fmt})"
+  elif expdate < congress_end_cutoff:
+    return f"AGA membership expires during Congress ({expdate_fmt})"
+  elif expdate < processing_cutoff:
+    return f"AGA membership expires before ratings can be processed ({expdate_fmt})"
+  else:
+    return None
 
