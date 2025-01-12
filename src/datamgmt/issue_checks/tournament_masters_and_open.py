@@ -4,5 +4,5 @@ def run_check(attendee):
   
   tournaments = attendee.tournaments()
   if "open" in tournaments and "masters" in tournaments:
-    return { "msg": "Enrolled in both Masters and US Open" }
+    return { "msg": "Enrolled in both Masters and US Open", "code": "5b" }
   return None

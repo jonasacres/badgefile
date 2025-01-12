@@ -2,7 +2,7 @@
 import re
 
 def run_check(attendee):
-  for check in [ check_name, check_phone ]:
+  for check in [ check_name, check_phone, check_email ]:
     result = check(attendee)
     if result is not None:
       return result
@@ -20,10 +20,23 @@ def check_name(attendee):
   if attendee.info()['emergency_contact_name'].lower() in match_names:
     return {
       "msg": "Emergency contact matches primary attendee name",
+      "code": "7a",
       "match_type": "name",
       "primary_id": primary_info["badgefile_id"]
     }
   
+  return None
+
+def check_email(attendee):
+  pri_email = attendee.primary().info()["email"].lower()
+  att_email = attendee.info()["emergency_contact_email"].lower()
+  if att_email == pri_email:
+    return {
+      "msg": "Emergency contact matches primary registrant email",
+      "code": "7c",
+      "match_type": "email",
+      "primary_id": attendee.primary().id(),
+    }
   return None
 
 def check_phone(attendee):
@@ -38,6 +51,7 @@ def check_phone(attendee):
     if att_phone == pri_phone:
       return {
         "msg": "Emergency contact matches primary registrant phone",
+        "code": "7b",
         "match_type": "phone",
         "primary_id": attendee.primary().id(),
       }

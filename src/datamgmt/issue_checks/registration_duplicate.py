@@ -16,4 +16,4 @@ def run_check(attendee):
     'primary_email': reg.primary().info()['email'],
   } for reg in all_regs ]
 
-  return {'msg': "Attendee appears in multiple active registrations", 'num_registrations': len(all_regs), 'reg_details': reg_details}
+  return {'msg': "Attendee appears in multiple active registrations", 'num_registrations': len(all_regs), 'reg_details': reg_details, 'code': '2e'}

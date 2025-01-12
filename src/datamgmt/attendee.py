@@ -317,6 +317,8 @@ class Attendee:
       # Run all the issue check scripts, but only for non-cancelled attendees
       # (thus cancelled attendees have no outstanding issues)
       for filename in os.listdir(issue_dir):
+        if "__" in filename:
+          continue
         if filename.endswith(".py"):
           file_path = os.path.join(issue_dir, filename)
         

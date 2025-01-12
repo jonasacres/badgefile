@@ -11,5 +11,5 @@ def run_check(attendee):
       return {'msg': "Eligible for youth pricing but registered as adult", 'type': 'too-old'}
   elif "youth aga member" in type:
     if dob <= youth_cutoff:
-      return {'msg': "Not eligible for youth pricing but registered as youth", 'type': 'too-young'}
+      return {'msg': "Not eligible for youth pricing but registered as youth", 'type': 'too-young', 'code"': '2b'}
   return None

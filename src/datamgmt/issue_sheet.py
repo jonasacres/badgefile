@@ -59,7 +59,7 @@ class IssueSheet:
 
       for issue_type, issue_data in attendee.open_issues().items():
         parsed = json.loads(issue_data)
-        issues.append(preamble + [issue_type, parsed['msg']])
+        issues.append(preamble + [issue_type, parsed['code'], parsed['msg']])
     
     # Sort issues by [primary last name, primary first name, name_family, name_given, date_of_birth, issue_type]
     issues.sort(key=lambda x: (x[10], x[11], x[4], x[5]))
@@ -85,6 +85,7 @@ class IssueSheet:
         "Primary Phone",
         "Trans Ref Num",
         "Issue Type",
+        "Issue Code",
         "Issue Description"
       ])
 

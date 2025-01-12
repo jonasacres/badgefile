@@ -8,6 +8,6 @@ def run_check(attendee):
   if dob >= cutoff:
     has_youth_form = False # TODO: get a way to access this. apparently there will be a Google Sheet?
     if not has_youth_form:
-      return {'msg': "Youth form required"}
+      return {'msg': "Youth form required", 'code': '2d'}
   
   return None
