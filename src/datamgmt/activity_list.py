@@ -137,6 +137,8 @@ class ActivityList:
     for i, string in enumerate(self.header()):
       if string.lower() == heading:
         return i
+    print(f"Field has no index: {field_name}")
+
     return None
   
   def heading_map(self):
@@ -178,6 +180,8 @@ class ActivityList:
       "attended": "Attended?",
       "partial_week_instructions": "Partial Week Instructions",
       "partial_week_instructions_comments": "Partial Week Instructions Comments",
-      "partial_week_date_range": "Partial Week Date Range",
-      "partial_week_date_range_comments": "Partial Week Date Range Comments",
+      "partial_week_first_day": "Partial Week  First Day",
+      "partial_week_first_day_comments": "Partial Week  First Day Comments",
+      "partial_week_last_day": "Partial Week  Last Day",
+      "partial_week_last_day_comments": "Partial Week  Last Day Comments",
     }

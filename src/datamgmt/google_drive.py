@@ -26,7 +26,9 @@ def authenticate_service_account(service_account_file):
 
 def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
     # Search for existing file with the same name in the specified folder
-    query = f"name='{file_name}'"
+    basename = file_name.removesuffix(".csv")
+    print(f"Upload {basename} from {file_name}")
+    query = f"name='{basename}'"
     if folder_id:
       query += f" and '{folder_id}' in parents"
 
@@ -36,7 +38,7 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
     print(f"results: {results}")
     files = results.get('files', [])
     media = MediaFileUpload(file_path, mimetype='text/csv')
-    file_metadata = {'name': file_name}
+    file_metadata = {'name': basename, 'mimeType': "application/vnd.google-apps.spreadsheet"}
     if folder_id:
       file_metadata['parents'] = [folder_id]
     
