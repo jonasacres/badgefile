@@ -1,0 +1,17 @@
+pip
+setuptools
+wheel
+virtualenv
+reportlab
+pillow
+inotify-simple
+pycups
+PyPDF2
+requests
+beautifulsoup4
+flask
+pytz
+google-auth-oauthlib
+google-auth
+google-auth-httplib2
+google-api-python-client
