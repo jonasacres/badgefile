@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendee Directory</title>
+  <style>
+    body { 
+      font-family: sans-serif;
+      background-color: #1a1b2e;
+      color: #e4e4ff;
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 16px;
+    }
+    table { 
+      border-collapse: collapse; 
+      width: 100%;
+      background-color: #252642;
+      font-size: 16px;
+      a { color: #8487c7; }
+      a:hover { color: #e4e4ff; }
+      a:visited { color: #6366a5; }
+    }
+    th, td { 
+      padding: 12px 8px;
+      text-align: left; 
+      border-bottom: 1px solid #363761;
+    }
+    th { 
+      background-color: #2f3154;
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    th:hover {
+      background-color: #363761;
+    }
+    tr:hover { 
+      background-color: #363761; 
+      cursor: pointer;
+    }
+    .search-box {
+      width: 100%;
+      padding: 16px 20px;
+      margin: 16px 0;
+      box-sizing: border-box;
+      font-size: 18px;
+      background-color: #252642;
+      border: 1px solid #363761;
+      color: #e4e4ff;
+      border-radius: 8px;
+    }
+    .search-box::placeholder {
+      color: #8487c7;
+    }
+    .details {
+      display: none;
+      padding: 16px;
+      background-color: #2f3154;
+      border-bottom: 1px solid #363761;
+      font-size: 16px;
+    }
+    .details.visible {
+      display: table-row;
+    }
+    .details td {
+      padding: 20px;
+    }
+    .detail-label {
+      color: #8487c7;
+      margin-right: 12px;
+      font-size: 16px;
+    }
+    .highlight {
+      background-color: #4b4d7c;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 24px 0;
+    }
+    a {
+      font-size: 16px;
+      padding: 0;
+      text-decoration: none;
+      margin-right: 4px;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 18px;
+        padding: 8px;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+      table {
+        font-size: 18px;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
+      th {
+        display: none;
+      }
+      td {
+        display: block;
+        padding: 8px 12px;
+        border: none;
+        width: 100%;
+        box-sizing: border-box;
+        line-height: 1.6;
+      }
+      tr {
+        display: block;
+        border-bottom: 1px solid #363761;
+        margin-bottom: 8px;
+        width: 100%;
+      }
+      tr td:not(:first-child) {
+        display: none;
+      }
+      tr.details {
+        display: none;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      tr.details.visible {
+        display: block;
+      }
+      .search-box {
+        font-size: 20px;
+      }
+      .details {
+        font-size: 18px;
+      }
+      .detail-label {
+        font-size: 18px;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      a {
+        font-size: 18px;
+      }
+      .details td {
+        padding: 12px;
+        width: auto;
+      }
+      .details td[colspan] {
+        display: block;
+        width: 100% !important;
+        max-width: calc(100vw - 16px);
+        padding: 12px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+      .details td > div {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      .details div {
+        margin-bottom: 8px;
+      }
+      .attendee-name {
+        font-size: 26px;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .attendee-actions {
+        display: block;
+        font-size: 16px;
+      }
+      .attendee-actions a {
+        margin-right: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Attendee Directory</h1>
+  <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput">
+  <table>
+    <tr>
+      <th data-column="name_given">Given Name</th>
+      <th data-column="name_family" class="sorted" data-direction="asc">Family Name ⬆️</th>
+      <th data-column="phone_canonical">Phone</th>
+      <th data-column="email">Email</th>
+    </tr>
+    <script>
+      fetch('./badgefile.json')
+        .then(response => response.json())
+        .then(data => {
+          const attendees = data.attendees;
+          const tbody = document.querySelector('table');
+          const searchInput = document.getElementById('searchInput');
+          const headers = document.querySelectorAll('th');
+
+          function sortAttendees() {
+            const sortedHeader = document.querySelector('th.sorted');
+            const column = sortedHeader.dataset.column;
+            const direction = sortedHeader.dataset.direction === 'asc' ? 1 : -1;
+
+            return attendees
+              .filter(a => a.status.toLowerCase() !== 'cancelled')
+              .sort((a, b) => {
+                let aVal = a[column] || '';
+                let bVal = b[column] || '';
+                
+                if (typeof aVal === 'string') {
+                  aVal = aVal.toLowerCase();
+                  bVal = bVal.toLowerCase();
+                }
+                
+                if (aVal === bVal) {
+                  // Secondary sort by family name if values are equal
+                  return a.name_family.toLowerCase() < b.name_family.toLowerCase() ? -1 : 1;
+                }
+                
+                return aVal < bVal ? -direction : direction;
+              });
+          }
+
+          headers.forEach(header => {
+            header.addEventListener('click', () => {
+              // Remove sort indicators from other headers
+              headers.forEach(h => {
+                if (h !== header) {
+                  h.classList.remove('sorted');
+                  h.dataset.direction = '';
+                  h.textContent = h.textContent.replace(/[⬆️⬇️]/g, '');
+                }
+              });
+
+              // Toggle sort direction if already sorted by this column
+              if (header.classList.contains('sorted')) {
+                header.dataset.direction = header.dataset.direction === 'asc' ? 'desc' : 'asc';
+              } else {
+                header.classList.add('sorted');
+                header.dataset.direction = 'asc';
+              }
+
+              // Update header text with sort indicator
+              header.textContent = header.textContent.replace(/[⬆️⬇️]/g, '');
+              header.textContent += header.dataset.direction === 'asc' ? ' ⬆️' : ' ⬇️';
+
+              renderRows(searchInput.value);
+            });
+          });
+
+          function highlightText(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+          }
+
+          function renderRows(filterText = '') {
+            // Remove all existing rows except header
+            while (tbody.rows.length > 1) {
+              tbody.deleteRow(1);
+            }
+
+            const lowercaseFilter = filterText.toLowerCase();
+            const sortedAttendees = sortAttendees();
+            const isMobile = window.innerWidth <= 600;
+            
+            sortedAttendees.forEach(attendee => {
+              const searchableText = [
+                attendee.name_given || '',
+                attendee.name_family || '',
+                attendee.phone_canonical || '',
+                attendee.email || '',
+                ...(attendee.translator !== null ? attendee.languages_canonical || [] : [])
+              ].join(' ').toLowerCase();
+
+              if (!filterText || searchableText.includes(lowercaseFilter)) {
+                const row = document.createElement('tr');
+                const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
+                const actions = [
+                  attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a>` : '',
+                  attendee.phone_canonical ? `<a href="tel:${attendee.phone_canonical}">[call]</a>` : '',
+                  attendee.email ? `<a href="mailto:${attendee.email}">[email]</a>` : ''
+                ].filter(Boolean).join(' ');
+
+                row.innerHTML = isMobile ? `
+                  <td>
+                    <span class="attendee-name">${name}</span>
+                    <span class="attendee-actions">${actions}</span>
+                  </td>
+                ` : `
+                  <td>${highlightText(attendee.name_given || '', filterText)}</td>
+                  <td>${highlightText(attendee.name_family || '', filterText)}</td>
+                  <td>${attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a> <a href="tel:${attendee.phone_canonical}">[call]</a> ` : ''}${highlightText(attendee.phone_canonical || '', filterText)}</td>
+                  <td>${attendee.email ? `<a href="mailto:${attendee.email}">[email]</a> ` : ''}${highlightText(attendee.email || '', filterText)}</td>
+                `;
+
+                const detailsRow = document.createElement('tr');
+                detailsRow.className = 'details';
+                detailsRow.innerHTML = `
+                  <td colspan="4">
+                    <div><span class="detail-label">AGA Number:</span>${attendee.aga_id || 'N/A'}</div>
+                    <div><span class="detail-label">Club:</span>${attendee.aga_chapter || 'N/A'}</div>
+                    <div><span class="detail-label">Playing Rank:</span>${attendee.aga_rating ? attendee.aga_rating : 'N/A'}</div>
+                    <div><span class="detail-label">Tournaments:</span>${attendee.tournaments_canonical.join(', ') || 'None'}</div>
+                    <div><span class="detail-label">Languages:</span>${attendee.languages_canonical.join(', ') || 'N/A'}</div>
+                    <div><span class="detail-label">Translator:</span>${attendee.translator ? 'Yes' : 'No'}</div>
+                  </td>
+                `;
+
+                tbody.appendChild(row);
+                tbody.appendChild(detailsRow);
+
+                row.addEventListener('click', (event) => {
+                  // Only toggle if it's a genuine click, not a text selection
+                  if (window.getSelection().toString()) {
+                    return;
+                  }
+                  
+                  // Hide any currently visible detail rows
+                  const visibleDetails = tbody.querySelectorAll('.details.visible');
+                  visibleDetails.forEach(detail => {
+                    if (detail !== detailsRow) {
+                      detail.classList.remove('visible');
+                    }
+                  });
+                  // Toggle this detail row
+                  detailsRow.classList.toggle('visible');
+                });
+              }
+            });
+          }
+
+          // Initial render
+          renderRows();
+
+          // Add search handler
+          searchInput.addEventListener('input', (e) => {
+            renderRows(e.target.value);
+          });
+
+          // Instead, only re-render on actual window size changes
+          let lastWidth = window.innerWidth;
+          window.addEventListener('resize', () => {
+            if (window.innerWidth !== lastWidth) {
+              lastWidth = window.innerWidth;
+              renderRows(searchInput.value);
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error loading attendee data:', error);
+          document.body.innerHTML += '<p style="color: red">Error loading attendee data</p>';
+        });
+    </script>
+  </table>
+</body>
+</html>
