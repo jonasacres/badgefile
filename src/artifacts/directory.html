@@ -199,11 +199,33 @@
         margin-right: 8px;
       }
     }
+    .search-container {
+      position: sticky;
+      top: 0;
+      background-color: #1a1b2e;
+      padding: 16px 0;
+      z-index: 100;
+      margin-bottom: 16px;
+    }
+    
+    h1 {
+      margin: 8px 0;
+    }
+    
+    tr.expanded {
+      background-color: #2f542f !important;
+    }
+    
+    tr.expanded:hover {
+      background-color: #2f542f !important;
+    }
   </style>
 </head>
 <body>
-  <h1>Attendee Directory</h1>
-  <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput">
+  <div class="search-container">
+    <h1>Attendee Directory</h1>
+    <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput">
+  </div>
   <table>
     <tr>
       <th data-column="name_given">Given Name</th>
@@ -278,6 +300,73 @@
             return text.replace(regex, '<span class="highlight">$1</span>');
           }
 
+          let lastExpandedAttendeeId = null;
+
+          function collapseAllRows() {
+            const visibleDetails = tbody.querySelectorAll('.details.visible');
+            visibleDetails.forEach(detail => {
+              detail.classList.remove('visible');
+              detail.previousElementSibling?.classList.remove('expanded');
+            });
+          }
+
+          // Add keyboard handler
+          document.addEventListener('keydown', (e) => {
+            // If typing starts anywhere, focus search and include the character
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              if (document.activeElement !== searchInput) {
+                searchInput.focus();
+                searchInput.value = e.key;
+                renderRows(e.key);
+                e.preventDefault();
+              }
+            }
+            
+            // Handle arrow keys
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              const visibleRows = Array.from(tbody.querySelectorAll('tr:not(.details)'))
+                .filter(row => row.style.display !== 'none' && !row.querySelector('th'));
+              
+              if (!visibleRows.length) return;
+              
+              const currentExpanded = tbody.querySelector('.details.visible');
+              let currentIndex = currentExpanded 
+                ? visibleRows.indexOf(currentExpanded.previousElementSibling)
+                : -1;
+              
+              let newIndex;
+              if (currentIndex === -1) {
+                // No row expanded, start with first row
+                newIndex = 0;
+              } else {
+                newIndex = currentIndex + (e.key === 'ArrowDown' ? 1 : -1);
+              }
+              
+              // Bounds checking
+              if (newIndex >= 0 && newIndex < visibleRows.length) {
+                // First remove all expanded/visible classes
+                collapseAllRows();
+                
+                // Then show new expanded row
+                const newRow = visibleRows[newIndex];
+                const newDetailsRow = newRow.nextElementSibling;
+                requestAnimationFrame(() => {
+                  newDetailsRow.classList.add('visible');
+                  newRow.classList.add('expanded');
+                });
+                
+                // Track the expanded attendee
+                lastExpandedAttendeeId = attendees.find(a => 
+                  (a.name_given + a.name_family) === newRow.querySelector('td').textContent.trim()
+                )?.id;
+                
+                // Ensure the expanded row is visible
+                newDetailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }
+          });
+
           function renderRows(filterText = '') {
             // Remove all existing rows except header
             while (tbody.rows.length > 1) {
@@ -287,6 +376,8 @@
             const lowercaseFilter = filterText.toLowerCase();
             const sortedAttendees = sortAttendees();
             const isMobile = window.innerWidth <= 600;
+            
+            let hasExpandedRow = false;  // Track if we've expanded any row
             
             sortedAttendees.forEach(attendee => {
               const searchableText = [
@@ -350,30 +441,40 @@
                   </td>
                 `;
 
-                tbody.appendChild(row);
-                tbody.appendChild(detailsRow);
+                // Only expand if this is the tracked expanded row AND we haven't expanded another row yet
+                if (attendee.id === lastExpandedAttendeeId && !hasExpandedRow) {
+                  detailsRow.classList.add('visible');
+                  row.classList.add('expanded');
+                  hasExpandedRow = true;
+                }
 
                 row.addEventListener('click', (event) => {
-                  // Only toggle if it's a genuine click, not a text selection
-                  if (window.getSelection().toString()) {
-                    return;
-                  }
+                  if (window.getSelection().toString()) return;
                   
-                  // Hide any currently visible detail rows
-                  const visibleDetails = tbody.querySelectorAll('.details.visible');
-                  visibleDetails.forEach(detail => {
-                    if (detail !== detailsRow) {
-                      detail.classList.remove('visible');
-                    }
-                  });
-                  // Toggle this detail row
-                  detailsRow.classList.toggle('visible');
+                  const isCurrentlyExpanded = detailsRow.classList.contains('visible');
+                  
+                  // Always collapse all rows first
+                  collapseAllRows();
+                  
+                  if (!isCurrentlyExpanded) {
+                    // Expand this row if it wasn't previously expanded
+                    detailsRow.classList.add('visible');
+                    row.classList.add('expanded');
+                    lastExpandedAttendeeId = attendee.id;
+                  } else {
+                    // If it was expanded, we just collapse it (already done by collapseAllRows)
+                    lastExpandedAttendeeId = null;
+                  }
                 });
+
+                tbody.appendChild(row);
+                tbody.appendChild(detailsRow);
               }
             });
           }
 
-          // Initial render
+          // Initial render with no rows expanded
+          lastExpandedAttendeeId = null;
           renderRows();
 
           // Add search handler
