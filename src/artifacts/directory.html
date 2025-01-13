@@ -148,115 +148,48 @@
       white-space: nowrap;
     }
 
-    @media (max-width: 600px) {
-      body {
-        font-size: 18px;
-        padding: 4px 8px;
-        max-width: 100vw;
-        overflow-x: hidden;
-      }
-      table {
-        font-size: 18px;
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        overflow-x: hidden;
-        box-sizing: border-box;
-      }
-      th {
-        display: none;
-      }
-      td {
-        display: block;
-        padding: 4px 12px;
-        border: none;
-        width: 100%;
-        box-sizing: border-box;
-        line-height: 1.2;
-      }
-      tr {
-        display: block;
-        border-bottom: 1px solid #363761;
-        margin-bottom: 2px;
-        width: 100%;
-      }
-      tr td:not(:first-child) {
-        display: none;
-      }
-      tr.details {
-        display: none;
-        width: 100%;
-        max-width: 100%;
-        overflow-x: hidden;
-      }
-      tr.details.visible {
-        display: block;
-      }
-      .search-box {
-        font-size: 14px;
-        padding: 8px 16px;
-        margin: 2px 0;
-      }
-      .details {
-        font-size: 18px;
-      }
-      .detail-label {
-        font-size: 14px;
-      }
-      h1 {
-        font-size: 20px;
-        font-weight: 700;
-        margin: 2px 0;
-      }
-      a {
-        font-size: 18px;
-      }
-      .details td {
-        padding: 8px 12px;
-        width: auto;
-      }
-      .details td[colspan] {
-        display: block;
-        width: 100% !important;
-        max-width: calc(100vw - 16px);
-        padding: 12px;
-        box-sizing: border-box;
-        overflow-x: hidden;
-      }
-      .details td > div {
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        word-break: break-word;
-        overflow-wrap: break-word;
-      }
-      .details-grid {
-        gap: 12px;
-      }
-      .attendee-name {
-        font-size: 18px;
-        font-weight: 600;
-        display: inline;
-        margin-bottom: 0;
-      }
-      .attendee-actions {
-        display: inline;
-        font-size: 16px;
-        margin-left: 8px;
-        white-space: nowrap;
-      }
-      .attendee-actions a {
-        margin-right: 4px;
-      }
-      .search-container {
-        padding: 0 0 2px 0;
-        margin-bottom: 2px;
-      }
-      .detail-value {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    body {
+      font-size: 18px;
+      padding: 4px 8px;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    table {
+      font-size: 18px;
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+    th {
+      display: none;
+    }
+    td {
+      display: block;
+      padding: 4px 12px;
+      border: none;
+      width: 100%;
+      box-sizing: border-box;
+      line-height: 1.2;
+    }
+    tr {
+      display: block;
+      border-bottom: 1px solid #363761;
+      margin-bottom: 2px;
+      width: 100%;
+    }
+    tr td:not(:first-child) {
+      display: none;
+    }
+    tr.details {
+      display: none;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    tr.details.visible {
+      display: block;
     }
   </style>
 </head>
@@ -280,7 +213,6 @@
           const tbody = document.querySelector('table');
           const searchInput = document.getElementById('searchInput');
           const headers = document.querySelectorAll('th');
-
           attendees.forEach(attendee => {
             // eg. "Congress Director, Age 19, Translates Korean/Chinese, playing 7d, Beaverton OR"
             const parts = [];
@@ -297,15 +229,21 @@
 
             if (attendee.languages_canonical.length > 0) {
               const prefix = attendee.translator?.includes("Yes") ? "Translates" : "Speaks";
-              parts.push(`${prefix} ${attendee.languages_canonical.join('/')}`);
+              parts.push(`${prefix} ${attendee.languages_canonical.map(lang => lang.charAt(0).toUpperCase() + lang.slice(1)).join('/')}`);
             }
 
-            parts.push(`playing ${attendee.aga_rating}`);
-            parts.push(`${attendee.city} ${attendee.state}`);
+            // Only include playing rank if not a non-participant
+            if (attendee.regtype?.includes("Non-Participant")) {
+              parts.push(`non-participant`);
+            } else {
+              parts.push(`playing ${attendee.badge_rating}`);
+            }
+
+            parts.push(`${attendee.city} ${attendee.state} ${attendee.country}`);
 
             // Join all parts with commas
             attendee.description = parts.join(", ");
-          })
+          });
 
           function sortAttendees() {
             const sortedHeader = document.querySelector('th.sorted');
@@ -440,9 +378,8 @@
 
             const lowercaseFilter = filterText.toLowerCase();
             const sortedAttendees = sortAttendees();
-            const isMobile = window.innerWidth <= 600;
             
-            let hasExpandedRow = false;  // Track if we've expanded any row
+            let hasExpandedRow = false;
             
             sortedAttendees.forEach(attendee => {
               const searchableText = [
@@ -450,28 +387,26 @@
                 attendee.name_family || '',
                 attendee.phone_canonical || '',
                 attendee.email || '',
+                attendee.description || '',
                 ...(attendee.translator !== null ? attendee.languages_canonical || [] : [])
               ].join(' ').toLowerCase();
 
               if (!filterText || searchableText.includes(lowercaseFilter)) {
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
+                const description = highlightText(attendee.description || '', filterText);
                 const actions = [
                   attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a>` : '',
                   attendee.phone_canonical ? `<a href="tel:${attendee.phone_canonical}">[call]</a>` : '',
                   attendee.email ? `<a href="mailto:${attendee.email}">[email]</a>` : ''
                 ].filter(Boolean).join(' ');
 
-                row.innerHTML = isMobile ? `
+                row.innerHTML = `
                   <td>
                     <span class="attendee-name">${name}</span>
+                    <div style="font-size: 14px; color: #9ca3af; margin-top: 4px;">${description}</div>
                     <span class="attendee-actions">${actions}</span>
                   </td>
-                ` : `
-                  <td>${highlightText(attendee.name_given || '', filterText)}</td>
-                  <td>${highlightText(attendee.name_family || '', filterText)}</td>
-                  <td>${attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a> <a href="tel:${attendee.phone_canonical}">[call]</a> ` : ''}${highlightText(attendee.phone_canonical || '', filterText)}</td>
-                  <td>${attendee.email ? `<a href="mailto:${attendee.email}">[email]</a> ` : ''}${highlightText(attendee.email || '', filterText)}</td>
                 `;
                 const detailsRow = document.createElement('tr');
                 detailsRow.className = 'details';
@@ -545,15 +480,6 @@
           // Add search handler
           searchInput.addEventListener('input', (e) => {
             renderRows(e.target.value);
-          });
-
-          // Instead, only re-render on actual window size changes
-          let lastWidth = window.innerWidth;
-          window.addEventListener('resize', () => {
-            if (window.innerWidth !== lastWidth) {
-              lastWidth = window.innerWidth;
-              renderRows(searchInput.value);
-            }
           });
         })
         .catch(error => {

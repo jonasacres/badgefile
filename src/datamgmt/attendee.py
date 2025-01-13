@@ -59,6 +59,8 @@ class Attendee:
       # this might be someone who added an AGA number to their registraton later.
       self._info["badgefile_id"] = agaid
       IdManager.shared().set_id_alias(agaid, bfid)
+    
+    self._info["badge_rating"] = self.badge_rating()
 
     if sync:
       self.sync_to_db(bfid)
@@ -152,6 +154,19 @@ class Attendee:
     if not 'aga_expiration' in self._info or self._info['aga_expiration'] is None:
       return None
     return datetime.strptime(self._info['aga_expiration'], "%m/%d/%Y")
+
+  def badge_rating(self):
+    rating = self._info.get("aga_rating", None)
+    if rating is None:
+      return ""
+    rating = float(rating)
+    
+    from math import floor, ceil
+
+    if rating > 0:
+      return str(floor(rating)) + "d"
+    else:
+      return str(-ceil(rating)) + "k"
   
   def date_of_birth(self):
     if not 'date_of_birth' in self._info or self._info['date_of_birth'] is None:
