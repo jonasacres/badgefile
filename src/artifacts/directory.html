@@ -100,7 +100,7 @@
       background-color: rgba(59, 130, 246, 0.1);
       
       color: #60a5fa;
-      padding: 2px 6px;
+      padding: 0;
       border-radius: 4px;
     }
     h1 {
@@ -137,6 +137,17 @@
       background-color: #1e2128 !important;
     }
 
+    td a[href^="tel"],
+    td a[href^="sms"],
+    td a[href^="mailto"] {
+      white-space: nowrap;
+    }
+    
+    td:nth-child(3),
+    td:nth-child(4) {
+      white-space: nowrap;
+    }
+
     @media (max-width: 600px) {
       body {
         font-size: 18px;
@@ -157,16 +168,16 @@
       }
       td {
         display: block;
-        padding: 8px 12px;
+        padding: 4px 12px;
         border: none;
         width: 100%;
         box-sizing: border-box;
-        line-height: 1.6;
+        line-height: 1.2;
       }
       tr {
         display: block;
         border-bottom: 1px solid #363761;
-        margin-bottom: 8px;
+        margin-bottom: 2px;
         width: 100%;
       }
       tr td:not(:first-child) {
@@ -201,7 +212,7 @@
         font-size: 18px;
       }
       .details td {
-        padding: 12px;
+        padding: 8px 12px;
         width: auto;
       }
       .details td[colspan] {
@@ -220,24 +231,31 @@
         overflow-wrap: break-word;
       }
       .details-grid {
-        gap: 20px;
+        gap: 12px;
       }
       .attendee-name {
-        font-size: 26px;
+        font-size: 18px;
         font-weight: 600;
-        display: block;
-        margin-bottom: 4px;
+        display: inline;
+        margin-bottom: 0;
       }
       .attendee-actions {
-        display: block;
+        display: inline;
         font-size: 16px;
+        margin-left: 8px;
+        white-space: nowrap;
       }
       .attendee-actions a {
-        margin-right: 8px;
+        margin-right: 4px;
       }
       .search-container {
         padding: 0 0 2px 0;
         margin-bottom: 2px;
+      }
+      .detail-value {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   </style>
@@ -262,6 +280,32 @@
           const tbody = document.querySelector('table');
           const searchInput = document.getElementById('searchInput');
           const headers = document.querySelectorAll('th');
+
+          attendees.forEach(attendee => {
+            // eg. "Congress Director, Age 19, Translates Korean/Chinese, playing 7d, Beaverton OR"
+            const parts = [];
+            if (attendee.title) {
+              parts.push(attendee.title);
+            }
+
+            const birthDate = new Date(attendee.date_of_birth);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear() - 
+              (today.getMonth() < birthDate.getMonth() || 
+               (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()) ? 1 : 0);
+            parts.push(`Age ${age}`);
+
+            if (attendee.languages_canonical.length > 0) {
+              const prefix = attendee.translator?.includes("Yes") ? "Translates" : "Speaks";
+              parts.push(`${prefix} ${attendee.languages_canonical.join('/')}`);
+            }
+
+            parts.push(`playing ${attendee.aga_rating}`);
+            parts.push(`${attendee.city} ${attendee.state}`);
+
+            // Join all parts with commas
+            attendee.description = parts.join(", ");
+          })
 
           function sortAttendees() {
             const sortedHeader = document.querySelector('th.sorted');
