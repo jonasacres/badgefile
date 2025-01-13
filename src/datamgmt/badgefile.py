@@ -6,6 +6,10 @@ from .reglist import Reglist
 from .activity_list import ActivityList
 from .tdlist import TDList
 from .issue_sheet import IssueSheet
+from artifacts.directory import generate_directory
+
+import json
+import os
 
 # Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress.
 class Badgefile:
@@ -29,6 +33,24 @@ class Badgefile:
       attendee.scan_issues()
     
     IssueSheet(self).generate("reports/issue_sheet.csv")
+    self.generate_json()
+  
+  def generate_json(self):
+    # Create artifacts directory if it doesn't exist
+    os.makedirs("artifacts", exist_ok=True)
+
+    # Generate JSON data for all non-cancelled attendees
+    attendees_data = []
+    for attendee in self.attendees():
+      info = attendee.info()
+      info["phone_canonical"] = attendee.phone()
+      info["tournaments_canonical"] = attendee.tournaments()
+      info["languages_canonical"] = attendee.languages()
+      attendees_data.append(attendee.info())
+
+    # Write JSON file
+    with open("artifacts/badgefile.json", "w") as f:
+      json.dump({"attendees": attendees_data}, f, indent=2)
 
   def lookup_attendee(self, badgefile_id):
     for attendee in self.attendees():

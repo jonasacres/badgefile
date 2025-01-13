@@ -3,3 +3,4 @@ src/__pycache__
 src/datamgmt/__pycache__
 src/datamgmt/issue_checks/__pycache__
 badgefile.sqlite3
+artifacts

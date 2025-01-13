@@ -101,6 +101,21 @@ class Attendee:
   def is_participant(self):
     return "aga member" in self._info["regtype"].lower()
   
+  def languages(self):
+    langstr = str(self._info.get("languages", "")).lower()
+    languages = []
+
+    if "korean" in langstr:
+      languages.append("korean")
+    if "chinese" in langstr:
+      languages.append("chinese")
+    if "japanese" in langstr:
+      languages.append("japanese")
+    if "spanish" in langstr:
+      languages.append("spanish")
+    
+    return sorted(languages)
+  
   def tournaments(self):
     tournament_str = str(self._info['tournaments']).lower()
     if tournament_str == "none":
@@ -124,7 +139,7 @@ class Attendee:
         print(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
       
-    return tournaments
+    return sorted(tournaments)
   
   def activities(self):
     if self._activities == None:

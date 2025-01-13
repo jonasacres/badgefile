@@ -39,7 +39,6 @@ def update():
   bf = Badgefile()
   bf.update()
 
-
 if "download" in sys.argv:
   download()
 update()
