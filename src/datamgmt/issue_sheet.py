@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from .google_drive import authenticate_service_account, upload_csv_to_drive
@@ -95,7 +96,7 @@ class IssueSheet:
     self.upload_to_drive(path)
   
   def upload_to_drive(self, path):
-    service_account_file = "/home/jonas/gocongress2025-0f356f9df4e4.json"
+    service_account_file = os.path.expanduser("~/gocongress2025-0f356f9df4e4.json")
     folder_id = "1AnJeOujx1j2-RGvkJsQWp_2tqe5g2V-F"
     service = authenticate_service_account(service_account_file)
     upload_csv_to_drive(service, path, "issue_data.csv", folder_id)

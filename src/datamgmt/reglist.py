@@ -92,7 +92,7 @@ class Reglist:
       file.write(self.csv.decode("utf-8"))
 
   def upload_to_drive(self):
-    service_account_file = "/home/jonas/gocongress2025-0f356f9df4e4.json"
+    service_account_file = os.path.expanduser("~/gocongress2025-0f356f9df4e4.json")
     folder_id = "1AnJeOujx1j2-RGvkJsQWp_2tqe5g2V-F"
     service = authenticate_service_account(service_account_file)
     upload_csv_to_drive(service, self.path(), "registrant_data.csv", folder_id)
