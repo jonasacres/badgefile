@@ -6,7 +6,7 @@
   <title>Attendee Directory</title>
   <style>
     body { 
-      font-family: sans-serif;
+      font-family: 'Inter', sans-serif;
       background-color: #1a1b2e;
       color: #e4e4ff;
       font-size: 16px;
@@ -67,9 +67,26 @@
     .details td {
       padding: 20px;
     }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+    .details-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     .detail-label {
-      color: #8487c7;
-      margin-right: 12px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #a5a8e3;
+    }
+    .detail-value {
+      font-family: 'Inter', sans-serif;
       font-size: 16px;
     }
     .highlight {
@@ -138,7 +155,7 @@
         font-size: 18px;
       }
       .detail-label {
-        font-size: 18px;
+        font-size: 14px;
       }
       h1 {
         font-size: 32px;
@@ -165,8 +182,8 @@
         word-break: break-word;
         overflow-wrap: break-word;
       }
-      .details div {
-        margin-bottom: 8px;
+      .details-grid {
+        gap: 20px;
       }
       .attendee-name {
         font-size: 26px;
@@ -300,17 +317,36 @@
                   <td>${attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a> <a href="tel:${attendee.phone_canonical}">[call]</a> ` : ''}${highlightText(attendee.phone_canonical || '', filterText)}</td>
                   <td>${attendee.email ? `<a href="mailto:${attendee.email}">[email]</a> ` : ''}${highlightText(attendee.email || '', filterText)}</td>
                 `;
-
                 const detailsRow = document.createElement('tr');
                 detailsRow.className = 'details';
                 detailsRow.innerHTML = `
                   <td colspan="4">
-                    <div><span class="detail-label">AGA Number:</span>${attendee.aga_id || 'N/A'}</div>
-                    <div><span class="detail-label">Club:</span>${attendee.aga_chapter || 'N/A'}</div>
-                    <div><span class="detail-label">Playing Rank:</span>${attendee.aga_rating ? attendee.aga_rating : 'N/A'}</div>
-                    <div><span class="detail-label">Tournaments:</span>${attendee.tournaments_canonical.join(', ') || 'None'}</div>
-                    <div><span class="detail-label">Languages:</span>${attendee.languages_canonical.join(', ') || 'N/A'}</div>
-                    <div><span class="detail-label">Translator:</span>${attendee.translator ? 'Yes' : 'No'}</div>
+                    <div class="details-grid">
+                      <div class="details-item">
+                        <div class="detail-label">AGA Number:</div>
+                        <div class="detail-value">${attendee.aga_id || 'N/A'}</div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Club:</div>
+                        <div class="detail-value">${attendee.aga_chapter || 'N/A'}</div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Playing Rank:</div>
+                        <div class="detail-value">${attendee.aga_rating ? attendee.aga_rating : 'N/A'}</div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Tournaments:</div>
+                        <div class="detail-value">${attendee.tournaments_canonical.join(', ') || 'None'}</div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Languages:</div>
+                        <div class="detail-value">${attendee.languages_canonical.join(', ') || 'N/A'}</div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Translator:</div>
+                        <div class="detail-value">${attendee.translator ? 'Yes' : 'No'}</div>
+                      </div>
+                    </div>
                   </td>
                 `;
 
