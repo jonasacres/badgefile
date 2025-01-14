@@ -741,12 +741,32 @@
                 const fieldSearchesMatch = clause.fieldSearches.every(search => {
                   const fieldValue = attendee[search.field];
                   if (Array.isArray(fieldValue)) {
-                    return fieldValue.some(v => matchesSearchTerm(v, search.value));
-                  } else if (search.field === 'translator') {
-                    const translatorValue = (fieldValue ? 'yes' : 'no');
-                    return matchesSearchTerm(translatorValue, search.value);
+                    // For array fields like languages_canonical
+                    return fieldValue.some(v => {
+                      const valueStr = (v || '').toString().toLowerCase().trim();
+                      const searchStr = search.value.toLowerCase().trim();
+                      
+                      if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
+                        return valueStr === searchStr.slice(1, -1);
+                      } else if (searchStr.startsWith('/')) {
+                        return valueStr.startsWith(searchStr.slice(1));
+                      } else if (searchStr.endsWith('/')) {
+                        return valueStr.endsWith(searchStr.slice(0, -1));
+                      }
+                      return valueStr.includes(searchStr);
+                    });
                   } else {
-                    return matchesSearchTerm(fieldValue, search.value);
+                    const valueStr = (fieldValue || '').toString().toLowerCase().trim();
+                    const searchStr = search.value.toLowerCase().trim();
+                    
+                    if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
+                      return valueStr === searchStr.slice(1, -1);
+                    } else if (searchStr.startsWith('/')) {
+                      return valueStr.startsWith(searchStr.slice(1));
+                    } else if (searchStr.endsWith('/')) {
+                      return valueStr.endsWith(searchStr.slice(0, -1));
+                    }
+                    return valueStr.includes(searchStr);
                   }
                 });
 
@@ -764,12 +784,26 @@
                   attendee.emergency_contact_name || '',
                   attendee.emergency_contact_email || '',
                   attendee.emergency_contact_phone_std || ''
-                ].join(' ').toLowerCase();
-
-                const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
+                ].join('\n').toLowerCase().trim();
 
                 return clause.generalSearchTerms.every(term => {
-                  return matchesSearchTerm(searchableText, term) || matchesSearchTerm(tournamentText, term);
+                  const termStr = term.toLowerCase().trim();
+                  
+                  if (termStr.startsWith('/') && termStr.endsWith('/')) {
+                    // For exact matches in general search, look for the term in any part of the text
+                    const exactTerm = termStr.slice(1, -1);
+                    return searchableText.split('\n').some(line => line.trim() === exactTerm);
+                  } else if (termStr.startsWith('/')) {
+                    // For prefix matches, look for lines starting with the term
+                    const prefix = termStr.slice(1);
+                    return searchableText.split('\n').some(line => line.trim().startsWith(prefix));
+                  } else if (termStr.endsWith('/')) {
+                    // For suffix matches, look for lines ending with the term
+                    const suffix = termStr.slice(0, -1);
+                    return searchableText.split('\n').some(line => line.trim().endsWith(suffix));
+                  }
+                  // Default substring match
+                  return searchableText.includes(termStr);
                 });
               });
 
@@ -804,9 +838,37 @@
                   matchingFields = fields
                     .filter(field => field.value)
                     .filter(field => {
-                      const fieldValue = field.value.toString().toLowerCase();
-                      return allSearchTerms.some(term => fieldValue.includes(term)) ||
-                        allFieldSearches.some(search => search.field === search.field);
+                      const fieldValue = field.value.toString().toLowerCase().trim();
+                      
+                      // Check field-specific searches first
+                      const matchesFieldSearch = allFieldSearches.some(search => {
+                        if (search.field !== field.field) return false;
+                        const searchStr = search.value.toLowerCase().trim();
+                        
+                        if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
+                          return fieldValue === searchStr.slice(1, -1);
+                        } else if (searchStr.startsWith('/')) {
+                          return fieldValue.startsWith(searchStr.slice(1));
+                        } else if (searchStr.endsWith('/')) {
+                          return fieldValue.endsWith(searchStr.slice(0, -1));
+                        }
+                        return fieldValue.includes(searchStr);
+                      });
+                      
+                      if (matchesFieldSearch) return true;
+                      
+                      // Then check general terms
+                      return allSearchTerms.some(term => {
+                        const termStr = term.toLowerCase().trim();
+                        if (termStr.startsWith('/') && termStr.endsWith('/')) {
+                          return fieldValue === termStr.slice(1, -1);
+                        } else if (termStr.startsWith('/')) {
+                          return fieldValue.startsWith(termStr.slice(1));
+                        } else if (termStr.endsWith('/')) {
+                          return fieldValue.endsWith(termStr.slice(0, -1));
+                        }
+                        return fieldValue.includes(termStr);
+                      });
                     })
                     .map(field => `<span style="color: #0a0">${field.label}:</span> <span style="color: #0f0">${
                       highlightText(field.value, allSearchTerms.join(' '), field.field, allFieldSearches)
@@ -984,21 +1046,28 @@
 
           function matchesSearchTerm(value, term) {
             if (!value) return false;
-            value = value.toString().toLowerCase();
+            value = value.toString().toLowerCase().trim();
+            term = term.toLowerCase().trim();
             
-            if (term.startsWith('/') && !term.endsWith('/')) {
-              // Prefix match
-              return value.startsWith(term.slice(1));
-            } else if (term.endsWith('/') && !term.startsWith('/')) {
-              // Suffix match
-              return value.endsWith(term.slice(0, -1));
-            } else if (term.startsWith('/') && term.endsWith('/')) {
-              // Exact match
-              return value === term.slice(1, -1);
-            } else {
-              // Normal contains match
-              return value.includes(term);
+            // Remove slashes for exact match check
+            if (term.startsWith('/') && term.endsWith('/')) {
+              const exactTerm = term.slice(1, -1);
+              return value === exactTerm;
             }
+            
+            // Remove slash for prefix/suffix checks
+            if (term.startsWith('/')) {
+              const prefix = term.slice(1);
+              return value.startsWith(prefix);
+            }
+            
+            if (term.endsWith('/')) {
+              const suffix = term.slice(0, -1);
+              return value.endsWith(suffix);
+            }
+            
+            // Default case: substring match
+            return value.includes(term);
           }
 
           // Add this event listener to handle blur events on rows
