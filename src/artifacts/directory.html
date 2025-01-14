@@ -135,6 +135,15 @@
     * {
       text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
     }
+
+    .details-item {
+      margin-bottom: 1em;  /* Add space between items */
+    }
+
+    .details-item:last-child {
+      margin-bottom: 0;     /* Remove margin from last item */
+      border-bottom: none;  /* Remove border from last item */
+    }
   </style>
 </head>
 <body>
@@ -439,6 +448,7 @@
                           ` : ''}
                         </div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Email:</div>
                         <div class="detail-value">
@@ -450,26 +460,32 @@
                           ` : ''}
                         </div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
                         <div class="detail-value">${highlightText(attendee.aga_id || 'N/A', filterText)}</div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Club:</div>
                         <div class="detail-value">${highlightText(attendee.aga_chapter || 'N/A', filterText)}</div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Playing Rank:</div>
                         <div class="detail-value">${attendee.aga_rating ? attendee.aga_rating : 'N/A'}</div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Tournaments:</div>
                         <div class="detail-value">${(attendee.tournaments_canonical || []).map(t => highlightText(t, filterText)).join(', ') || 'None'}</div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Languages:</div>
                         <div class="detail-value">${attendee.languages_canonical.join(', ') || 'N/A'}</div>
                       </div>
+
                       <div class="details-item">
                         <div class="detail-label">Translator:</div>
                         <div class="detail-value">${attendee.translator ? 'Yes' : 'No'}</div>
