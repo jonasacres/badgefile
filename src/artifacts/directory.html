@@ -614,6 +614,16 @@
                 return;
               case 'ArrowDown':
               case 'ArrowUp':
+                // Allow default behavior (scrolling) if Shift is pressed
+                if (e.shiftKey) {
+                  const scrollAmount = 100; // Adjust this value to control scroll speed
+                  window.scrollBy({
+                    top: e.key === 'ArrowDown' ? scrollAmount : -scrollAmount,
+                    behavior: 'smooth'
+                  });
+                  return;
+                }
+                
                 e.preventDefault();
                 
                 // Calculate new index but don't clear selection if we're at the boundary
