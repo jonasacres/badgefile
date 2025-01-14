@@ -258,17 +258,10 @@
             return text.replace(regex, '<span class="highlight">$1</span>');
           }
 
-          let lastExpandedAttendeeId = null;
+          let currentExpandedRow = null;
+          let selectedIndex = -1;
 
-          function collapseAllRows() {
-            const visibleDetails = tbody.querySelectorAll('.details.visible');
-            visibleDetails.forEach(detail => {
-              detail.classList.remove('visible');
-              detail.previousElementSibling?.classList.remove('expanded');
-            });
-          }
-
-          document.addEventListener('keydown', (e) => {
+          function handleKeyEvents(e) {
             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
               if (document.activeElement !== searchInput) {
                 searchInput.focus();
@@ -277,53 +270,10 @@
                 e.preventDefault();
               }
             }
-            
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              e.preventDefault();
-              const visibleRows = Array.from(tbody.querySelectorAll('tr:not(.details)'))
-                .filter(row => row.style.display !== 'none' && !row.querySelector('th'));
-              
-              if (!visibleRows.length) return;
-              
-              const currentExpanded = tbody.querySelector('.details.visible');
-              let currentIndex = currentExpanded 
-                ? visibleRows.indexOf(currentExpanded.previousElementSibling)
-                : -1;
-              
-              let newIndex;
-              if (currentIndex === -1) {
-                newIndex = 0;
-              } else {
-                newIndex = currentIndex + (e.key === 'ArrowDown' ? 1 : -1);
-              }
-              
-              if (newIndex >= 0 && newIndex < visibleRows.length) {
-                collapseAllRows();
-                
-                const newRow = visibleRows[newIndex];
-                const newDetailsRow = newRow.nextElementSibling;
-                requestAnimationFrame(() => {
-                  newDetailsRow.classList.add('visible');
-                  newRow.classList.add('expanded');
-                });
-                
-                lastExpandedAttendeeId = attendees.find(a => 
-                  (a.name_given + a.name_family) === newRow.querySelector('td').textContent.trim()
-                )?.id;
-                
-                newDetailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }
-          });
 
-          let currentExpandedRow = null;
-
-          let selectedIndex = -1;
-
-          function handleArrowKeys(e) {
             const rows = Array.from(tbody.getElementsByTagName('tr'))
               .filter(row => !row.classList.contains('details') && !row.querySelector('th'));
-            
+
             if (rows.length === 0) return;
 
             let newIndex = selectedIndex;
@@ -363,7 +313,7 @@
             }
           }
 
-          document.addEventListener('keydown', handleArrowKeys);
+          document.addEventListener('keydown', handleKeyEvents);
 
           function renderRows(filterText = '') {
             selectedIndex = -1;
@@ -499,7 +449,6 @@
             });
           }
 
-          lastExpandedAttendeeId = null;
           renderRows();
 
           searchInput.addEventListener('input', (e) => {
