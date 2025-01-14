@@ -732,6 +732,9 @@
               window.scrollTo({ top: 0, behavior: 'smooth' });
               collapseExpandedRow();
               
+              // Remove the URL anchor tag
+              history.replaceState(null, '', window.location.pathname);
+              
               // Remove highlight from selected row
               if (selectedIndex >= 0) {
                 const rows = Array.from(tbody.getElementsByTagName('tr'))
