@@ -224,6 +224,48 @@
       // Clear search box on page load
       document.getElementById('searchInput').value = '';
 
+      function jumpToPrimaryRegistrant(id) {
+        const searchInput = document.getElementById('searchInput');
+        
+        // Scroll to top of page
+        window.scrollTo(0, 0);
+        
+        // Update search box and trigger the search
+        searchInput.value = `id:/${id}/`;
+        searchInput.dispatchEvent(new Event('input'));
+        
+        // Expand the first row after a short delay to ensure rendering is complete
+        setTimeout(() => {
+          const firstRow = document.querySelector('tr:not(.details):not(:first-child)');
+          if (firstRow) {
+            const detailsRow = firstRow.nextElementSibling;
+            if (detailsRow) {
+              // Close any currently expanded row
+              if (currentExpandedRow) {
+                currentExpandedRow.style.display = 'none';
+                const prevRow = currentExpandedRow.previousElementSibling;
+                if (prevRow) {
+                  prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                }
+              }
+              
+              // Expand the first row
+              detailsRow.style.display = 'table-row';
+              currentExpandedRow = detailsRow;
+              lastExpandedAttendeeId = sortedAttendees[0]?.badgefile_id;
+              firstRow.querySelector('.arrow-indicator').textContent = '▼';
+            }
+          }
+        }, 0);
+      }
+
+      function showParty(id) {
+        const searchInput = document.getElementById('searchInput');
+        window.scrollTo(0, 0);
+        searchInput.value = `pid:/${id}/`;
+        searchInput.dispatchEvent(new Event('input'));
+      }
+
       fetch('./badgefile.json')
         .then(response => response.json())
         .then(data => {
@@ -641,13 +683,23 @@
 
                       <div class="details-item">
                         <div class="detail-label">Primary Registrant:</div>
-                        <div class="detail-value">${
-                          attendee.primary_registrant_name 
+                        <div class="detail-value">
+                          ${attendee.primary_registrant_name 
                             ? `${highlightText(attendee.primary_registrant_name, filterText)} (#${
                                 highlightText(attendee.primary_registrant_id, filterText, 'primary_registrant_id', fieldSearches)
-                              })`
+                              })
+                              <div style="margin-top: 4px">
+                                <a href="#" onclick="event.preventDefault(); jumpToPrimaryRegistrant('${attendee.primary_registrant_id}')">[JUMP]</a>
+                                ${(() => {
+                                  const partyCount = attendees.filter(a => 
+                                    a.primary_registrant_id === attendee.primary_registrant_id
+                                  ).length;
+                                  return `<a href="#" onclick="event.preventDefault(); showParty('${attendee.primary_registrant_id}')">[PARTY (${partyCount})]</a>`;
+                                })()}
+                              </div>`
                             : 'N/A'
-                        }</div>
+                          }
+                        </div>
                       </div>
                     </div>
                   </td>
