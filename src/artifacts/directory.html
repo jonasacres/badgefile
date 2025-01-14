@@ -326,33 +326,39 @@
               .match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
               ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
               .filter(term => {
-                // Exclude terms that are field-specific searches
                 return !term.includes(':') || term.split(':').length !== 2;
               }) || [];
 
             let termsToHighlight = [];
             
-            // If this is for a specific field, include matching field searches
             if (specificField) {
               const fieldTerms = fieldSearches
                 .filter(search => search.field === specificField)
                 .map(search => search.value);
               termsToHighlight.push(...fieldTerms);
               
-              // If this field is one that supports field-specific search,
-              // also include general terms that match
               if (Object.values(fieldMapping).includes(specificField)) {
                 termsToHighlight.push(...generalTerms);
               }
             } else {
-              // For non-specific fields, just include general terms
               termsToHighlight.push(...generalTerms);
             }
             
             if (termsToHighlight.length === 0) return text;
             
             const regex = new RegExp(
-              `(${termsToHighlight.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+              `(${termsToHighlight.map(term => {
+                // Handle prefix/suffix matching in highlighting
+                let pattern = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                if (term.startsWith('/') && !term.endsWith('/')) {
+                  pattern = `^${pattern.slice(1)}`;
+                } else if (term.endsWith('/') && !term.startsWith('/')) {
+                  pattern = `${pattern.slice(0, -1)}$`;
+                } else if (term.startsWith('/') && term.endsWith('/')) {
+                  pattern = `^${pattern.slice(1, -1)}$`;
+                }
+                return pattern;
+              }).join('|')})`,
               'gi'
             );
             return text.replace(regex, '<span class="highlight">$1</span>');
@@ -508,12 +514,12 @@
               const fieldSearchesMatch = fieldSearches.every(search => {
                 const fieldValue = attendee[search.field];
                 if (Array.isArray(fieldValue)) {
-                  return fieldValue.some(v => v.toString().toLowerCase().includes(search.value));
+                  return fieldValue.some(v => matchesSearchTerm(v, search.value));
                 } else if (search.field === 'translator') {
                   const translatorValue = (fieldValue ? 'yes' : 'no');
-                  return translatorValue.includes(search.value);
+                  return matchesSearchTerm(translatorValue, search.value);
                 } else {
-                  return (fieldValue || '').toString().toLowerCase().includes(search.value);
+                  return matchesSearchTerm(fieldValue, search.value);
                 }
               });
 
@@ -533,9 +539,9 @@
 
               const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
 
-              const generalTermsMatch = generalSearchTerms.every(term => 
-                searchableText.includes(term) || tournamentText.includes(term)
-              );
+              const generalTermsMatch = generalSearchTerms.every(term => {
+                return matchesSearchTerm(searchableText, term) || matchesSearchTerm(tournamentText, term);
+              });
 
               if (!filterText || (fieldSearchesMatch && generalTermsMatch)) {
                 const row = document.createElement('tr');
@@ -696,6 +702,25 @@
               searchInput.closest('.search-container').classList.add('focused');
             }
           });
+
+          function matchesSearchTerm(value, term) {
+            if (!value) return false;
+            value = value.toString().toLowerCase();
+            
+            if (term.startsWith('/') && !term.endsWith('/')) {
+              // Prefix match
+              return value.startsWith(term.slice(1));
+            } else if (term.endsWith('/') && !term.startsWith('/')) {
+              // Suffix match
+              return value.endsWith(term.slice(0, -1));
+            } else if (term.startsWith('/') && term.endsWith('/')) {
+              // Exact match
+              return value === term.slice(1, -1);
+            } else {
+              // Normal contains match
+              return value.includes(term);
+            }
+          }
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
