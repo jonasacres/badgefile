@@ -39,9 +39,10 @@
       padding: 8px;
       margin: 4px 0;
       font-family: 'Courier New', monospace;
+      font-size: 18px;
       background-color: #000;
       border: 1px solid #0f0;
-      color: #0f0;
+      color: #f0f;
     }
     .search-box:focus {
       outline: none;
@@ -49,7 +50,7 @@
       box-shadow: 0 0 5px #0f0;
     }
     .search-box::placeholder {
-      color: #030;
+      color: rgb(0, 114, 0);
     }
     .details {
       background-color: #000;
@@ -63,10 +64,18 @@
       color: #0f0;
     }
     .highlight {
-      background-color: #020;
-      color: #0f0;
+      background-color: #1a0033;
+      color: #ff00ff;
       font-weight: bold;
+      font-size: 120%;
+      padding: 0 0px;
+      margin: 0 0px;
+      border: none;
+      display: inline-block;
+      position: relative;
+      text-shadow: 0 0 8px #8a008a;
     }
+
     h1 {
       font-family: 'Courier New', monospace;
       font-size: 24px;
@@ -133,7 +142,7 @@
 
     /* Add CRT monitor glow effect */
     * {
-      text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+      text-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
     }
 
     .details-item {
