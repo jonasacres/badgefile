@@ -214,7 +214,7 @@
   </div>
   <table>
     <tr>
-      <th data-column="name_family" class="sorted" data-direction="asc">Directory Listing ⬆️</th>
+      <th data-column="name_family" class="sorted" data-direction="asc">Directory Listing <span style="color: #0f0">↑</span></th>
     </tr>
     <script>
       let lastExpandedAttendeeId = null;
@@ -290,7 +290,7 @@
                 if (h !== header) {
                   h.classList.remove('sorted');
                   h.dataset.direction = '';
-                  h.textContent = h.textContent.replace(/[⬆️⬇️]/g, '');
+                  h.textContent = h.textContent.replace(/[⬆️⬇️↑↓]/g, '');
                 }
               });
 
@@ -301,8 +301,8 @@
                 header.dataset.direction = 'asc';
               }
 
-              header.textContent = header.textContent.replace(/[⬆️⬇️]/g, '');
-              header.textContent += header.dataset.direction === 'asc' ? ' ⬆️' : ' ⬇️';
+              header.textContent = header.textContent.replace(/[⬆️⬇️↑↓]/g, '');
+              header.textContent += header.dataset.direction === 'asc' ? ' ↑' : ' ↓';
 
               renderRows(searchInput.value);
             });
