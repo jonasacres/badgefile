@@ -61,6 +61,8 @@ class Attendee:
       IdManager.shared().set_id_alias(agaid, bfid)
     
     self._info["badge_rating"] = self.badge_rating()
+    if self._info["emergency_contact_phone"] is not None:
+      self._info["emergency_contact_phone_std"] = util.standardize_phone(self._info["emergency_contact_phone"])
 
     if sync:
       self.sync_to_db(bfid)

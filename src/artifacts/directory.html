@@ -763,7 +763,7 @@
                   attendee.aga_chapter || '',
                   attendee.emergency_contact_name || '',
                   attendee.emergency_contact_email || '',
-                  attendee.emergency_contact_phone || ''
+                  attendee.emergency_contact_phone_std || ''
                 ].join(' ').toLowerCase();
 
                 const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
@@ -797,7 +797,7 @@
                     { label: 'Club', value: attendee.aga_chapter, field: 'aga_chapter' },
                     { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' },
                     { label: 'Emerg. Contact', value: attendee.emergency_contact_name },
-                    { label: 'Emerg. Ph. #', value: attendee.emergency_contact_phone },
+                    { label: 'Emerg. Ph. #', value: attendee.emergency_contact_phone_std },
                     { label: 'Emerg. Email', value: attendee.emergency_contact_email }
                   ];
 
@@ -885,7 +885,7 @@
                           ${attendee.emergency_contact_name ? `
                             ${highlightText(attendee.emergency_contact_name, allSearchTerms.join(' '))} 
                             (${highlightText(attendee.emergency_contact_email || 'no email', allSearchTerms.join(' '))}, 
-                            ${highlightText(attendee.emergency_contact_phone || 'no phone', allSearchTerms.join(' '))})
+                            ${highlightText(attendee.emergency_contact_phone_std || 'no phone', allSearchTerms.join(' '))})
                           ` : 'N/A'}
                         </div>
                       </div>
