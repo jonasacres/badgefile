@@ -395,17 +395,11 @@
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
                 const description = highlightText(attendee.description || '', filterText);
-                const actions = [
-                  attendee.phone_canonical ? `<a href="sms:${attendee.phone_canonical}">[txt]</a>` : '',
-                  attendee.phone_canonical ? `<a href="tel:${attendee.phone_canonical}">[call]</a>` : '',
-                  attendee.email ? `<a href="mailto:${attendee.email}">[email]</a>` : ''
-                ].filter(Boolean).join(' ');
 
                 row.innerHTML = `
                   <td>
                     <span class="attendee-name">${name}</span>
                     <div style="font-size: 14px; color: #9ca3af; margin-top: 4px;">${description}</div>
-                    <span class="attendee-actions">${actions}</span>
                   </td>
                 `;
                 const detailsRow = document.createElement('tr');
@@ -413,6 +407,29 @@
                 detailsRow.innerHTML = `
                   <td colspan="4">
                     <div class="details-grid">
+                      <div class="details-item">
+                        <div class="detail-label">Phone:</div>
+                        <div class="detail-value">
+                          ${attendee.phone_canonical || 'N/A'}
+                          ${attendee.phone_canonical ? `
+                            <div style="margin-top: 4px">
+                              <a href="sms:${attendee.phone_canonical}">[txt]</a>
+                              <a href="tel:${attendee.phone_canonical}">[call]</a>
+                            </div>
+                          ` : ''}
+                        </div>
+                      </div>
+                      <div class="details-item">
+                        <div class="detail-label">Email:</div>
+                        <div class="detail-value">
+                          ${attendee.email || 'N/A'}
+                          ${attendee.email ? `
+                            <div style="margin-top: 4px">
+                              <a href="mailto:${attendee.email}">[email]</a>
+                            </div>
+                          ` : ''}
+                        </div>
+                      </div>
                       <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
                         <div class="detail-value">${attendee.aga_id || 'N/A'}</div>
