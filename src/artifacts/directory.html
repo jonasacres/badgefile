@@ -483,11 +483,25 @@
                 e.preventDefault();
                 if (selectedIndex >= 0) {
                   const detailsRow = rows[selectedIndex].nextElementSibling;
-                  if (detailsRow.style.display !== 'table-row') {
+                  const arrowIndicator = rows[selectedIndex].querySelector('.arrow-indicator');
+                  
+                  if (detailsRow.style.display === 'table-row') {
+                    detailsRow.style.display = 'none';
+                    currentExpandedRow = null;
+                    lastExpandedAttendeeId = null;
+                    arrowIndicator.textContent = '▶';
+                  } else {
+                    if (currentExpandedRow) {
+                      currentExpandedRow.style.display = 'none';
+                      const prevRow = currentExpandedRow.previousElementSibling;
+                      if (prevRow) {
+                        prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                      }
+                    }
                     detailsRow.style.display = 'table-row';
                     currentExpandedRow = detailsRow;
                     lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
-                    rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▼';
+                    arrowIndicator.textContent = '▼';
                   }
                 }
                 return;
@@ -498,26 +512,6 @@
                   ? (selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex)
                   : (selectedIndex > 0 ? selectedIndex - 1 : 0);
                 break;
-              case 'ArrowLeft':
-                e.preventDefault();
-                if (selectedIndex >= 0) {
-                  const detailsRow = rows[selectedIndex].nextElementSibling;
-                  detailsRow.style.display = 'none';
-                  currentExpandedRow = null;
-                  lastExpandedAttendeeId = null;
-                  rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▶';
-                }
-                return;
-              case 'ArrowRight':
-                e.preventDefault();
-                if (selectedIndex >= 0) {
-                  const detailsRow = rows[selectedIndex].nextElementSibling;
-                  detailsRow.style.display = 'table-row';
-                  currentExpandedRow = detailsRow;
-                  lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
-                  rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▼';
-                }
-                return;
               default:
                 return;
             }
