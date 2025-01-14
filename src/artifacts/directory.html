@@ -189,6 +189,21 @@
         background-position: 0 100px;
       }
     }
+
+    @media (max-width: 768px) {
+      .search-container h1,
+      .search-container div[style*="color: #0a0"] {
+        transition: opacity 0.2s, margin 0.2s;
+      }
+      
+      .search-container.focused h1,
+      .search-container.focused div[style*="color: #0a0"] {
+        opacity: 0;
+        margin: 0;
+        height: 0;
+        overflow: hidden;
+      }
+    }
   </style>
 </head>
 <body>
@@ -567,6 +582,12 @@
             }
           `;
           document.head.appendChild(style);
+
+          searchInput.addEventListener('focus', () => {
+            if (window.innerWidth <= 768) {
+              searchInput.closest('.search-container').classList.add('focused');
+            }
+          });
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
