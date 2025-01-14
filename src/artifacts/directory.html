@@ -298,6 +298,7 @@
           });
 
           function highlightText(text, query) {
+            text = text.toString();
             if (!query) return text;
             const regex = new RegExp(`(${query})`, 'gi');
             return text.replace(regex, '<span class="highlight">$1</span>');
@@ -388,10 +389,15 @@
                 attendee.phone_canonical || '',
                 attendee.email || '',
                 attendee.description || '',
-                ...(attendee.translator !== null ? attendee.languages_canonical || [] : [])
+                ...(attendee.translator !== null ? attendee.languages_canonical || [] : []),
+                (attendee.aga_id || '').toString()
               ].join(' ').toLowerCase();
 
-              if (!filterText || searchableText.includes(lowercaseFilter)) {
+              // Check if any tournament matches the search text
+              const tournamentMatches = (attendee.tournaments_canonical || [])
+                .some(tournament => tournament.toLowerCase().includes(lowercaseFilter));
+
+              if (!filterText || searchableText.includes(lowercaseFilter) || tournamentMatches) {
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
                 const description = highlightText(attendee.description || '', filterText);
@@ -432,7 +438,7 @@
                       </div>
                       <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
-                        <div class="detail-value">${attendee.aga_id || 'N/A'}</div>
+                        <div class="detail-value">${highlightText(attendee.aga_id || 'N/A', filterText)}</div>
                       </div>
                       <div class="details-item">
                         <div class="detail-label">Club:</div>
@@ -444,7 +450,7 @@
                       </div>
                       <div class="details-item">
                         <div class="detail-label">Tournaments:</div>
-                        <div class="detail-value">${attendee.tournaments_canonical.join(', ') || 'None'}</div>
+                        <div class="detail-value">${(attendee.tournaments_canonical || []).map(t => highlightText(t, filterText)).join(', ') || 'None'}</div>
                       </div>
                       <div class="details-item">
                         <div class="detail-label">Languages:</div>
