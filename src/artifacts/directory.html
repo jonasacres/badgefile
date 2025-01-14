@@ -297,10 +297,15 @@
             });
           });
 
-          function highlightText(text, query) {
+          function highlightText(text, filterText) {
             text = text.toString();
-            if (!query) return text;
-            const regex = new RegExp(`(${query})`, 'gi');
+            if (!filterText) return text;
+            
+            // Split query into terms and filter out empty strings
+            const terms = filterText.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+            
+            // Create a single regex that matches any of the terms
+            const regex = new RegExp(`(${terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
             return text.replace(regex, '<span class="highlight">$1</span>');
           }
 
@@ -377,7 +382,7 @@
               tbody.deleteRow(1);
             }
 
-            const lowercaseFilter = filterText.toLowerCase();
+            const searchTerms = filterText.toLowerCase().split(/\s+/).filter(term => term.length > 0);
             const sortedAttendees = sortAttendees();
             
             let hasExpandedRow = false;
@@ -393,11 +398,15 @@
                 (attendee.aga_id || '').toString()
               ].join(' ').toLowerCase();
 
-              // Check if any tournament matches the search text
-              const tournamentMatches = (attendee.tournaments_canonical || [])
-                .some(tournament => tournament.toLowerCase().includes(lowercaseFilter));
+              // Check if any tournament matches all search terms
+              const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
 
-              if (!filterText || searchableText.includes(lowercaseFilter) || tournamentMatches) {
+              // Check if all search terms match either searchableText or tournaments
+              const allTermsMatch = searchTerms.every(term => 
+                searchableText.includes(term) || tournamentText.includes(term)
+              );
+
+              if (!filterText || allTermsMatch) {
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
                 const description = highlightText(attendee.description || '', filterText);
