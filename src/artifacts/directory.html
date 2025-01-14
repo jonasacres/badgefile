@@ -258,8 +258,43 @@
       let currentExpandedRow = null;
       let sortedAttendees = [];
 
-      // Clear search box on page load
-      document.getElementById('searchInput').value = '';
+      // Add this function to handle URL parameters
+      function getSearchFromURL() {
+        const urlParams = new URLSearchParams(window.location.hash.slice(1));
+        return urlParams.get('q') || '';
+      }
+
+      // Modify the function to update URL
+      function updateURL(searchQuery) {
+        const newURL = searchQuery 
+          ? `${window.location.pathname}#q=${encodeURIComponent(searchQuery)}`
+          : window.location.pathname;
+        
+        // Replace current history state instead of adding new one
+        window.history.replaceState(null, '', newURL);
+      }
+
+      // Clear search box on page load and populate from URL if present
+      const searchInput = document.getElementById('searchInput');
+      const initialSearch = getSearchFromURL();
+      searchInput.value = initialSearch;
+
+      // Modify the existing searchInput event listener
+      searchInput.addEventListener('input', (e) => {
+        const searchQuery = e.target.value;
+        updateURL(searchQuery);
+        renderRows(searchQuery);
+      });
+
+      // Modify the clear button click handler
+      clearButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        searchInput.value = '';
+        clearButton.style.display = 'none';
+        updateURL('');
+        renderRows('');
+        searchInput.focus();
+      });
 
       function jumpToPrimaryRegistrant(id) {
         const searchInput = document.getElementById('searchInput');
@@ -734,6 +769,8 @@
             sortedAttendees = sortAttendees();
             let hasExpandedRow = false;
             let visibleCount = 0;
+            let firstMatchRow = null;
+            let firstMatchDetails = null;
 
             sortedAttendees.forEach(attendee => {
               // Check if the attendee matches ANY clause (OR logic between clauses)
@@ -1030,12 +1067,36 @@
                   }
                 });
 
+                // Store the first match we find
+                if (!firstMatchRow) {
+                  firstMatchRow = row;
+                  firstMatchDetails = detailsRow;
+                }
+
                 tbody.appendChild(row);
                 tbody.appendChild(detailsRow);
               }
             });
 
             headerCell.innerHTML = `Directory Listing (${visibleCount})${directionArrow}`;
+
+            // Auto-expand if we're loading from an anchor tag and have exactly one result
+            const isInitialSearch = filterText === initialSearch && initialSearch;
+            if (isInitialSearch && visibleCount === 1 && firstMatchRow && firstMatchDetails) {
+              // Highlight the row
+              selectedIndex = 0;
+              firstMatchRow.classList.add('selected-row');
+              firstMatchRow.focus();
+
+              // Expand the details
+              firstMatchDetails.style.display = 'table-row';
+              currentExpandedRow = firstMatchDetails;
+              lastExpandedAttendeeId = sortedAttendees[0].badgefile_id;
+              firstMatchRow.querySelector('.arrow-indicator').textContent = '▼';
+
+              // Scroll to ensure the row is visible
+              firstMatchRow.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
           }
 
           renderRows();
@@ -1106,6 +1167,15 @@
               });
             }
           });
+
+          // Initialize with URL search query if present
+          if (initialSearch) {
+            searchInput.value = initialSearch;
+            clearButton.style.display = 'block';
+            renderRows(initialSearch);
+          } else {
+            renderRows();
+          }
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
