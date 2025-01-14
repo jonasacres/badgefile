@@ -615,15 +615,19 @@
               case 'ArrowDown':
               case 'ArrowUp':
                 e.preventDefault();
-                // Remove any lingering focus styles from previously focused rows
-                rows.forEach(row => {
-                  row.classList.remove('selected-row');
-                  row.blur();
-                });
                 
+                // Calculate new index but don't clear selection if we're at the boundary
                 newIndex = e.key === 'ArrowDown' 
                   ? (selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex)
-                  : (selectedIndex > 0 ? selectedIndex - 1 : 0);
+                  : (selectedIndex >= 0 ? (selectedIndex > 0 ? selectedIndex - 1 : selectedIndex) : 0);
+
+                // Only clear other rows' selection if we're actually moving
+                if (newIndex !== selectedIndex) {
+                  rows.forEach(row => {
+                    row.classList.remove('selected-row');
+                    row.blur();
+                  });
+                }
                 break;
               default:
                 return;
