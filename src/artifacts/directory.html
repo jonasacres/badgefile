@@ -324,7 +324,7 @@
             if (attendee.title) {
               parts.push(attendee.title);
             }
-
+            
             const birthDate = new Date(attendee.date_of_birth);
             const today = new Date();
             const age = today.getFullYear() - birthDate.getFullYear() - 
@@ -341,6 +341,16 @@
               parts.push(`non-participant`);
             } else {
               parts.push(`playing ${attendee.badge_rating}`);
+            }
+
+            // Add party size info
+            const partySize = attendees.filter(a => a.primary_registrant_id === attendee.primary_registrant_id).length;
+            if (partySize === 1) {
+              parts.push("solo party");
+            } else if (attendee.badgefile_id === attendee.primary_registrant_id) {
+              parts.push(`primary in party of ${partySize}`);
+            } else {
+              parts.push(`party of ${partySize}`);
             }
 
             parts.push(`${attendee.city} ${attendee.state} ${attendee.country}`);
@@ -552,6 +562,11 @@
               tbody.deleteRow(1);
             }
 
+            // Update the header text to include count
+            const headerCell = tbody.rows[0].cells[0];
+            const directionArrow = headerCell.dataset.direction === 'asc' ? ' ↑' : ' ↓';
+            headerCell.innerHTML = `Directory Listing${directionArrow}`;
+
             // Parse search terms, handling field-specific searches
             const searchTerms = filterText.toLowerCase()
               .match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
@@ -592,7 +607,8 @@
 
             sortedAttendees = sortAttendees();
             let hasExpandedRow = false;
-            
+            let visibleCount = 0;  // Add counter
+
             sortedAttendees.forEach(attendee => {
               // Check field-specific searches first
               const fieldSearchesMatch = fieldSearches.every(search => {
@@ -616,7 +632,7 @@
                 attendee.phone_canonical || '',
                 attendee.email || '',
                 attendee.description || '',
-                ...(attendee.translator !== null ? attendee.languages_canonical || [] : []),
+                ...(attendee.languages_canonical || []),
                 (attendee.aga_id || '').toString(),
                 attendee.aga_chapter || '',
                 attendee.emergency_contact_name || '',
@@ -631,6 +647,7 @@
               });
 
               if (!filterText || (fieldSearchesMatch && generalTermsMatch)) {
+                visibleCount++;  // Increment counter when adding a row
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
                 const description = highlightText(attendee.description || '', filterText);
@@ -808,6 +825,8 @@
                 tbody.appendChild(detailsRow);
               }
             });
+
+            headerCell.innerHTML = `Directory Listing (${visibleCount})${directionArrow}`;
           }
 
           renderRows();
