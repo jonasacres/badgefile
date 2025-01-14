@@ -618,6 +618,12 @@
               case 'ArrowDown':
               case 'ArrowUp':
                 e.preventDefault();
+                // Remove any lingering focus styles from previously focused rows
+                rows.forEach(row => {
+                  row.classList.remove('selected-row');
+                  row.blur();
+                });
+                
                 newIndex = e.key === 'ArrowDown' 
                   ? (selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex)
                   : (selectedIndex > 0 ? selectedIndex - 1 : 0);
@@ -982,6 +988,25 @@
               return value.includes(term);
             }
           }
+
+          // Add this event listener to handle blur events on rows
+          document.addEventListener('blur', (e) => {
+            if (e.target.tagName === 'TR' && !e.target.classList.contains('details')) {
+              e.target.classList.remove('selected-row');
+            }
+          }, true);
+
+          // Add this event listener to handle focus events on rows
+          document.addEventListener('focus', (e) => {
+            if (e.target.tagName === 'TR' && !e.target.classList.contains('details')) {
+              // Remove selected-row class from all other rows
+              const rows = Array.from(tbody.getElementsByTagName('tr'))
+                .filter(row => !row.classList.contains('details') && !row.querySelector('th'));
+              rows.forEach(row => {
+                row.classList.remove('selected-row');
+              });
+            }
+          });
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
