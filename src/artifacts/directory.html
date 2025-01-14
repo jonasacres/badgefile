@@ -155,6 +155,20 @@
     .selected-row {
       background-color: #020;
     }
+
+    .arrow-indicator {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 24px;
+      color: #0f0;
+      user-select: none;
+    }
+
+    td {
+      position: relative;
+    }
   </style>
 </head>
 <body>
@@ -304,6 +318,7 @@
                   detailsRow.style.display = 'none';
                   currentExpandedRow = null;
                   lastExpandedAttendeeId = null;
+                  rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▶';
                 }
                 return;
               case 'ArrowRight':
@@ -313,6 +328,7 @@
                   detailsRow.style.display = 'table-row';
                   currentExpandedRow = detailsRow;
                   lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
+                  rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▼';
                 }
                 return;
               default:
@@ -336,8 +352,10 @@
                   detailsRow.style.display = 'table-row';
                   currentExpandedRow = detailsRow;
                   lastExpandedAttendeeId = sortedAttendees[index].badgefile_id;
+                  row.querySelector('.arrow-indicator').textContent = '▼';
                 } else {
                   detailsRow.style.display = 'none';
+                  row.querySelector('.arrow-indicator').textContent = '▶';
                 }
               });
               
@@ -388,6 +406,7 @@
                   <td>
                     <span class="attendee-name">${name}</span>
                     <div style="font-size: 14px; color: #0a0; margin-top: 4px;">${description}</div>
+                    <span class="arrow-indicator">▶</span>
                   </td>
                 `;
 
@@ -467,13 +486,19 @@
                     detailsRow.style.display = 'none';
                     currentExpandedRow = null;
                     lastExpandedAttendeeId = null;
+                    row.querySelector('.arrow-indicator').textContent = '▶';
                   } else {
                     if (currentExpandedRow) {
                       currentExpandedRow.style.display = 'none';
+                      const prevRow = currentExpandedRow.previousElementSibling;
+                      if (prevRow) {
+                        prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                      }
                     }
                     detailsRow.style.display = 'table-row';
                     currentExpandedRow = detailsRow;
                     lastExpandedAttendeeId = attendee.badgefile_id;
+                    row.querySelector('.arrow-indicator').textContent = '▼';
                   }
                 });
 
