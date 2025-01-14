@@ -194,7 +194,7 @@
 <body>
   <div class="search-container">
     <h1>2025 Go Congress Directory</h1>
-    <div style="color: #0a0; font-size: 14px; text-align: center; margin: 0; padding: 0;">Unauthorized use prohibited.</div>
+    <div style="color: #0a0; font-size: 14px; text-align: center; margin: 0; padding: 0;">Confidential. Do not share. Authorized use only.</div>
     <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput" autocomplete="off">
   </div>
   <table>
@@ -331,6 +331,18 @@
             let newIndex = selectedIndex;
 
             switch (e.key) {
+              case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                  const detailsRow = rows[selectedIndex].nextElementSibling;
+                  if (detailsRow.style.display !== 'table-row') {
+                    detailsRow.style.display = 'table-row';
+                    currentExpandedRow = detailsRow;
+                    lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
+                    rows[selectedIndex].querySelector('.arrow-indicator').textContent = '▼';
+                  }
+                }
+                return;
               case 'ArrowDown':
               case 'ArrowUp':
                 e.preventDefault();
