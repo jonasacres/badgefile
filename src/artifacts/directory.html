@@ -6,198 +6,134 @@
   <title>Attendee Directory</title>
   <style>
     body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #0f1117;
-      color: #e1e2e6;
+      font-family: 'Courier New', monospace;
+      background-color: #000;
+      color: #0f0;
       font-size: 16px;
-      line-height: 1.5;
+      line-height: 1.2;
       padding: 12px 24px;
     }
     table { 
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
       width: 100%;
-      background-color: #1a1d25;
+      background-color: #000;
       font-size: 16px;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #0f0;
     }
     th, td { 
-      padding: 16px;
+      padding: 8px;
       text-align: left; 
-      border-bottom: 1px solid #2a2f3a;
+      border: 1px solid #0f0;
     }
     th { 
-      background-color: #1e2128;
-      color: #fff;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    th:hover {
-      background-color: #252832;
+      background-color: #020;
+      color: #0f0;
+      font-weight: bold;
     }
     tr:hover { 
-      background-color: #1e2128; 
+      background-color: #010; 
       cursor: pointer;
     }
     .search-box {
       width: 100%;
-      padding: 8px 16px;
-      margin: 2px 0;
-      box-sizing: border-box;
-      font-size: 14px;
-      background-color: #1a1d25;
-      border: 1px solid #2a2f3a;
-      color: #e1e2e6;
-      border-radius: 8px;
-      transition: all 0.2s ease;
+      padding: 8px;
+      margin: 4px 0;
+      font-family: 'Courier New', monospace;
+      background-color: #000;
+      border: 1px solid #0f0;
+      color: #0f0;
     }
     .search-box:focus {
       outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      border-color: #0f0;
+      box-shadow: 0 0 5px #0f0;
     }
     .search-box::placeholder {
-      color: #6b7280;
+      color: #030;
     }
     .details {
-      display: none;
-      background-color: #1e2128;
-      border-bottom: 1px solid #2a2f3a;
-    }
-    .details.visible {
-      display: table-row;
-    }
-    .details td {
-      padding: 24px;
-    }
-    .details-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 32px;
-    }
-    .details-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      background-color: #000;
+      border: 1px solid #0f0;
     }
     .detail-label {
       font-family: 'Courier New', monospace;
-      font-weight: 500;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #9ca3af;
+      color: #0a0;
     }
     .detail-value {
-      font-size: 17px;
-      font-weight: 600;
-      color: #e1e2e6;
+      color: #0f0;
     }
     .highlight {
-      background-color: rgba(246, 59, 175, 0.1);
-      font-size: 120%;
-      color: #fa60a5;
-      padding: 0;
-      border-radius: 4px;
+      background-color: #020;
+      color: #0f0;
+      font-weight: bold;
     }
     h1 {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 20px;
-      font-weight: 800;
-      color: transparent;
-      background: linear-gradient(135deg, #60a5fa 0%, #fa60a5 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      margin: 2px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      font-weight: bold;
+      color: #0f0;
       text-align: center;
-      letter-spacing: -0.01em;
+      margin: 10px 0;
+      text-transform: uppercase;
     }
     a {
-      color: #60a5fa;
+      color: #0f0;
       text-decoration: none;
-      transition: color 0.2s ease;
-      margin-right: 8px;
     }
     a:hover {
-      color: #93c5fd;
+      background-color: #0f0;
+      color: #000;
     }
     
     .search-container {
-      position: sticky;
+      border: 2px solid #0f0;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+    
+    /* Add some ASCII art borders */
+    .search-container::before {
+      content: "╔══════════════════════════════════╗";
+      display: block;
+      margin-bottom: 10px;
+    }
+    
+    .search-container::after {
+      content: "╚══════════════════════════════════╝";
+      display: block;
+      margin-top: 10px;
+    }
+
+    /* Add scanline effect */
+    @keyframes scanline {
+      0% {
+        background-position: 0 -100vh;
+      }
+      100% {
+        background-position: 0 100vh;
+      }
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
       top: 0;
-      background-color: #0f1117;
-      padding: 0 0 2px 0;
-      z-index: 100;
-      margin-bottom: 2px;
-      border-bottom: 1px solid #2a2f3a;
-    }
-    
-    tr.expanded {
-      background-color: #1e2128 !important;
-    }
-    
-    tr.expanded:hover {
-      background-color: #1e2128 !important;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(
+        0deg,
+        rgba(0, 255, 0, 0.03) 50%,
+        transparent 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+      animation: scanline 10s linear infinite;
     }
 
-    td a[href^="tel"],
-    td a[href^="sms"],
-    td a[href^="mailto"] {
-      white-space: nowrap;
-    }
-    
-    td:nth-child(3),
-    td:nth-child(4) {
-      white-space: nowrap;
-    }
-
-    body {
-      font-size: 18px;
-      padding: 4px 8px;
-      max-width: 100vw;
-      overflow-x: hidden;
-    }
-    table {
-      font-size: 18px;
-      display: block;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;
-      box-sizing: border-box;
-    }
-    th {
-      display: none;
-    }
-    td {
-      display: block;
-      padding: 4px 12px;
-      border: none;
-      width: 100%;
-      box-sizing: border-box;
-      line-height: 1.2;
-    }
-    tr {
-      display: block;
-      border-bottom: 1px solid #363761;
-      margin-bottom: 2px;
-      width: 100%;
-    }
-    tr td:not(:first-child) {
-      display: none;
-    }
-    tr.details {
-      display: none;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-    tr.details.visible {
-      display: block;
+    /* Add CRT monitor glow effect */
+    * {
+      text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
     }
   </style>
 </head>
@@ -208,10 +144,7 @@
   </div>
   <table>
     <tr>
-      <th data-column="name_given">Given Name</th>
-      <th data-column="name_family" class="sorted" data-direction="asc">Family Name ⬆️</th>
-      <th data-column="phone_canonical">Phone</th>
-      <th data-column="email">Email</th>
+      <th data-column="name_family" class="sorted" data-direction="asc">Directory Listing ⬆️</th>
     </tr>
     <script>
       fetch('./badgefile.json')
@@ -386,22 +319,75 @@
             }
           });
 
+          let currentExpandedRow = null;
+
+          let selectedIndex = -1;
+
+          function handleArrowKeys(e) {
+            // Filter out both header row (th) and details rows
+            const rows = Array.from(tbody.getElementsByTagName('tr'))
+              .filter(row => !row.classList.contains('details') && !row.querySelector('th'));
+            
+            if (rows.length === 0) return;
+
+            let newIndex = selectedIndex;
+
+            switch (e.key) {
+              case 'ArrowDown':
+                e.preventDefault();
+                newIndex = selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex;
+                break;
+              case 'ArrowUp':
+                e.preventDefault();
+                newIndex = selectedIndex > 0 ? selectedIndex - 1 : 0;
+                break;
+              default:
+                return;
+            }
+
+            if (newIndex !== selectedIndex || selectedIndex === -1) {
+              // Remove highlight from previously selected row
+              if (selectedIndex >= 0) {
+                rows[selectedIndex].classList.remove('highlight');
+              }
+              
+              // Add highlight to newly selected row
+              selectedIndex = newIndex;
+              rows[selectedIndex].classList.add('highlight');
+              
+              // Automatically expand the selected row and collapse others
+              rows.forEach((row, index) => {
+                const detailsRow = row.nextElementSibling;
+                if (index === selectedIndex) {
+                  detailsRow.style.display = 'table-row';
+                  currentExpandedRow = detailsRow;
+                } else {
+                  detailsRow.style.display = 'none';
+                }
+              });
+              
+              // Ensure the selected row is visible
+              rows[selectedIndex].scrollIntoView({ block: 'nearest' });
+            }
+          }
+
+          // Restore the original event listener
+          document.addEventListener('keydown', handleArrowKeys);
+
           function renderRows(filterText = '') {
+            selectedIndex = -1;  // Reset selection when rerendering
             // Remove all existing rows except header
             while (tbody.rows.length > 1) {
               tbody.deleteRow(1);
             }
 
-            // New regex to handle quoted strings and regular words
-            const searchTerms = filterText.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
-              ?.map(term => {
-                // Remove quotes from quoted terms
-                return term.replace(/^['"]|['"]$/g, '').toLowerCase();
-              })
+            // Split query into terms and filter out empty strings, handling quotes
+            const searchTerms = filterText.toLowerCase()
+              .match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
+              ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
               .filter(term => term.length > 0) || [];
 
             const sortedAttendees = sortAttendees();
-            
             let hasExpandedRow = false;
             
             sortedAttendees.forEach(attendee => {
@@ -432,13 +418,14 @@
                 row.innerHTML = `
                   <td>
                     <span class="attendee-name">${name}</span>
-                    <div style="font-size: 14px; color: #9ca3af; margin-top: 4px;">${description}</div>
+                    <div style="font-size: 14px; color: #0a0; margin-top: 4px;">${description}</div>
                   </td>
                 `;
+
                 const detailsRow = document.createElement('tr');
                 detailsRow.className = 'details';
                 detailsRow.innerHTML = `
-                  <td colspan="4">
+                  <td>
                     <div class="details-grid">
                       <div class="details-item">
                         <div class="detail-label">Phone:</div>
@@ -498,27 +485,27 @@
                   hasExpandedRow = true;
                 }
 
-                row.addEventListener('click', (event) => {
-                  if (window.getSelection().toString()) return;
-                  
-                  const isCurrentlyExpanded = detailsRow.classList.contains('visible');
-                  
-                  // Always collapse all rows first
-                  collapseAllRows();
-                  
-                  if (!isCurrentlyExpanded) {
-                    // Expand this row if it wasn't previously expanded
-                    detailsRow.classList.add('visible');
-                    row.classList.add('expanded');
-                    lastExpandedAttendeeId = attendee.id;
+                row.addEventListener('click', (e) => {
+                  if (currentExpandedRow === detailsRow) {
+                    // Clicking already expanded row collapses it
+                    detailsRow.style.display = 'none';
+                    currentExpandedRow = null;
                   } else {
-                    // If it was expanded, we just collapse it (already done by collapseAllRows)
-                    lastExpandedAttendeeId = null;
+                    // Collapse any currently expanded row
+                    if (currentExpandedRow) {
+                      currentExpandedRow.style.display = 'none';
+                    }
+                    // Expand this row
+                    detailsRow.style.display = 'table-row';
+                    currentExpandedRow = detailsRow;
                   }
                 });
 
                 tbody.appendChild(row);
                 tbody.appendChild(detailsRow);
+                
+                // Hide details row by default
+                detailsRow.style.display = 'none';
               }
             });
           }
@@ -555,6 +542,52 @@
             
             return searchTerms.every(term => searchText.includes(term));
           }
+
+          // Add keyboard navigation
+          document.addEventListener('keydown', (e) => {
+            const rows = Array.from(tbody.getElementsByTagName('tr'))
+              .filter(row => !row.classList.contains('details'));
+            
+            if (rows.length === 0) return;
+
+            const currentIndex = rows.findIndex(row => row.contains(document.activeElement));
+            let newIndex = currentIndex;
+
+            switch (e.key) {
+              case 'ArrowDown':
+                e.preventDefault();
+                newIndex = currentIndex < rows.length - 1 ? currentIndex + 1 : currentIndex;
+                break;
+              case 'ArrowUp':
+                e.preventDefault();
+                newIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+                break;
+              case 'Enter':
+                e.preventDefault();
+                if (currentIndex >= 0) {
+                  rows[currentIndex].click();
+                }
+                return;
+            }
+
+            if (newIndex !== currentIndex || currentIndex === -1) {
+              rows[newIndex].focus();
+              rows[newIndex].click();
+            }
+          });
+
+          // Make rows focusable
+          const style = document.createElement('style');
+          style.textContent = `
+            tr:not(.details) {
+              tabindex: 0;
+              outline: none;
+            }
+            tr:not(.details):focus {
+              background-color: #020;
+            }
+          `;
+          document.head.appendChild(style);
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
