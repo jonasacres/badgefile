@@ -308,6 +308,12 @@
           let selectedIndex = -1;
 
           function handleKeyEvents(e) {
+            if (e.key === 'Escape') {
+              searchInput.value = '';
+              renderRows('');
+              return;
+            }
+
             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
               if (document.activeElement !== searchInput) {
                 searchInput.focus();
@@ -493,6 +499,9 @@
                     </div>
                   </td>
                 `;
+
+                row.querySelector('.arrow-indicator').textContent = 
+                  (attendee.badgefile_id === lastExpandedAttendeeId) ? '▼' : '▶';
 
                 if (attendee.badgefile_id === lastExpandedAttendeeId && !hasExpandedRow) {
                   detailsRow.style.display = 'table-row';
