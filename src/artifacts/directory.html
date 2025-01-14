@@ -493,7 +493,8 @@
                   'tournament': 'tournaments_canonical',
                   'rating': 'aga_rating',
                   'language': 'languages_canonical',
-                  'translator': 'translator'
+                  'translator': 'translator',
+                  'pid': 'primary_registrant_id'
                 };
                 
                 if (validKeys[key]) {
@@ -636,6 +637,17 @@
                         <div class="detail-value">${(attendee.languages_canonical || []).map(l => 
                           highlightText(l, filterText, 'languages_canonical', fieldSearches)
                         ).join(', ') || 'N/A'}</div>
+                      </div>
+
+                      <div class="details-item">
+                        <div class="detail-label">Primary Registrant:</div>
+                        <div class="detail-value">${
+                          attendee.primary_registrant_name 
+                            ? `${highlightText(attendee.primary_registrant_name, filterText)} (#${
+                                highlightText(attendee.primary_registrant_id, filterText, 'primary_registrant_id', fieldSearches)
+                              })`
+                            : 'N/A'
+                        }</div>
                       </div>
                     </div>
                   </td>
