@@ -230,6 +230,16 @@
       color: #f0f;
       background-color: transparent;
     }
+
+    .details a:focus {
+      background-color: #0f0;
+      color: #000;
+      outline: none;
+    }
+
+    tr:focus {
+      outline: none;
+    }
   </style>
 </head>
 <body>
@@ -464,6 +474,55 @@
 
           let selectedIndex = -1;
 
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              
+              // Only handle tab navigation if we have an expanded row
+              if (currentExpandedRow) {
+                const links = Array.from(currentExpandedRow.querySelectorAll('a'));
+                const currentFocus = document.activeElement;
+                const expandedTableRow = currentExpandedRow.previousElementSibling;
+                
+                if (currentFocus === expandedTableRow) {
+                  // If focus is on the row
+                  if (e.shiftKey) {
+                    // Shift+Tab goes to last link
+                    links[links.length - 1]?.focus();
+                  } else {
+                    // Tab goes to first link
+                    links[0]?.focus();
+                  }
+                } else if (links.includes(currentFocus)) {
+                  // Find the next/previous link in sequence
+                  const currentIndex = links.indexOf(currentFocus);
+                  if (e.shiftKey) {
+                    // Shift+Tab goes backward
+                    if (currentIndex === 0) {
+                      // If we're on first link, go back to row
+                      expandedTableRow.focus();
+                    } else {
+                      // Otherwise, go to previous link
+                      links[currentIndex - 1]?.focus();
+                    }
+                  } else {
+                    // Tab goes forward
+                    if (currentIndex === links.length - 1) {
+                      // If we're on last link, go back to row
+                      expandedTableRow.focus();
+                    } else {
+                      // Otherwise, go to next link
+                      links[currentIndex + 1]?.focus();
+                    }
+                  }
+                } else {
+                  // If focus is anywhere else, focus the row
+                  expandedTableRow.focus();
+                }
+              }
+            }
+          }, true);
+
           function handleKeyEvents(e) {
             if (e.key === 'Escape') {
               searchInput.value = '';
@@ -491,27 +550,35 @@
             switch (e.key) {
               case 'Enter':
                 e.preventDefault();
-                if (selectedIndex >= 0) {
-                  const detailsRow = rows[selectedIndex].nextElementSibling;
-                  const arrowIndicator = rows[selectedIndex].querySelector('.arrow-indicator');
-                  
-                  if (detailsRow.style.display === 'table-row') {
-                    detailsRow.style.display = 'none';
-                    currentExpandedRow = null;
-                    lastExpandedAttendeeId = null;
-                    arrowIndicator.textContent = '▶';
-                  } else {
-                    if (currentExpandedRow) {
-                      currentExpandedRow.style.display = 'none';
-                      const prevRow = currentExpandedRow.previousElementSibling;
-                      if (prevRow) {
-                        prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                if (document.activeElement.tagName === 'A') {
+                  // If a link is focused, trigger its click event
+                  document.activeElement.click();
+                } else {
+                  // Otherwise, handle row expansion/collapse if a row is selected
+                  if (selectedIndex >= 0) {
+                    const rows = Array.from(tbody.getElementsByTagName('tr'))
+                      .filter(row => !row.classList.contains('details') && !row.querySelector('th'));
+                    const detailsRow = rows[selectedIndex].nextElementSibling;
+                    const arrowIndicator = rows[selectedIndex].querySelector('.arrow-indicator');
+                    
+                    if (detailsRow.style.display === 'table-row') {
+                      detailsRow.style.display = 'none';
+                      currentExpandedRow = null;
+                      lastExpandedAttendeeId = null;
+                      arrowIndicator.textContent = '▶';
+                    } else {
+                      if (currentExpandedRow) {
+                        currentExpandedRow.style.display = 'none';
+                        const prevRow = currentExpandedRow.previousElementSibling;
+                        if (prevRow) {
+                          prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                        }
                       }
+                      detailsRow.style.display = 'table-row';
+                      currentExpandedRow = detailsRow;
+                      lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
+                      arrowIndicator.textContent = '▼';
                     }
-                    detailsRow.style.display = 'table-row';
-                    currentExpandedRow = detailsRow;
-                    lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
-                    arrowIndicator.textContent = '▼';
                   }
                 }
                 return;
@@ -691,6 +758,8 @@
                   </td>
                 `;
 
+                row.setAttribute('tabindex', '0');  // Make the row focusable
+                
                 const detailsRow = document.createElement('tr');
                 detailsRow.className = 'details';
                 detailsRow.innerHTML = `
@@ -809,6 +878,7 @@
                     currentExpandedRow = detailsRow;
                     lastExpandedAttendeeId = attendee.badgefile_id;
                     row.querySelector('.arrow-indicator').textContent = '▼';
+                    row.focus();
                   }
                 });
 
