@@ -714,7 +714,8 @@
                     'rating': 'aga_rating',
                     'language': 'languages_canonical',
                     'translator': 'translator',
-                    'pid': 'primary_registrant_id'
+                    'pid': 'primary_registrant_id',
+                    'name': 'name'
                   };
                   
                   if (validKeys[key]) {
@@ -739,6 +740,23 @@
               const matchesAnyClauses = parsedClauses.some(clause => {
                 // For each clause, check if ALL conditions within it match (AND logic within clause)
                 const fieldSearchesMatch = clause.fieldSearches.every(search => {
+                  // Special handling for name field
+                  if (search.field === 'name') {
+                    const givenName = (attendee.name_given || '').toString().toLowerCase().trim();
+                    const familyName = (attendee.name_family || '').toString().toLowerCase().trim();
+                    const searchStr = search.value.toLowerCase().trim();
+                    
+                    if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
+                      return givenName === searchStr.slice(1, -1) || familyName === searchStr.slice(1, -1);
+                    } else if (searchStr.startsWith('/')) {
+                      return givenName.startsWith(searchStr.slice(1)) || familyName.startsWith(searchStr.slice(1));
+                    } else if (searchStr.endsWith('/')) {
+                      return givenName.endsWith(searchStr.slice(0, -1)) || familyName.endsWith(searchStr.slice(0, -1));
+                    }
+                    return givenName.includes(searchStr) || familyName.includes(searchStr);
+                  }
+                  
+                  // Original field search logic for other fields
                   const fieldValue = attendee[search.field];
                   if (Array.isArray(fieldValue)) {
                     // For array fields like languages_canonical
