@@ -1129,32 +1129,6 @@
             }
           });
 
-          function matchesSearchTerm(value, term) {
-            if (!value) return false;
-            value = value.toString().toLowerCase().trim();
-            term = term.toLowerCase().trim();
-            
-            // Remove slashes for exact match check
-            if (term.startsWith('/') && term.endsWith('/')) {
-              const exactTerm = term.slice(1, -1);
-              return value === exactTerm;
-            }
-            
-            // Remove slash for prefix/suffix checks
-            if (term.startsWith('/')) {
-              const prefix = term.slice(1);
-              return value.startsWith(prefix);
-            }
-            
-            if (term.endsWith('/')) {
-              const suffix = term.slice(0, -1);
-              return value.endsWith(suffix);
-            }
-            
-            // Default case: substring match
-            return value.includes(term);
-          }
-
           // Add this event listener to handle blur events on rows
           document.addEventListener('blur', (e) => {
             if (e.target.tagName === 'TR' && !e.target.classList.contains('details')) {
