@@ -495,22 +495,13 @@
                 const currentFocus = document.activeElement;
                 const expandedTableRow = currentExpandedRow.previousElementSibling;
                 
-                if (currentFocus === expandedTableRow) {
-                  // If focus is on the row
-                  if (e.shiftKey) {
-                    // Shift+Tab goes to last link
-                    links[links.length - 1]?.focus();
-                  } else {
-                    // Tab goes to first link
-                    links[0]?.focus();
-                  }
-                } else if (links.includes(currentFocus)) {
+                if (links.includes(currentFocus)) {
                   // Find the next/previous link in sequence
                   const currentIndex = links.indexOf(currentFocus);
                   if (e.shiftKey) {
                     // Shift+Tab goes backward
                     if (currentIndex === 0) {
-                      // If we're on first link, go back to row
+                      // If we're on first link, go back to the row
                       expandedTableRow.focus();
                     } else {
                       // Otherwise, go to previous link
@@ -519,7 +510,7 @@
                   } else {
                     // Tab goes forward
                     if (currentIndex === links.length - 1) {
-                      // If we're on last link, go back to row
+                      // If we're on last link, cycle back to the row
                       expandedTableRow.focus();
                     } else {
                       // Otherwise, go to next link
@@ -527,8 +518,14 @@
                     }
                   }
                 } else {
-                  // If focus is anywhere else, focus the row
-                  expandedTableRow.focus();
+                  // If focus is anywhere else (including on the row)
+                  if (e.shiftKey) {
+                    // Shift+Tab goes to last link
+                    links[links.length - 1]?.focus();
+                  } else {
+                    // Tab goes to first link
+                    links[0]?.focus();
+                  }
                 }
               }
             }
