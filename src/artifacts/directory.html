@@ -301,6 +301,40 @@
         searchInput.focus();
       });
 
+      function handleSlashMatching(value, searchStr) {
+        value = (value || '').toString().toLowerCase().trim();
+        searchStr = searchStr.toLowerCase().trim();
+        
+        if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
+          return value === searchStr.slice(1, -1);
+        } else if (searchStr.startsWith('/')) {
+          return value.startsWith(searchStr.slice(1));
+        } else if (searchStr.endsWith('/')) {
+          return value.endsWith(searchStr.slice(0, -1));
+        }
+        return value.includes(searchStr);
+      }
+
+      function collapseExpandedRow() {
+        if (currentExpandedRow) {
+          currentExpandedRow.style.display = 'none';
+          const prevRow = currentExpandedRow.previousElementSibling;
+          if (prevRow) {
+            prevRow.querySelector('.arrow-indicator').textContent = '▶';
+          }
+          currentExpandedRow = null;
+          lastExpandedAttendeeId = null;
+        }
+      }
+
+      function expandRow(row, detailsRow, attendeeId) {
+        collapseExpandedRow();
+        detailsRow.style.display = 'table-row';
+        currentExpandedRow = detailsRow;
+        lastExpandedAttendeeId = attendeeId;
+        row.querySelector('.arrow-indicator').textContent = '▼';
+      }
+
       function jumpToPrimaryRegistrant(id) {
         const searchInput = document.getElementById('searchInput');
         const tableHeader = document.querySelector('table tr:first-child');
@@ -579,17 +613,7 @@
               clearButton.style.display = 'none';
               renderRows('');
               window.scrollTo({ top: 0, behavior: 'smooth' });
-              
-              // Collapse any expanded row
-              if (currentExpandedRow) {
-                currentExpandedRow.style.display = 'none';
-                const prevRow = currentExpandedRow.previousElementSibling;
-                if (prevRow) {
-                  prevRow.querySelector('.arrow-indicator').textContent = '▶';
-                }
-                currentExpandedRow = null;
-                lastExpandedAttendeeId = null;
-              }
+              collapseExpandedRow();
               
               // Remove highlight from selected row
               if (selectedIndex >= 0) {
@@ -786,16 +810,8 @@
                   if (search.field === 'name') {
                     const givenName = (attendee.name_given || '').toString().toLowerCase().trim();
                     const familyName = (attendee.name_family || '').toString().toLowerCase().trim();
-                    const searchStr = search.value.toLowerCase().trim();
-                    
-                    if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
-                      return givenName === searchStr.slice(1, -1) || familyName === searchStr.slice(1, -1);
-                    } else if (searchStr.startsWith('/')) {
-                      return givenName.startsWith(searchStr.slice(1)) || familyName.startsWith(searchStr.slice(1));
-                    } else if (searchStr.endsWith('/')) {
-                      return givenName.endsWith(searchStr.slice(0, -1)) || familyName.endsWith(searchStr.slice(0, -1));
-                    }
-                    return givenName.includes(searchStr) || familyName.includes(searchStr);
+                    return handleSlashMatching(givenName, search.value) || 
+                           handleSlashMatching(familyName, search.value);
                   }
                   
                   // Original field search logic for other fields
@@ -1053,22 +1069,9 @@
 
                 row.addEventListener('click', (e) => {
                   if (currentExpandedRow === detailsRow) {
-                    detailsRow.style.display = 'none';
-                    currentExpandedRow = null;
-                    lastExpandedAttendeeId = null;
-                    row.querySelector('.arrow-indicator').textContent = '▶';
+                    collapseExpandedRow();
                   } else {
-                    if (currentExpandedRow) {
-                      currentExpandedRow.style.display = 'none';
-                      const prevRow = currentExpandedRow.previousElementSibling;
-                      if (prevRow) {
-                        prevRow.querySelector('.arrow-indicator').textContent = '▶';
-                      }
-                    }
-                    detailsRow.style.display = 'table-row';
-                    currentExpandedRow = detailsRow;
-                    lastExpandedAttendeeId = attendee.badgefile_id;
-                    row.querySelector('.arrow-indicator').textContent = '▼';
+                    expandRow(row, detailsRow, attendee.badgefile_id);
                     row.focus();
                   }
                 });
