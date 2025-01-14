@@ -749,15 +749,6 @@
                             ${highlightText(attendee.emergency_contact_name, filterText)} 
                             (${highlightText(attendee.emergency_contact_email || 'no email', filterText)}, 
                             ${highlightText(attendee.emergency_contact_phone || 'no phone', filterText)})
-                            <div style="margin-top: 4px">
-                              ${attendee.emergency_contact_phone ? `
-                                <a href="sms:${attendee.emergency_contact_phone}">[txt]</a>
-                                <a href="tel:${attendee.emergency_contact_phone}">[call]</a>
-                              ` : ''}
-                              ${attendee.emergency_contact_email ? `
-                                <a href="mailto:${attendee.emergency_contact_email}">[email]</a>
-                              ` : ''}
-                            </div>
                           ` : 'N/A'}
                         </div>
                       </div>
