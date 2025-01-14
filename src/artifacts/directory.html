@@ -151,6 +151,10 @@
       margin-bottom: 0;
       border-bottom: none;
     }
+
+    .selected-row {
+      background-color: #020;
+    }
   </style>
 </head>
 <body>
@@ -293,21 +297,42 @@
                   ? (selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex)
                   : (selectedIndex > 0 ? selectedIndex - 1 : 0);
                 break;
+              case 'ArrowLeft':
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                  const detailsRow = rows[selectedIndex].nextElementSibling;
+                  detailsRow.style.display = 'none';
+                  currentExpandedRow = null;
+                  lastExpandedAttendeeId = null;
+                }
+                return;
+              case 'ArrowRight':
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                  const detailsRow = rows[selectedIndex].nextElementSibling;
+                  detailsRow.style.display = 'table-row';
+                  currentExpandedRow = detailsRow;
+                  lastExpandedAttendeeId = sortedAttendees[selectedIndex].badgefile_id;
+                }
+                return;
               default:
                 return;
             }
 
             if (newIndex !== selectedIndex || selectedIndex === -1) {
               if (selectedIndex >= 0) {
-                rows[selectedIndex].classList.remove('highlight');
+                rows[selectedIndex].classList.remove('selected-row');
               }
               
               selectedIndex = newIndex;
-              rows[selectedIndex].classList.add('highlight');
+              rows[selectedIndex].classList.add('selected-row');
+              
+              // Get the current expanded state before changing rows
+              const wasExpanded = currentExpandedRow?.style.display === 'table-row';
               
               rows.forEach((row, index) => {
                 const detailsRow = row.nextElementSibling;
-                if (index === selectedIndex) {
+                if (index === selectedIndex && wasExpanded) {
                   detailsRow.style.display = 'table-row';
                   currentExpandedRow = detailsRow;
                   lastExpandedAttendeeId = sortedAttendees[index].badgefile_id;
