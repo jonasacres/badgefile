@@ -44,6 +44,7 @@
       background-color: #000;
       border: 1px solid #0f0;
       color: #f0f;
+      padding-right: 60px;
     }
     .search-box:focus {
       outline: none;
@@ -204,13 +205,41 @@
         overflow: hidden;
       }
     }
+
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .clear-button {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #0f0;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      padding: 4px 8px;
+      display: none;
+      text-decoration: none;
+    }
+
+    .clear-button:hover {
+      color: #f0f;
+      background-color: transparent;
+    }
   </style>
 </head>
 <body>
   <div class="search-container">
     <h1>2025 Go Congress Directory</h1>
     <div style="color: #0a0; font-size: 14px; text-align: center; margin: 0; padding: 0;">Confidential. Do not share. Authorized use only.</div>
-    <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput" autocomplete="off">
+    <div class="search-wrapper">
+      <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput" autocomplete="off">
+      <a href="#" class="clear-button" id="clearButton">[clear]</a>
+    </div>
   </div>
   <table>
     <tr>
@@ -273,6 +302,23 @@
           const tbody = document.querySelector('table');
           const searchInput = document.getElementById('searchInput');
           const headers = document.querySelectorAll('th');
+          const clearButton = document.getElementById('clearButton');
+
+          // Show/hide clear button based on search input
+          searchInput.addEventListener('input', (e) => {
+            clearButton.style.display = e.target.value ? 'block' : 'none';
+            renderRows(e.target.value);
+          });
+
+          // Clear button click handler
+          clearButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            searchInput.value = '';
+            clearButton.style.display = 'none';
+            renderRows('');
+            searchInput.focus();
+          });
+
           attendees.forEach(attendee => {
             const parts = [];
             if (attendee.title) {
@@ -656,6 +702,27 @@
                           ` : ''}
                         </div>
                       </div>
+                      
+                      <div class="details-item">
+                        <div class="detail-label">Primary Registrant:</div>
+                        <div class="detail-value">
+                          ${attendee.primary_registrant_name 
+                            ? `${highlightText(attendee.primary_registrant_name, filterText)} (#${
+                                highlightText(attendee.primary_registrant_id, filterText, 'primary_registrant_id', fieldSearches)
+                              })
+                              <div style="margin-top: 4px">
+                                <a href="#" onclick="event.preventDefault(); jumpToPrimaryRegistrant('${attendee.primary_registrant_id}')">[goto]</a>
+                                ${(() => {
+                                  const partyCount = attendees.filter(a => 
+                                    a.primary_registrant_id === attendee.primary_registrant_id
+                                  ).length;
+                                  return `<a href="#" onclick="event.preventDefault(); showParty('${attendee.primary_registrant_id}')">[party (${partyCount})]</a>`;
+                                })()}
+                              </div>`
+                            : 'N/A'
+                          }
+                        </div>
+                      </div>
 
                       <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
@@ -681,26 +748,6 @@
                         ).join(', ') || 'N/A'}</div>
                       </div>
 
-                      <div class="details-item">
-                        <div class="detail-label">Primary Registrant:</div>
-                        <div class="detail-value">
-                          ${attendee.primary_registrant_name 
-                            ? `${highlightText(attendee.primary_registrant_name, filterText)} (#${
-                                highlightText(attendee.primary_registrant_id, filterText, 'primary_registrant_id', fieldSearches)
-                              })
-                              <div style="margin-top: 4px">
-                                <a href="#" onclick="event.preventDefault(); jumpToPrimaryRegistrant('${attendee.primary_registrant_id}')">[JUMP]</a>
-                                ${(() => {
-                                  const partyCount = attendees.filter(a => 
-                                    a.primary_registrant_id === attendee.primary_registrant_id
-                                  ).length;
-                                  return `<a href="#" onclick="event.preventDefault(); showParty('${attendee.primary_registrant_id}')">[PARTY (${partyCount})]</a>`;
-                                })()}
-                              </div>`
-                            : 'N/A'
-                          }
-                        </div>
-                      </div>
                     </div>
                   </td>
                 `;
