@@ -415,6 +415,123 @@
             searchInput.focus();
           });
 
+          // 1. Simplify the field mapping and search validation
+          const SEARCH_FIELDS = {
+            phone: 'phone_canonical',
+            id: 'badgefile_id',
+            club: 'aga_chapter',
+            tournament: 'tournaments_canonical',
+            rating: 'aga_rating',
+            language: 'languages_canonical',
+            translator: 'translator',
+            pid: 'primary_registrant_id',
+            name: 'name'
+          };
+
+          // 2. Simplify the attendee description construction
+          function buildAttendeeDescription(attendee) {
+            const parts = [];
+            
+            if (attendee.title) parts.push(attendee.title);
+            
+            const age = calculateAge(new Date(attendee.date_of_birth));
+            parts.push(`Age ${age}`);
+            
+            if (attendee.languages_canonical.length > 0) {
+              const prefix = attendee.translator?.includes("Yes") ? "Translates" : "Speaks";
+              parts.push(`${prefix} ${attendee.languages_canonical.map(capitalize).join('/')}`);
+            }
+            
+            parts.push(attendee.regtype?.includes("Non-Participant") 
+              ? 'non-participant'
+              : `playing ${attendee.badge_rating}`);
+            
+            const partySize = attendees.filter(a => a.primary_registrant_id === attendee.primary_registrant_id).length;
+            parts.push(partySize === 1 
+              ? "solo party" 
+              : attendee.badgefile_id === attendee.primary_registrant_id
+                ? `primary in party of ${partySize}`
+                : `party of ${partySize}`);
+            
+            parts.push(`${attendee.city} ${attendee.state} ${attendee.country}`);
+            
+            return parts.join(", ");
+          }
+
+          // 3. Simplify the matching fields display logic
+          function getMatchingFields(attendee, searchTerms, fieldSearches) {
+            const fields = [
+              { label: 'Phone', value: attendee.phone_canonical, field: 'phone_canonical' },
+              { label: 'Email', value: attendee.email },
+              { label: 'AGA#', value: attendee.badgefile_id, field: 'badgefile_id' },
+              { label: 'Club', value: attendee.aga_chapter, field: 'aga_chapter' },
+              { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' },
+              { label: 'Emerg. Contact', value: attendee.emergency_contact_name },
+              { label: 'Emerg. Ph. #', value: attendee.emergency_contact_phone_std },
+              { label: 'Emerg. Email', value: attendee.emergency_contact_email }
+            ];
+
+            return fields
+              .filter(field => field.value && isFieldMatch(field, searchTerms, fieldSearches))
+              .map(field => `
+                <span style="color: #0a0">${field.label}:</span> 
+                <span style="color: #0f0">
+                  ${highlightText(field.value, searchTerms.join(' '), field.field, fieldSearches)}
+                </span>
+              `)
+              .join(' | ');
+          }
+
+          // 4. Simplify the search clause parsing
+          function parseSearchClauses(filterText) {
+            if (!filterText) return [];
+            
+            return filterText.split('|').map(clause => {
+              const terms = clause.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
+                ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
+                .filter(Boolean) || [];
+                
+              return terms.reduce((acc, term) => {
+                const [field, value] = term.split(':');
+                if (value && SEARCH_FIELDS[field]) {
+                  acc.fieldSearches.push({ field: SEARCH_FIELDS[field], value });
+                } else {
+                  acc.generalSearchTerms.push(term);
+                }
+                return acc;
+              }, { fieldSearches: [], generalSearchTerms: [] });
+            });
+          }
+
+          // Helper functions
+          function calculateAge(birthDate) {
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+            }
+            return age;
+          }
+
+          function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+          }
+
+          function isFieldMatch(field, searchTerms, fieldSearches) {
+            const fieldValue = field.value.toString().toLowerCase().trim();
+            
+            // Check field-specific searches
+            const hasFieldMatch = fieldSearches.some(search => 
+              search.field === field.field && handleSlashMatching(fieldValue, search.value)
+            );
+            
+            if (hasFieldMatch) return true;
+            
+            // Check general terms
+            return searchTerms.some(term => handleSlashMatching(fieldValue, term));
+          }
+
           attendees.forEach(attendee => {
             const parts = [];
             if (attendee.title) {
@@ -901,59 +1018,11 @@
                 // Add matching fields that aren't visible in the collapsed view
                 let matchingFields = [];
                 if (filterText) {
-                  const fields = [
-                    { label: 'Phone', value: attendee.phone_canonical, field: 'phone_canonical' },
-                    { label: 'Email', value: attendee.email },
-                    { label: 'AGA#', value: attendee.badgefile_id, field: 'badgefile_id' },
-                    { label: 'Club', value: attendee.aga_chapter, field: 'aga_chapter' },
-                    { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' },
-                    { label: 'Emerg. Contact', value: attendee.emergency_contact_name },
-                    { label: 'Emerg. Ph. #', value: attendee.emergency_contact_phone_std },
-                    { label: 'Emerg. Email', value: attendee.emergency_contact_email }
-                  ];
-
-                  matchingFields = fields
-                    .filter(field => field.value)
-                    .filter(field => {
-                      const fieldValue = field.value.toString().toLowerCase().trim();
-                      
-                      // Check field-specific searches first
-                      const matchesFieldSearch = allFieldSearches.some(search => {
-                        if (search.field !== field.field) return false;
-                        const searchStr = search.value.toLowerCase().trim();
-                        
-                        if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
-                          return fieldValue === searchStr.slice(1, -1);
-                        } else if (searchStr.startsWith('/')) {
-                          return fieldValue.startsWith(searchStr.slice(1));
-                        } else if (searchStr.endsWith('/')) {
-                          return fieldValue.endsWith(searchStr.slice(0, -1));
-                        }
-                        return fieldValue.includes(searchStr);
-                      });
-                      
-                      if (matchesFieldSearch) return true;
-                      
-                      // Then check general terms
-                      return allSearchTerms.some(term => {
-                        const termStr = term.toLowerCase().trim();
-                        if (termStr.startsWith('/') && termStr.endsWith('/')) {
-                          return fieldValue === termStr.slice(1, -1);
-                        } else if (termStr.startsWith('/')) {
-                          return fieldValue.startsWith(termStr.slice(1));
-                        } else if (termStr.endsWith('/')) {
-                          return fieldValue.endsWith(termStr.slice(0, -1));
-                        }
-                        return fieldValue.includes(termStr);
-                      });
-                    })
-                    .map(field => `<span style="color: #0a0">${field.label}:</span> <span style="color: #0f0">${
-                      highlightText(field.value, allSearchTerms.join(' '), field.field, allFieldSearches)
-                    }</span>`);
+                  matchingFields = getMatchingFields(attendee, allSearchTerms, allFieldSearches);
                 }
 
                 const matchingFieldsHtml = matchingFields.length 
-                  ? `<div style="font-size: 14px; margin-top: 4px;">${matchingFields.join(' | ')}</div>` 
+                  ? `<div style="font-size: 14px; margin-top: 4px;">${matchingFields}</div>` 
                   : '';
 
                 row.innerHTML = `
