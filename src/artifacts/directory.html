@@ -457,6 +457,7 @@
           function handleKeyEvents(e) {
             if (e.key === 'Escape') {
               searchInput.value = '';
+              clearButton.style.display = 'none';
               renderRows('');
               return;
             }
