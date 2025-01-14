@@ -834,6 +834,7 @@
                   attendee.email || '',
                   attendee.description || '',
                   ...(attendee.languages_canonical || []),
+                  ...(attendee.tournaments_canonical || []),
                   (attendee.aga_id || '').toString(),
                   attendee.aga_chapter || '',
                   attendee.emergency_contact_name || '',
