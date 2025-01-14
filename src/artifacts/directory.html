@@ -618,7 +618,10 @@
                 attendee.description || '',
                 ...(attendee.translator !== null ? attendee.languages_canonical || [] : []),
                 (attendee.aga_id || '').toString(),
-                attendee.aga_chapter || ''
+                attendee.aga_chapter || '',
+                attendee.emergency_contact_name || '',
+                attendee.emergency_contact_email || '',
+                attendee.emergency_contact_phone || ''
               ].join(' ').toLowerCase();
 
               const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
@@ -640,7 +643,10 @@
                     { label: 'Email', value: attendee.email },
                     { label: 'AGA#', value: attendee.badgefile_id, field: 'badgefile_id' },
                     { label: 'Club', value: attendee.aga_chapter, field: 'aga_chapter' },
-                    { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' }
+                    { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' },
+                    { label: 'Emerg. Contact', value: attendee.emergency_contact_name },
+                    { label: 'Emerg. Ph. #', value: attendee.emergency_contact_phone },
+                    { label: 'Emerg. Email', value: attendee.emergency_contact_email }
                   ];
 
                   matchingFields = fields
@@ -720,6 +726,26 @@
                       </div>
 
                       <div class="details-item">
+                        <div class="detail-label">Emergency Contact:</div>
+                        <div class="detail-value">
+                          ${attendee.emergency_contact_name ? `
+                            ${highlightText(attendee.emergency_contact_name, filterText)} 
+                            (${highlightText(attendee.emergency_contact_email || 'no email', filterText)}, 
+                            ${highlightText(attendee.emergency_contact_phone || 'no phone', filterText)})
+                            <div style="margin-top: 4px">
+                              ${attendee.emergency_contact_phone ? `
+                                <a href="sms:${attendee.emergency_contact_phone}">[txt]</a>
+                                <a href="tel:${attendee.emergency_contact_phone}">[call]</a>
+                              ` : ''}
+                              ${attendee.emergency_contact_email ? `
+                                <a href="mailto:${attendee.emergency_contact_email}">[email]</a>
+                              ` : ''}
+                            </div>
+                          ` : 'N/A'}
+                        </div>
+                      </div>
+
+                      <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
                         <div class="detail-value">${highlightText(attendee.badgefile_id || 'N/A', filterText, 'badgefile_id', fieldSearches)}</div>
                       </div>
@@ -742,7 +768,6 @@
                           highlightText(l, filterText, 'languages_canonical', fieldSearches)
                         ).join(', ') || 'N/A'}</div>
                       </div>
-
                     </div>
                   </td>
                 `;
