@@ -425,7 +425,7 @@
                       <div class="details-item">
                         <div class="detail-label">Phone:</div>
                         <div class="detail-value">
-                          ${attendee.phone_canonical || 'N/A'}
+                          ${highlightText(attendee.phone_canonical || 'N/A', filterText)}
                           ${attendee.phone_canonical ? `
                             <div style="margin-top: 4px">
                               <a href="sms:${attendee.phone_canonical}">[txt]</a>
@@ -437,7 +437,7 @@
                       <div class="details-item">
                         <div class="detail-label">Email:</div>
                         <div class="detail-value">
-                          ${attendee.email || 'N/A'}
+                          ${highlightText(attendee.email || 'N/A', filterText)}
                           ${attendee.email ? `
                             <div style="margin-top: 4px">
                               <a href="mailto:${attendee.email}">[email]</a>
