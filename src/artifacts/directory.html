@@ -155,7 +155,7 @@
 <body>
   <div class="search-container">
     <h1>2025 Go Congress Directory</h1>
-    <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput">
+    <input type="text" class="search-box" placeholder="Name, phone number, email, language..." id="searchInput" autocomplete="off">
   </div>
   <table>
     <tr>
@@ -165,6 +165,9 @@
       let lastExpandedAttendeeId = null;
       let currentExpandedRow = null;
       let sortedAttendees = [];
+
+      // Clear search box on page load
+      document.getElementById('searchInput').value = '';
 
       fetch('./badgefile.json')
         .then(response => response.json())
