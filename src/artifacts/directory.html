@@ -162,6 +162,10 @@
       <th data-column="name_family" class="sorted" data-direction="asc">Directory Listing ⬆️</th>
     </tr>
     <script>
+      let lastExpandedAttendeeId = null;
+      let currentExpandedRow = null;
+      let sortedAttendees = [];
+
       fetch('./badgefile.json')
         .then(response => response.json())
         .then(data => {
@@ -258,7 +262,6 @@
             return text.replace(regex, '<span class="highlight">$1</span>');
           }
 
-          let currentExpandedRow = null;
           let selectedIndex = -1;
 
           function handleKeyEvents(e) {
@@ -280,12 +283,11 @@
 
             switch (e.key) {
               case 'ArrowDown':
-                e.preventDefault();
-                newIndex = selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex;
-                break;
               case 'ArrowUp':
                 e.preventDefault();
-                newIndex = selectedIndex > 0 ? selectedIndex - 1 : 0;
+                newIndex = e.key === 'ArrowDown' 
+                  ? (selectedIndex < rows.length - 1 ? selectedIndex + 1 : selectedIndex)
+                  : (selectedIndex > 0 ? selectedIndex - 1 : 0);
                 break;
               default:
                 return;
@@ -304,6 +306,7 @@
                 if (index === selectedIndex) {
                   detailsRow.style.display = 'table-row';
                   currentExpandedRow = detailsRow;
+                  lastExpandedAttendeeId = sortedAttendees[index].badgefile_id;
                 } else {
                   detailsRow.style.display = 'none';
                 }
@@ -326,7 +329,7 @@
               ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
               .filter(term => term.length > 0) || [];
 
-            const sortedAttendees = sortAttendees();
+            sortedAttendees = sortAttendees();
             let hasExpandedRow = false;
             
             sortedAttendees.forEach(attendee => {
@@ -422,29 +425,31 @@
                   </td>
                 `;
 
-                if (attendee.id === lastExpandedAttendeeId && !hasExpandedRow) {
-                  detailsRow.classList.add('visible');
-                  row.classList.add('expanded');
+                if (attendee.badgefile_id === lastExpandedAttendeeId && !hasExpandedRow) {
+                  detailsRow.style.display = 'table-row';
+                  currentExpandedRow = detailsRow;
                   hasExpandedRow = true;
+                } else {
+                  detailsRow.style.display = 'none';
                 }
 
                 row.addEventListener('click', (e) => {
                   if (currentExpandedRow === detailsRow) {
                     detailsRow.style.display = 'none';
                     currentExpandedRow = null;
+                    lastExpandedAttendeeId = null;
                   } else {
                     if (currentExpandedRow) {
                       currentExpandedRow.style.display = 'none';
                     }
                     detailsRow.style.display = 'table-row';
                     currentExpandedRow = detailsRow;
+                    lastExpandedAttendeeId = attendee.badgefile_id;
                   }
                 });
 
                 tbody.appendChild(row);
                 tbody.appendChild(detailsRow);
-                
-                detailsRow.style.display = 'none';
               }
             });
           }
