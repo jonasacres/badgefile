@@ -308,15 +308,53 @@
             });
           });
 
-          function highlightText(text, filterText) {
+          function highlightText(text, filterText, specificField = null, fieldSearches = []) {
             text = text.toString();
             if (!filterText) return text;
             
-            const terms = filterText.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
-              ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
-              .filter(term => term.length > 0) || [];
+            // Map of display fields to their canonical search fields
+            const fieldMapping = {
+              'tournaments': 'tournaments_canonical',
+              'languages': 'languages_canonical',
+              'phone': 'phone_canonical',
+              'id': 'badgefile_id',
+              'club': 'aga_chapter'
+            };
             
-            const regex = new RegExp(`(${terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+            // Get general search terms
+            const generalTerms = filterText.toLowerCase()
+              .match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
+              ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
+              .filter(term => {
+                // Exclude terms that are field-specific searches
+                return !term.includes(':') || term.split(':').length !== 2;
+              }) || [];
+
+            let termsToHighlight = [];
+            
+            // If this is for a specific field, include matching field searches
+            if (specificField) {
+              const fieldTerms = fieldSearches
+                .filter(search => search.field === specificField)
+                .map(search => search.value);
+              termsToHighlight.push(...fieldTerms);
+              
+              // If this field is one that supports field-specific search,
+              // also include general terms that match
+              if (Object.values(fieldMapping).includes(specificField)) {
+                termsToHighlight.push(...generalTerms);
+              }
+            } else {
+              // For non-specific fields, just include general terms
+              termsToHighlight.push(...generalTerms);
+            }
+            
+            if (termsToHighlight.length === 0) return text;
+            
+            const regex = new RegExp(
+              `(${termsToHighlight.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+              'gi'
+            );
             return text.replace(regex, '<span class="highlight">$1</span>');
           }
 
@@ -425,15 +463,63 @@
               tbody.deleteRow(1);
             }
 
+            // Parse search terms, handling field-specific searches
             const searchTerms = filterText.toLowerCase()
               .match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
               ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
               .filter(term => term.length > 0) || [];
 
+            // Separate field-specific and general search terms
+            const fieldSearches = [];
+            const generalSearchTerms = [];
+            
+            searchTerms.forEach(term => {
+              const colonIndex = term.indexOf(':');
+              if (colonIndex > 0 && term.lastIndexOf(':') === colonIndex) {
+                const key = term.substring(0, colonIndex);
+                const value = term.substring(colonIndex + 1);
+                
+                // Map of valid search keys to their corresponding attendee fields
+                const validKeys = {
+                  'phone': 'phone_canonical',
+                  'id': 'badgefile_id',
+                  'club': 'aga_chapter',
+                  'tournament': 'tournaments_canonical',
+                  'rating': 'aga_rating',
+                  'language': 'languages_canonical',
+                  'translator': 'translator'
+                };
+                
+                if (validKeys[key]) {
+                  fieldSearches.push({ field: validKeys[key], value });
+                } else {
+                  generalSearchTerms.push(term);
+                }
+              } else {
+                generalSearchTerms.push(term);
+              }
+            });
+
             sortedAttendees = sortAttendees();
             let hasExpandedRow = false;
             
             sortedAttendees.forEach(attendee => {
+              // Check field-specific searches first
+              const fieldSearchesMatch = fieldSearches.every(search => {
+                const fieldValue = attendee[search.field];
+                if (Array.isArray(fieldValue)) {
+                  return fieldValue.some(v => v.toString().toLowerCase().includes(search.value));
+                } else if (search.field === 'translator') {
+                  const translatorValue = (fieldValue ? 'yes' : 'no');
+                  return translatorValue.includes(search.value);
+                } else {
+                  return (fieldValue || '').toString().toLowerCase().includes(search.value);
+                }
+              });
+
+              // Only proceed with general search if field searches match
+              if (!fieldSearchesMatch) return;
+
               const searchableText = [
                 attendee.name_given || '',
                 attendee.name_family || '',
@@ -447,19 +533,47 @@
 
               const tournamentText = (attendee.tournaments_canonical || []).join(' ').toLowerCase();
 
-              const allTermsMatch = searchTerms.every(term => 
+              const generalTermsMatch = generalSearchTerms.every(term => 
                 searchableText.includes(term) || tournamentText.includes(term)
               );
 
-              if (!filterText || allTermsMatch) {
+              if (!filterText || (fieldSearchesMatch && generalTermsMatch)) {
                 const row = document.createElement('tr');
                 const name = `${highlightText(attendee.name_given || '', filterText)} ${highlightText(attendee.name_family || '', filterText)}`;
                 const description = highlightText(attendee.description || '', filterText);
+
+                // Add matching fields that aren't visible in the collapsed view
+                let matchingFields = [];
+                if (filterText) {
+                  const fields = [
+                    { label: 'Phone', value: attendee.phone_canonical, field: 'phone_canonical' },
+                    { label: 'Email', value: attendee.email },
+                    { label: 'AGA#', value: attendee.badgefile_id, field: 'badgefile_id' },
+                    { label: 'Club', value: attendee.aga_chapter, field: 'aga_chapter' },
+                    { label: 'Tournaments', value: (attendee.tournaments_canonical || []).join(', '), field: 'tournaments_canonical' }
+                  ];
+
+                  matchingFields = fields
+                    .filter(field => field.value)
+                    .filter(field => {
+                      const fieldValue = field.value.toString().toLowerCase();
+                      return searchTerms.some(term => fieldValue.includes(term)) ||
+                        fieldSearches.some(search => field.field === search.field);
+                    })
+                    .map(field => `<span style="color: #0a0">${field.label}:</span> <span style="color: #0f0">${
+                      highlightText(field.value, filterText, field.field, fieldSearches)
+                    }</span>`);
+                }
+
+                const matchingFieldsHtml = matchingFields.length 
+                  ? `<div style="font-size: 14px; margin-top: 4px;">${matchingFields.join(' | ')}</div>` 
+                  : '';
 
                 row.innerHTML = `
                   <td>
                     <span class="attendee-name">${name}</span>
                     <div style="font-size: 14px; color: #0a0; margin-top: 4px;">${description}</div>
+                    ${matchingFieldsHtml}
                     <span class="arrow-indicator">▶</span>
                   </td>
                 `;
@@ -472,7 +586,7 @@
                       <div class="details-item">
                         <div class="detail-label">Phone:</div>
                         <div class="detail-value">
-                          ${highlightText(attendee.phone_canonical || 'N/A', filterText)}
+                          ${highlightText(attendee.phone_canonical || 'N/A', filterText, 'phone_canonical', fieldSearches)}
                           ${attendee.phone_canonical ? `
                             <div style="margin-top: 4px">
                               <a href="sms:${attendee.phone_canonical}">[txt]</a>
@@ -496,32 +610,26 @@
 
                       <div class="details-item">
                         <div class="detail-label">AGA Number:</div>
-                        <div class="detail-value">${highlightText(attendee.aga_id || 'N/A', filterText)}</div>
+                        <div class="detail-value">${highlightText(attendee.badgefile_id || 'N/A', filterText, 'badgefile_id', fieldSearches)}</div>
                       </div>
 
                       <div class="details-item">
                         <div class="detail-label">Club:</div>
-                        <div class="detail-value">${highlightText(attendee.aga_chapter || 'N/A', filterText)}</div>
-                      </div>
-
-                      <div class="details-item">
-                        <div class="detail-label">Playing Rank:</div>
-                        <div class="detail-value">${attendee.aga_rating ? attendee.aga_rating : 'N/A'}</div>
+                        <div class="detail-value">${highlightText(attendee.aga_chapter || 'N/A', filterText, 'aga_chapter', fieldSearches)}</div>
                       </div>
 
                       <div class="details-item">
                         <div class="detail-label">Tournaments:</div>
-                        <div class="detail-value">${(attendee.tournaments_canonical || []).map(t => highlightText(t, filterText)).join(', ') || 'None'}</div>
+                        <div class="detail-value">${(attendee.tournaments_canonical || []).map(t => 
+                          highlightText(t, filterText, 'tournaments_canonical', fieldSearches)
+                        ).join(', ') || 'None'}</div>
                       </div>
 
                       <div class="details-item">
                         <div class="detail-label">Languages:</div>
-                        <div class="detail-value">${attendee.languages_canonical.join(', ') || 'N/A'}</div>
-                      </div>
-
-                      <div class="details-item">
-                        <div class="detail-label">Translator:</div>
-                        <div class="detail-value">${attendee.translator ? 'Yes' : 'No'}</div>
+                        <div class="detail-value">${(attendee.languages_canonical || []).map(l => 
+                          highlightText(l, filterText, 'languages_canonical', fieldSearches)
+                        ).join(', ') || 'N/A'}</div>
                       </div>
                     </div>
                   </td>
