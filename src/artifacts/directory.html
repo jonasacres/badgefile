@@ -232,7 +232,7 @@
     }
 
     .details a:focus {
-      background-color: #0f0;
+      background-color: #00ffff;
       color: #000;
       outline: none;
     }
@@ -265,9 +265,10 @@
 
       function jumpToPrimaryRegistrant(id) {
         const searchInput = document.getElementById('searchInput');
+        const tableHeader = document.querySelector('table tr:first-child');
         
-        // Scroll to top of page
-        window.scrollTo(0, 0);
+        // Scroll to table header
+        tableHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
         // Update search box and trigger the search
         searchInput.value = `id:/${id}/`;
@@ -300,7 +301,8 @@
 
       function showParty(id) {
         const searchInput = document.getElementById('searchInput');
-        window.scrollTo(0, 0);
+        const tableHeader = document.querySelector('table tr:first-child');
+        tableHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
         searchInput.value = `pid:/${id}/`;
         searchInput.dispatchEvent(new Event('input'));
       }
@@ -525,9 +527,31 @@
 
           function handleKeyEvents(e) {
             if (e.key === 'Escape') {
+              // Clear search and scroll to top
               searchInput.value = '';
               clearButton.style.display = 'none';
               renderRows('');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              
+              // Collapse any expanded row
+              if (currentExpandedRow) {
+                currentExpandedRow.style.display = 'none';
+                const prevRow = currentExpandedRow.previousElementSibling;
+                if (prevRow) {
+                  prevRow.querySelector('.arrow-indicator').textContent = '▶';
+                }
+                currentExpandedRow = null;
+                lastExpandedAttendeeId = null;
+              }
+              
+              // Remove highlight from selected row
+              if (selectedIndex >= 0) {
+                const rows = Array.from(tbody.getElementsByTagName('tr'))
+                  .filter(row => !row.classList.contains('details') && !row.querySelector('th'));
+                rows[selectedIndex].classList.remove('selected-row');
+                selectedIndex = -1;
+              }
+              
               return;
             }
 
@@ -617,7 +641,8 @@
                 }
               });
               
-              rows[selectedIndex].scrollIntoView({ block: 'nearest' });
+              // Update scrolling behavior to align with top of viewport
+              rows[selectedIndex].scrollIntoView({ block: 'start', behavior: 'smooth' });
             }
           }
 
