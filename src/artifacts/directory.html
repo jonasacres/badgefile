@@ -56,8 +56,7 @@
       color: rgb(0, 114, 0);
     }
     .details {
-      background-color: #000;
-      border: 1px solid #0f0;
+      background-color: #000 !important;
     }
     .detail-label {
       font-family: 'Courier New', monospace;
@@ -228,6 +227,15 @@
 
     tr:focus {
       outline: none;
+    }
+
+    tr:not(.details):focus {
+      background-color: #020;
+    }
+
+    /* Remove any lingering background color when focus is lost */
+    tr:not(.details):not(:focus):not(.selected-row) {
+      background-color: transparent;
     }
   </style>
 </head>
