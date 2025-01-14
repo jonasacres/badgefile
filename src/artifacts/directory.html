@@ -97,9 +97,9 @@
       color: #e1e2e6;
     }
     .highlight {
-      background-color: rgba(59, 130, 246, 0.1);
-      
-      color: #60a5fa;
+      background-color: rgba(246, 59, 175, 0.1);
+      font-size: 120%;
+      color: #fa60a5;
       padding: 0;
       border-radius: 4px;
     }
@@ -301,8 +301,10 @@
             text = text.toString();
             if (!filterText) return text;
             
-            // Split query into terms and filter out empty strings
-            const terms = filterText.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+            // Split query into terms and filter out empty strings, handling quotes
+            const terms = filterText.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
+              ?.map(term => term.replace(/^['"]|['"]$/g, '').toLowerCase())
+              .filter(term => term.length > 0) || [];
             
             // Create a single regex that matches any of the terms
             const regex = new RegExp(`(${terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
@@ -382,7 +384,14 @@
               tbody.deleteRow(1);
             }
 
-            const searchTerms = filterText.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+            // New regex to handle quoted strings and regular words
+            const searchTerms = filterText.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g)
+              ?.map(term => {
+                // Remove quotes from quoted terms
+                return term.replace(/^['"]|['"]$/g, '').toLowerCase();
+              })
+              .filter(term => term.length > 0) || [];
+
             const sortedAttendees = sortAttendees();
             
             let hasExpandedRow = false;
@@ -395,7 +404,8 @@
                 attendee.email || '',
                 attendee.description || '',
                 ...(attendee.translator !== null ? attendee.languages_canonical || [] : []),
-                (attendee.aga_id || '').toString()
+                (attendee.aga_id || '').toString(),
+                attendee.aga_chapter || ''
               ].join(' ').toLowerCase();
 
               // Check if any tournament matches all search terms
@@ -451,7 +461,7 @@
                       </div>
                       <div class="details-item">
                         <div class="detail-label">Club:</div>
-                        <div class="detail-value">${attendee.aga_chapter || 'N/A'}</div>
+                        <div class="detail-value">${highlightText(attendee.aga_chapter || 'N/A', filterText)}</div>
                       </div>
                       <div class="details-item">
                         <div class="detail-label">Playing Rank:</div>
@@ -513,6 +523,30 @@
           searchInput.addEventListener('input', (e) => {
             renderRows(e.target.value);
           });
+
+          function attendeeMatchesFilter(attendee, searchTerms) {
+            if (!searchTerms.length) return true;
+            
+            const searchableFields = [
+              attendee.name_given,
+              attendee.name_family,
+              attendee.tdlist_name,
+              attendee.email,
+              attendee.city,
+              attendee.state,
+              attendee.country,
+              attendee.badge_rating,
+              attendee.aga_chapter,
+              // ... any other existing fields ...
+            ];
+            
+            const searchText = searchableFields
+              .filter(field => field) // Remove null/undefined values
+              .join(' ')
+              .toLowerCase();
+            
+            return searchTerms.every(term => searchText.includes(term));
+          }
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
