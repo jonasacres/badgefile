@@ -218,7 +218,7 @@
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: #0f0;
+      color: #00ffff;  /* Changed from #0f0 to cyan */
       cursor: pointer;
       font-family: 'Courier New', monospace;
       padding: 4px 8px;
@@ -302,6 +302,18 @@
       function showParty(id) {
         const searchInput = document.getElementById('searchInput');
         const tableHeader = document.querySelector('table tr:first-child');
+        
+        // Collapse any expanded row
+        if (currentExpandedRow) {
+          currentExpandedRow.style.display = 'none';
+          const prevRow = currentExpandedRow.previousElementSibling;
+          if (prevRow) {
+            prevRow.querySelector('.arrow-indicator').textContent = '▶';
+          }
+          currentExpandedRow = null;
+          lastExpandedAttendeeId = null;
+        }
+        
         tableHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
         searchInput.value = `pid:/${id}/`;
         searchInput.dispatchEvent(new Event('input'));
