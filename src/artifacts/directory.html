@@ -269,128 +269,6 @@
         return urlParams.get('q') || '';
       }
 
-      // Modify the function to update URL
-      function updateURL(searchQuery) {
-        const newURL = searchQuery 
-          ? `${window.location.pathname}#q=${encodeURIComponent(searchQuery)}`
-          : window.location.pathname;
-        
-        // Replace current history state instead of adding new one
-        window.history.replaceState(null, '', newURL);
-      }
-
-      // Clear search box on page load and populate from URL if present
-      const searchInput = document.getElementById('searchInput');
-      const initialSearch = getSearchFromURL();
-      searchInput.value = initialSearch;
-
-      // Modify the existing searchInput event listener
-      searchInput.addEventListener('input', (e) => {
-        const searchQuery = e.target.value;
-        updateURL(searchQuery);
-        renderRows(searchQuery);
-      });
-
-      // Modify the clear button click handler
-      clearButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        searchInput.value = '';
-        clearButton.style.display = 'none';
-        updateURL('');
-        renderRows('');
-        searchInput.focus();
-      });
-
-      function handleSlashMatching(value, searchStr) {
-        value = (value || '').toString().toLowerCase().trim();
-        searchStr = searchStr.toLowerCase().trim();
-        
-        if (searchStr.startsWith('/') && searchStr.endsWith('/')) {
-          return value === searchStr.slice(1, -1);
-        } else if (searchStr.startsWith('/')) {
-          return value.startsWith(searchStr.slice(1));
-        } else if (searchStr.endsWith('/')) {
-          return value.endsWith(searchStr.slice(0, -1));
-        }
-        return value.includes(searchStr);
-      }
-
-      function collapseExpandedRow() {
-        if (currentExpandedRow) {
-          currentExpandedRow.style.display = 'none';
-          const prevRow = currentExpandedRow.previousElementSibling;
-          if (prevRow) {
-            prevRow.querySelector('.arrow-indicator').textContent = '▶';
-          }
-          currentExpandedRow = null;
-          lastExpandedAttendeeId = null;
-        }
-      }
-
-      function expandRow(row, detailsRow, attendeeId) {
-        collapseExpandedRow();
-        detailsRow.style.display = 'table-row';
-        currentExpandedRow = detailsRow;
-        lastExpandedAttendeeId = attendeeId;
-        row.querySelector('.arrow-indicator').textContent = '▼';
-      }
-
-      function jumpToPrimaryRegistrant(id) {
-        const searchInput = document.getElementById('searchInput');
-        const tableHeader = document.querySelector('table tr:first-child');
-        
-        // Scroll to table header
-        tableHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // Update search box and trigger the search
-        searchInput.value = `id:/${id}/`;
-        searchInput.dispatchEvent(new Event('input'));
-        
-        // Expand the first row after a short delay to ensure rendering is complete
-        setTimeout(() => {
-          const firstRow = document.querySelector('tr:not(.details):not(:first-child)');
-          if (firstRow) {
-            const detailsRow = firstRow.nextElementSibling;
-            if (detailsRow) {
-              // Close any currently expanded row
-              if (currentExpandedRow) {
-                currentExpandedRow.style.display = 'none';
-                const prevRow = currentExpandedRow.previousElementSibling;
-                if (prevRow) {
-                  prevRow.querySelector('.arrow-indicator').textContent = '▶';
-                }
-              }
-              
-              // Expand the first row
-              detailsRow.style.display = 'table-row';
-              currentExpandedRow = detailsRow;
-              lastExpandedAttendeeId = sortedAttendees[0]?.badgefile_id;
-              firstRow.querySelector('.arrow-indicator').textContent = '▼';
-            }
-          }
-        }, 0);
-      }
-
-      function showParty(id) {
-        const searchInput = document.getElementById('searchInput');
-        const tableHeader = document.querySelector('table tr:first-child');
-        
-        // Collapse any expanded row
-        if (currentExpandedRow) {
-          currentExpandedRow.style.display = 'none';
-          const prevRow = currentExpandedRow.previousElementSibling;
-          if (prevRow) {
-            prevRow.querySelector('.arrow-indicator').textContent = '▶';
-          }
-          currentExpandedRow = null;
-          lastExpandedAttendeeId = null;
-        }
-        
-        tableHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        searchInput.value = `pid:/${id}/`;
-        searchInput.dispatchEvent(new Event('input'));
-      }
-
       fetch('./badgefile.json')
         .then(response => response.json())
         .then(data => {
@@ -399,6 +277,28 @@
           const searchInput = document.getElementById('searchInput');
           const headers = document.querySelectorAll('th');
           const clearButton = document.getElementById('clearButton');
+          const initialSearch = getSearchFromURL();
+
+          // Move URL handling functions here where renderRows is in scope
+          function updateURL(searchQuery) {
+            const newURL = searchQuery 
+              ? `${window.location.pathname}#q=${encodeURIComponent(searchQuery)}`
+              : window.location.pathname;
+            
+            // Replace current history state instead of adding new one
+            window.history.replaceState(null, '', newURL);
+          }
+
+          // Modify the searchInput event listener
+          searchInput.addEventListener('input', (e) => {
+            // If this is a user input event (not programmatic), preserve the cursor position
+            const cursorPosition = e.target.selectionStart;
+            const searchQuery = e.target.value;
+            updateURL(searchQuery);
+            renderRows(searchQuery);
+            // Restore cursor position
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+          });
 
           // Show/hide clear button based on search input
           searchInput.addEventListener('input', (e) => {
@@ -530,6 +430,24 @@
             
             // Check general terms
             return searchTerms.some(term => handleSlashMatching(fieldValue, term));
+          }
+
+          function handleSlashMatching(value, searchTerm) {
+            value = (value || '').toString().toLowerCase().trim();
+            searchTerm = searchTerm.toLowerCase().trim();
+            
+            if (searchTerm.startsWith('/') && searchTerm.endsWith('/')) {
+              // Exact match: /term/
+              return value === searchTerm.slice(1, -1);
+            } else if (searchTerm.startsWith('/')) {
+              // Prefix match: /term
+              return value.startsWith(searchTerm.slice(1));
+            } else if (searchTerm.endsWith('/')) {
+              // Suffix match: term/
+              return value.endsWith(searchTerm.slice(0, -1));
+            }
+            // Default: substring match
+            return value.includes(searchTerm);
           }
 
           attendees.forEach(attendee => {
@@ -1228,9 +1146,46 @@
             searchInput.value = initialSearch;
             clearButton.style.display = 'block';
             renderRows(initialSearch);
+            // Set cursor at end of initial search text
+            searchInput.setSelectionRange(initialSearch.length, initialSearch.length);
           } else {
             renderRows();
           }
+
+          function collapseExpandedRow() {
+            if (currentExpandedRow) {
+              currentExpandedRow.style.display = 'none';
+              const prevRow = currentExpandedRow.previousElementSibling;
+              if (prevRow) {
+                prevRow.querySelector('.arrow-indicator').textContent = '▶';
+              }
+              currentExpandedRow = null;
+              lastExpandedAttendeeId = null;
+            }
+          }
+
+          function expandRow(row, detailsRow, attendeeId) {
+            collapseExpandedRow();
+            detailsRow.style.display = 'table-row';
+            currentExpandedRow = detailsRow;
+            lastExpandedAttendeeId = attendeeId;
+            row.querySelector('.arrow-indicator').textContent = '▼';
+          }
+
+          // Add these functions at global scope so they can be called from onclick handlers
+          window.showParty = function(primaryRegistrantId) {
+            searchInput.value = `pid:/${primaryRegistrantId}/`;
+            clearButton.style.display = 'block';
+            renderRows(searchInput.value);
+            updateURL(searchInput.value);
+          };
+
+          window.jumpToPrimaryRegistrant = function(primaryRegistrantId) {
+            searchInput.value = `id:/${primaryRegistrantId}/`;
+            clearButton.style.display = 'block';
+            renderRows(searchInput.value);
+            updateURL(searchInput.value);
+          };
         })
         .catch(error => {
           console.error('Error loading attendee data:', error);
