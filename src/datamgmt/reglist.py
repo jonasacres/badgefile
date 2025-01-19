@@ -36,7 +36,7 @@ class Reglist:
   @classmethod
   # download a copy from CE, then save it to disk and return a copy
   def download(cls):
-    uri = "https://usgo.org/popup.aspx?page_id=4036&club_id=454497&item_id=2472861"
+    uri = "https://usgo.org/popup.aspx?page_id=4055&club_id=454497&item_id=2516874"
     data = {
           "__EVENTTARGET": "ctl00$save_button",
           "ctl00$export_radiobuttonlist": "2",
