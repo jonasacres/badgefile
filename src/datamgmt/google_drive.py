@@ -42,16 +42,25 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
     print(f"query: {query}")
     
     def retry_with_backoff(func, max_wait=30):
-        wait = 1
+        start_wait = 0.5
+        wait = start_wait
         while True:
-            try:
-                return func()
-            except HttpError as e:
-                if e.resp.status < 500 or wait > max_wait:
-                    raise
-                time.sleep(wait)
-                wait = min(wait * 2, max_wait)
-    
+          try:
+            if wait != start_wait:
+              print(f"Making Google API request after delay of {wait}")
+            return func()
+          except (HttpError, TimeoutError) as e:
+            if isinstance(e, HttpError):
+              print(f"Caught HttpError waiting for Google Drive: {e}")
+              if e.resp.status < 500:
+                print(f"Raising exception")
+                raise
+            else:
+              print(f"Caught TimeoutError waiting for Google Drive: {e}")
+            print(f"Waiting {wait}s to retry")
+            time.sleep(wait)
+            wait = min(wait * 2, max_wait)
+  
     results = retry_with_backoff(
         lambda: service.files().list(q=query, spaces='drive', fields="files(id, name)", 
                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
