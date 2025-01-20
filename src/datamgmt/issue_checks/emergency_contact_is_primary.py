@@ -28,8 +28,8 @@ def check_name(attendee):
   return None
 
 def check_email(attendee):
-  pri_email = attendee.primary().info()["email"].lower()
-  att_email = attendee.info()["emergency_contact_email"].lower()
+  pri_email = str(attendee.primary().info()["email"]).lower()
+  att_email = str(attendee.info()["emergency_contact_email"]).lower()
   if att_email == pri_email:
     return {
       "msg": "Emergency contact matches primary registrant email",
