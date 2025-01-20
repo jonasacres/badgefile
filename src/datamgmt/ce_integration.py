@@ -5,6 +5,7 @@ from datetime import datetime
 import hashlib
 import os
 import base64
+import time
 
 # Pulls reports from ClubExpress.
 class CEIntegration:
@@ -79,8 +80,22 @@ class CEIntegration:
     print(login_response.status_code)
     print(login_response.text)
 
-
   def make_form_query(self, uri, data):
+    attempts = 0
+    max_attempts = 5
+    delay = 10
+
+    while attempts < max_attempts:
+      try:
+        return self._make_form_query(uri, data)
+      except Exception as e:
+        attempts += 1
+        if attempts == max_attempts:
+          raise e
+        print(f"Request failed, retrying in {delay}s (attempt {attempts}/{max_attempts})\n{e}")
+        time.sleep(delay)
+
+  def _make_form_query(self, uri, data):
     # ASP.net expects to see a bunch of hidden form parameters to fulfill our request, like VIEWSTATE.
     # We can get these by doing a GET request for the page which has the form we want to submit.
     if(self.session is None):
