@@ -26,6 +26,13 @@ def authenticate_service_account(service_account_file):
 
 def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
     # Search for existing file with the same name in the specified folder
+
+    if not os.path.exists(file_path):
+      raise FileNotFoundError(f"File not found: {file_path}")
+
+    import time
+    from googleapiclient.errors import HttpError
+
     basename = file_name.removesuffix(".csv")
     print(f"Upload {basename} from {file_name}")
     query = f"name='{basename}'"
@@ -34,7 +41,21 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
 
     print(f"query: {query}")
     
-    results = service.files().list(q=query, spaces='drive', fields="files(id, name)", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+    def retry_with_backoff(func, max_wait=30):
+        wait = 1
+        while True:
+            try:
+                return func()
+            except HttpError as e:
+                if e.resp.status < 500 or wait > max_wait:
+                    raise
+                time.sleep(wait)
+                wait = min(wait * 2, max_wait)
+    
+    results = retry_with_backoff(
+        lambda: service.files().list(q=query, spaces='drive', fields="files(id, name)", 
+                                   supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+    )
     print(f"results: {results}")
     files = results.get('files', [])
     media = MediaFileUpload(file_path, mimetype='text/csv')
@@ -47,13 +68,19 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
       # if more than one existing copy is present, delete all but one
       for file in files[1:]:
         print(f"Deleting existing file {file['id']} {file['name']}")
-        service.files().delete(fileId=file['id'], supportsAllDrives=True).execute()
+        retry_with_backoff(
+            lambda: service.files().delete(fileId=file['id'], supportsAllDrives=True).execute()
+        )
         print(f"Deleted existing file {file['id']} {file['name']}")
       print(f"Updating existing file {files[0]['name']} at ID {files[0]['id']}")
-      service.files().update(fileId=files[0]['id'], media_body=media, supportsAllDrives=True).execute()
+      retry_with_backoff(
+          lambda: service.files().update(fileId=files[0]['id'], media_body=media, supportsAllDrives=True).execute()
+      )
       print(f"Updated file {files[0]['name']} successfully")
     else:
       # Upload the new file
       print(f"Uploading {basename} to new location")
-      uploaded_file = service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
+      uploaded_file = retry_with_backoff(
+          lambda: service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
+      )
       print(f"Uploaded file {basename} successfully. File ID: {uploaded_file.get('id')}")
