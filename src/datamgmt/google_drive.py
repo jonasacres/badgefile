@@ -54,6 +54,6 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
       print(f"Updated file {file['name']} successfully")
     else:
       # Upload the new file
-      print(f"Uploading {file['name']} to new location")
+      print(f"Uploading {basename} to new location")
       uploaded_file = service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
-      print(f"Uploaded file successfully. File ID: {uploaded_file.get('id')}")
+      print(f"Uploaded file {basename} successfully. File ID: {uploaded_file.get('id')}")
