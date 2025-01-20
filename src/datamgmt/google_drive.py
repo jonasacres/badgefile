@@ -49,9 +49,11 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
         print(f"Deleting existing file {file['id']} {file['name']}")
         service.files().delete(fileId=file['id'], supportsAllDrives=True).execute()
         print(f"Deleted existing file {file['id']} {file['name']}")
+      print(f"Updating existing file {file['name']} at ID {files[0]['id']}")
       service.files().update(fileId=files[0]['id'], media_body=media, supportsAllDrives=True).execute()
-      print(f"Updating existing file {files[0]['id']}")
+      print(f"Updated file {file['name']} successfully")
     else:
       # Upload the new file
+      print(f"Uploading {file['name']} to new location")
       uploaded_file = service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
       print(f"Uploaded file successfully. File ID: {uploaded_file.get('id')}")
