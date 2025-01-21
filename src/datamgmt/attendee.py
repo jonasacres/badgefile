@@ -84,7 +84,6 @@ class Attendee:
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
     for key in phone_keys:
       if self._info[key] != None and self._info[key] != "":
-        print(f"{key} -> {self._info[key]}")
         return util.standardize_phone(self._info[key])
     return None
 

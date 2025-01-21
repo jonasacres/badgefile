@@ -42,7 +42,7 @@ class ActivityList:
           "__EVENTTARGET": "ctl00$save_button",
           "ctl00$export_radiobuttonlist": "3",
           "ctl00$registration_status_dropdown": "Open, Paid, Cancelled, Not paid in time limit",
-          "ctl00_registration_status_dropdown_ClientState": '{"logEntries":[],"value":"","text":"Open, Paid, Cancelled, Not paid in time limit","enabled":true,"checkedIndices":[0,1,2,3],"checkedItemsTextOverflows":false}'
+          "ctl00_registration_status_dropdown_ClientState": '{"logEntries":[],"value":"","text":"Open,+Paid,+Cancelled,+Not+paid+in+time+limit","enabled":true,"checkedIndices":[0,1,2,3],"checkedItemsTextOverflows":false}'
       }
     
     csv = CEIntegration.shared().pull_report(uri, data)

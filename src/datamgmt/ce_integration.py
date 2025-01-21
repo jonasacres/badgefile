@@ -113,7 +113,7 @@ class CEIntegration:
     # We have to inject in certain constants as well -- these are buried elsewhere in the static site content, but aren't as easy to extract.
     # So they just have hardcoded values here.
     form_data = {
-        "script_manager_TSM": ";;System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35:en-US:e441b334-44bb-41f8-b8ef-43fec6e58811:ea597d4b:b25378d2;Telerik.Web.UI:en-US:8b7d6a7a-6133-413b-b622-bbc1f3ee15e4:16e4e7cd:365331c3:24ee1bba:ed16cbdc",
+        "script_manager_TSM": ";;System.Web.Extensions,+Version=4.0.0.0,+Culture=neutral,+PublicKeyToken=31bf3856ad364e35:en-US:e441b334-44bb-41f8-b8ef-43fec6e58811:ea597d4b:b25378d2;Telerik.Web.UI:en-US:8b7d6a7a-6133-413b-b622-bbc1f3ee15e4:16e4e7cd:365331c3:24ee1bba:2003d0b8:c128760b:88144a7a:1e771326:f46195d3:33715776:aa288e2d:258f1c72",
         "DES_JSE": 1,
         "changes_pending": "",
     }
