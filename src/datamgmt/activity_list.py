@@ -49,6 +49,8 @@ class ActivityList:
     activity_list = cls(csv)
 
     hash = activity_list.hash()
+    print(f"ActivityList hash: {hash}")
+
     latest = ActivityList.latest()
     if latest is not None:
       if latest.hash() == hash:
@@ -56,8 +58,9 @@ class ActivityList:
         ReportManager.shared().pulled_report("activity_list", hash, latest.path())
         existing = cls(csv)
         existing.path = latest.path()
+        print(f"Matches existing ActivityList hash; reusing existing copy")
         return existing
-
+    
     activity_list.save()
     activity_list.upload_to_drive()
     ReportManager.shared().pulled_report("activity_list", hash, activity_list.path())
