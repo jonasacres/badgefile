@@ -107,7 +107,7 @@ class Attendee:
     return self.info()["status"].lower() == "cancelled"
   
   def is_participant(self):
-    return "aga member" in self._info["regtype"].lower()
+    return "member" in self._info["regtype"].lower()
   
   def languages(self):
     langstr = str(self._info.get("languages", "")).lower()
