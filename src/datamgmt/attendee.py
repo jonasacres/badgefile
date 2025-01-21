@@ -73,7 +73,12 @@ class Attendee:
     return self._info["badgefile_id"]
   
   def invalidate_activities(self):
+    if "donation_amount" in self._info:
+      del self._info["donation_amount"]
     self._activities = None
+  
+  def populate_derived_fields(self):
+    self.donation_amount(True)
 
   def phone(self):
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
@@ -199,11 +204,18 @@ class Attendee:
         return True
     return False
   
-  def donation_amount(self):
-    for activity in self.activities():
-      if activity.is_open() and activity.is_donation():
-        return activity.fee()
-    return 0
+  def donation_amount(self, force=False):
+    if force or not 'donation_amount' in self._info or self._info['donation_amount'] == None:
+      for activity in self.activities():
+        if activity.is_open() and activity.is_donation():
+          self._info['donation_amount'] = activity.fee()
+          self.sync_to_db()
+      self._info['donation_amount'] = 0
+      self.sync_to_db()
+    return self._info['donation_amount']
+  
+  def merge_activity_info(self):
+    self.donation_amount(True) # force population of donation_amount
   
   def merge_tdlist_info(self, tdlist_info):
     for key, value in tdlist_info.items():

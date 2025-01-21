@@ -25,8 +25,13 @@ from datamgmt.tdlist import TDList
 import sys
 
 def download():
+  print(f"Downloading reglist.")
   Reglist.download()
+
+  print(f"Downloading activity list.")
   ActivityList.download()
+
+  print(f"Downloading TD list.")
   TDList.download()
 
 def update():

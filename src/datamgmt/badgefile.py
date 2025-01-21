@@ -30,6 +30,7 @@ class Badgefile:
     
     self.ensure_consistency()
     for attendee in self.attendees():
+      attendee.populate_derived_fields()
       attendee.scan_issues()
     
     IssueSheet(self).generate("reports/issue_sheet.csv")
@@ -42,6 +43,7 @@ class Badgefile:
     # Generate JSON data for all non-cancelled attendees
     attendees_data = []
     for attendee in self.attendees():
+      attendee.populate_derived_fields()
       info = attendee.info()
       info["phone_canonical"] = attendee.phone()
       info["tournaments_canonical"] = attendee.tournaments()
