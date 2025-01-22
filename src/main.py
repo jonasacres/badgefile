@@ -22,17 +22,29 @@ from datamgmt.clubexpress.reglist import Reglist
 from datamgmt.badgefile import Badgefile
 from datamgmt.clubexpress.activity_list import ActivityList
 from datamgmt.tdlist import TDList
+from log.logger import *
 import sys
 
 def download():
-  print(f"Downloading reglist.")
-  Reglist.download()
+  log_notice(f"Downloading fresh data.")
+  
+  log_info(f"Downloading reglist.")
+  try:
+    Reglist.download()
+  except exc:
+    log_critical("Failed to dowload reglist", exception=exc)
 
-  print(f"Downloading activity list.")
-  ActivityList.download()
+  log_info(f"Downloading activity list.")
+  try:
+    ActivityList.download()
+  except Exception as exc:
+    log_critical("Failed to download activity list", exception=exc)
 
-  print(f"Downloading TD list.")
-  TDList.download()
+  log_info(f"Downloading TD list.")
+  try:
+    TDList.download()
+  except Exception as exc:
+    log_critical("Failed to download TD list", exception=exc)
 
 def update():
   if Reglist.latest() == None:
@@ -44,9 +56,13 @@ def update():
   bf = Badgefile()
   bf.update()
 
-if "download" in sys.argv:
-  download()
-update()
+
+try:
+  if "download" in sys.argv:
+    download()
+  update()
+except Exception as exc:
+  log_fatal("Uncaught exception", exc)
 
 # ANALYSIS TASK
 # for each attendee

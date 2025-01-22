@@ -14,6 +14,8 @@ from .clubexpress.activity_list import ActivityList
 from .clubexpress.activity import Activity
 from .util import util
 
+from log.logger import *
+
 
 class Attendee:
   def __init__(self, badgefile):
@@ -144,7 +146,7 @@ class Attendee:
       elif "open" in rt:
         tournaments.append("open")
       else:
-        print(f"Unknown tournament option: {rt}")
+        log_warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
       
     return sorted(tournaments)

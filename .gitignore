@@ -2,3 +2,4 @@ reports
 badgefile.sqlite3
 /artifacts
 __pycache__
+badgefile.log

@@ -2,6 +2,8 @@ import sqlite3
 from typing import List, Dict, Any, Optional
 import os
 
+from log.logger import *
+
 class Database:
   _shared = None
 
@@ -54,8 +56,7 @@ class Database:
       self.conn.commit()
       return cursor.rowcount
     except sqlite3.OperationalError as exc:
-      # TODO: wouldn't it be swell to have decent exception management and logging?
-      print(f"Encountered exception executing statement SQL:\nSQL: {sql}\nException: {exc}")
+      log_warn(f"Encountered exception executing statement SQL", data=sql, exception=exc)
       os._exit(1)
   
   def columns_of_table(self, table_name):
