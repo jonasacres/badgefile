@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 from .report_manager import ReportManager
-from .google_drive import authenticate_service_account, upload_csv_to_drive
+from .google.google_drive import authenticate_service_account, upload_csv_to_drive
 
 # TODO: consolidate this with other report classes into a common subclass that does common parts of latest/download and other operations
 

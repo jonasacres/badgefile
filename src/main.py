@@ -18,9 +18,9 @@
 # update the database with the new journal entries
 # update the override sheet
 
-from datamgmt.reglist import Reglist
+from datamgmt.clubexpress.reglist import Reglist
 from datamgmt.badgefile import Badgefile
-from datamgmt.activity_list import ActivityList
+from datamgmt.clubexpress.activity_list import ActivityList
 from datamgmt.tdlist import TDList
 import sys
 

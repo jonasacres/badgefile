@@ -9,9 +9,9 @@ from pathlib import Path
 from .database import Database
 from .issue_manager import IssueManager
 from .id_manager import IdManager
-from .reglist import Reglist
-from .activity_list import ActivityList
-from .activity import Activity
+from .clubexpress.reglist import Reglist
+from .clubexpress.activity_list import ActivityList
+from .clubexpress.activity import Activity
 from .util import util
 
 

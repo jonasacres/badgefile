@@ -3,7 +3,7 @@ import csv
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from .google_drive import authenticate_service_account, upload_csv_to_drive
+from .google.google_drive import authenticate_service_account, upload_csv_to_drive
 
 class IssueSheet:
   def __init__(self, badgefile):

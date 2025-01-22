@@ -2,8 +2,8 @@ from .database import Database
 from .attendee import Attendee
 from .id_manager import IdManager
 from .report_manager import ReportManager
-from .reglist import Reglist
-from .activity_list import ActivityList
+from .clubexpress.reglist import Reglist
+from .clubexpress.activity_list import ActivityList
 from .tdlist import TDList
 from .issue_sheet import IssueSheet
 from artifacts.directory import generate_directory
