@@ -15,14 +15,14 @@ def authenticate_service_account(service_account_file=None):
   creds = Credentials.from_service_account_file(service_account_file, scopes=SCOPES)
   return build('drive', 'v3', credentials=creds)
 
-def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
+def upload_file_to_drive(service, file_path, file_name, folder_id=None, mimetype=None, google_mimetype=None):
     # Search for existing file with the same name in the specified folder
 
     if not os.path.exists(file_path):
       raise FileNotFoundError(f"File not found: {file_path}")
 
     basename = file_name.removesuffix(".csv")
-    log_info(f"{basename}: Uploading from {file_path}")
+    log_info(f"{basename}: Uploading from {file_path}, mimetype '{mimetype}', google mimetype '{google_mimetype}'")
     query = f"name='{basename}'"
     if folder_id:
       query += f" and '{folder_id}' in parents"
@@ -55,8 +55,8 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
     )
     log_trace(f"{basename}: query results {results}")
     files = results.get('files', [])
-    media = MediaFileUpload(file_path, mimetype='text/csv')
-    file_metadata = {'name': basename, 'mimeType': "application/vnd.google-apps.spreadsheet"}
+    media = MediaFileUpload(file_path, mimetype=mimetype)
+    file_metadata = {'name': basename, 'mimeType': google_mimetype}
     if folder_id:
       file_metadata['parents'] = [folder_id]
     
@@ -81,3 +81,10 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
           lambda: service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
       )
       log_debug(f"{basename}: Uploaded file successfully. File ID: {uploaded_file.get('id')}")
+
+def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
+  return upload_file_to_drive(service, file_path, file_name, folder_id, "text/csv", "application/vnd.google-apps.spreadsheet")
+
+
+def upload_json_to_drive(service, file_path, file_name, folder_id=None):
+  return upload_file_to_drive(service, file_path, file_name, folder_id, "application/json", "application/json")

@@ -7,6 +7,8 @@ from .clubexpress.activity_list import ActivityList
 from .tdlist import TDList
 from .issue_sheet import IssueSheet
 from artifacts.directory import generate_directory
+from .google.google_drive import authenticate_service_account, upload_json_to_drive
+from .secrets import secret
 
 import json
 import os
@@ -16,6 +18,9 @@ class Badgefile:
   def __init__(self):
     self._attendees = None
     self.db = Database.shared()
+
+  def path(self):
+    return "artifacts/badgefile.json"
 
   def update(self):
     # TODO: when does this become a "download"?
@@ -35,7 +40,8 @@ class Badgefile:
     
     IssueSheet(self).generate("reports/issue_sheet.csv")
     self.generate_json()
-  
+    self.upload_to_drive()
+    
   def generate_json(self):
     # Create artifacts directory if it doesn't exist
     os.makedirs("artifacts", exist_ok=True)
@@ -51,8 +57,12 @@ class Badgefile:
       attendees_data.append(attendee.info())
 
     # Write JSON file
-    with open("artifacts/badgefile.json", "w") as f:
+    with open(self.path(), "w") as f:
       json.dump({"attendees": attendees_data}, f, indent=2)
+  
+  def upload_to_drive(self):
+    service = authenticate_service_account()
+    upload_json_to_drive(service, self.path(), "badgefile.json", secret("folder_id"))
 
   def lookup_attendee(self, badgefile_id):
     for attendee in self.attendees():
