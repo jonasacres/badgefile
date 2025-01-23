@@ -1,9 +1,12 @@
 import inspect
 import os
+import random
 from datetime import datetime
 
 from .textfile import Textfile
 from .console import Console
+from .discord import Discord
+from datamgmt.secrets import secret
 
 class Logger:
   TRACE    = 0
@@ -11,8 +14,9 @@ class Logger:
   INFO     = 2
   NOTICE   = 3
   WARN     = 4
-  CRITICAL = 5
-  FATAL    = 6
+  ERROR    = 5
+  CRITICAL = 6
+  FATAL    = 7
 
   SEVERITY_NAMES = {
     TRACE:    "TRACE",
@@ -20,6 +24,7 @@ class Logger:
     INFO:     "INFO",
     NOTICE:   "NOTICE",
     WARN:     "WARN",
+    ERROR:    "ERROR",
     CRITICAL: "CRITICAL",
     FATAL:    "FATAL",
   }
@@ -71,7 +76,7 @@ class Logger:
     src_reference = self.caller()
 
     for target in self.targets:
-      target.log(timestamp, src_reference, severity, msg, data, exception)
+      target.log(timestamp, run_id, src_reference, severity, msg, data, exception)
 
   def trace(self, msg, data=None, exception=None):
     return self.logmsg(msg, self.TRACE, data, exception)
@@ -84,9 +89,12 @@ class Logger:
 
   def notice(self, msg, data=None, exception=None):
     return self.logmsg(msg, self.NOTICE, data, exception)
-
+  
   def warn(self, msg, data=None, exception=None):
     return self.logmsg(msg, self.WARN, data, exception)
+
+  def error(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.ERROR, data, exception)
 
   def critical(self, msg, data=None, exception=None):
     return self.logmsg(msg, self.CRITICAL, data, exception)
@@ -109,6 +117,9 @@ def log_notice(msg, data=None, exception=None):
 def log_warn(msg, data=None, exception=None):
   return Logger.default().warn(msg, data, exception)
 
+def log_error(msg, data=None, exception=None):
+  return Logger.default().error(msg, data, exception)
+
 def log_critical(msg, data=None, exception=None):
   return Logger.default().critical(msg, data, exception)
 
@@ -120,6 +131,12 @@ def setup_default_logger():
   if not hasattr(default, '_Logger__setup'):
     default.add_target(Console())
     default.add_target(Textfile("badgefile.log"))
+
+    discord_target = Discord(secret("discord_log_webhook"))
+    discord_target.set_severity(Logger.WARN)
+    default.add_target(discord_target)
+
     default._Logger__setup = True
 
 setup_default_logger()
+run_id = f"{random.randint(0, 0xFFFFFFFF):08x}"

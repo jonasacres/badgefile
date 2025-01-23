@@ -14,11 +14,12 @@ class LogTarget:
     self._data_severity = severity
     return self
   
-  def log(self, timestamp, src_reference, severity, msg, data, exception):
+  def log(self, timestamp, run_id, src_reference, severity, msg, data, exception):
     from .logger import Logger
     info = {
       "timestamp":           timestamp,
       "timestamp_str":       timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+      "run_id":              run_id,
       "severity":            severity,
       "severity_str":        Logger.SEVERITY_NAMES.get(severity, "UNKNOWN"),
       "severity_str_short":  Logger.SEVERITY_NAMES.get(severity, str(severity))[0],

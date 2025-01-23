@@ -32,7 +32,7 @@ class Console(LogTarget):
         "FATAL":    MAGENTA,
         "CRITICAL": RED,
         "ERROR":    RED, 
-        "WARN":  YELLOW,
+        "WARN":     YELLOW,
         "NOTICE":   GREEN,
         "INFO":     None,
         "DEBUG":    LIGHT_GRAY,
