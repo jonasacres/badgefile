@@ -9,6 +9,7 @@ import csv
 import traceback
 from io import StringIO
 from log.logger import *
+from ..secrets import secret
 
 # Pulls reports from ClubExpress.
 class CEIntegration:
@@ -19,14 +20,9 @@ class CEIntegration:
     if cls._shared != None:
        return cls._shared
     
-    credentials_path = os.path.expanduser("~/.badgefile_credentials")
-    with open(credentials_path, "r") as file:
-      lines = file.read().splitlines()  # Split on newline
-      if len(lines) >= 2:
-          username, password = lines[0], lines[1]
-      else:
-          raise ValueError("File does not contain enough lines to assign username and password.")
-    
+    username = secret("aga_username")
+    password = secret("aga_password")
+
     cls._shared = CEIntegration(username, password)
     return cls._shared
      

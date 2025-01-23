@@ -26,6 +26,7 @@ pkgs.mkShell {
     python.pkgs.google-auth-httplib2
     python.pkgs.google-api-python-client
     python.pkgs.python-dateutil
+    python.pkgs.pyyaml
   ];
 
   shellHook = ''

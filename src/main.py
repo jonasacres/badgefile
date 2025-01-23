@@ -31,7 +31,7 @@ def download():
   log_info(f"Downloading reglist.")
   try:
     Reglist.download()
-  except exc:
+  except Exception as exc:
     log_critical("Failed to dowload reglist", exception=exc)
 
   log_info(f"Downloading activity list.")
@@ -62,7 +62,7 @@ try:
     download()
   update()
 except Exception as exc:
-  log_fatal("Uncaught exception", exc)
+  log_fatal("Uncaught exception", exception=exc)
 
 # ANALYSIS TASK
 # for each attendee

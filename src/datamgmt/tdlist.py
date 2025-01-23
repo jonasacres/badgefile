@@ -5,6 +5,9 @@ import hashlib
 import os
 from datetime import datetime
 
+from log.logger import *
+from .secrets import secret
+
 from .report_manager import ReportManager
 from .google.google_drive import authenticate_service_account, upload_csv_to_drive
 
@@ -36,8 +39,11 @@ class TDList:
   # download a copy from CE, then save it to disk and return a copy
   def download(cls):
     uri = "https://aga-functions.azurewebsites.net/api/GenerateTDListB"
+    log_debug(f"td_list: Downloading from {uri}")
     tsv = requests.get(uri).text.encode("utf-8")
     td_list = TDList(tsv)
+
+    log_debug(f"td_list: sha256 {td_list.hash()}")
     hash = td_list.hash()
 
     latest = TDList.latest()
@@ -45,10 +51,12 @@ class TDList:
       if latest.hash() == hash:
         # We don't need to save a copy if the report hasn't changed since last time.
         ReportManager.shared().pulled_report("td_list", hash, latest.path())
+        log_debug(f"td_list: Matches existing copy (sha256 {hash}); reusing existing copy at {latest.path()}")
         existing = cls(csv)
         existing.path = latest.path()
         return existing
 
+    log_info(f"td_list: New version (sha256 {hash}); saving to {td_list.path()}")
     td_list.save()
     td_list.upload_to_drive()
     ReportManager.shared().pulled_report("td_list", hash, td_list.path())
@@ -122,7 +130,5 @@ class TDList:
       file.write(self.tsv.decode("utf-8"))
 
   def upload_to_drive(self):
-    service_account_file = os.path.expanduser("~/gocongress2025-0f356f9df4e4.json")
-    folder_id = "1AnJeOujx1j2-RGvkJsQWp_2tqe5g2V-F"
-    service = authenticate_service_account(service_account_file)
-    upload_csv_to_drive(service, self.path(), "td_list.csv", folder_id)
+    service = authenticate_service_account()
+    upload_csv_to_drive(service, self.path(), "td_list.csv", secret("folder_id"))

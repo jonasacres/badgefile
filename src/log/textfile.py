@@ -1,4 +1,6 @@
 import os
+import json
+import traceback
 from .log_target import LogTarget
 
 class Textfile(LogTarget):
@@ -18,6 +20,12 @@ class Textfile(LogTarget):
                             info["timestamp_str"],
                             info["src_reference_short"],
                             info["msg"]))
+    if info["exception"] is not None:
+      exc = info["exception"]
+      self.file.write(f"Exception {exc.__class__.__name__}: {str(exc)}")
+      self.file.write(''.join(traceback.format_tb(exc.__traceback__)))
+
     if info["data"] is not None:
-      self.file.write(f"{info["data"]}\n\n")
+      self.file.write(json.dumps(info["data"], indent=2))
+
     self.file.flush()

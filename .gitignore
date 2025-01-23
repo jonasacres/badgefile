@@ -3,3 +3,5 @@ badgefile.sqlite3
 /artifacts
 __pycache__
 badgefile.log
+secrets.yaml
+google_service_account.json

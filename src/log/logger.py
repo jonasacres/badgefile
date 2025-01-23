@@ -6,22 +6,22 @@ from .textfile import Textfile
 from .console import Console
 
 class Logger:
-  TRACE = 0
-  DEBUG = 1
-  INFO = 2
-  NOTICE = 3
-  WARN = 4
+  TRACE    = 0
+  DEBUG    = 1
+  INFO     = 2
+  NOTICE   = 3
+  WARN     = 4
   CRITICAL = 5
-  FATAL = 6
+  FATAL    = 6
 
   SEVERITY_NAMES = {
-    TRACE: "TRACE",
-    DEBUG: "DEBUG", 
-    INFO: "INFO",
-    NOTICE: "NOTICE",
-    WARN: "WARN",
+    TRACE:    "TRACE",
+    DEBUG:    "DEBUG", 
+    INFO:     "INFO",
+    NOTICE:   "NOTICE",
+    WARN:     "WARN",
     CRITICAL: "CRITICAL",
-    FATAL: "FATAL",
+    FATAL:    "FATAL",
   }
 
   _default = None
@@ -73,47 +73,47 @@ class Logger:
     for target in self.targets:
       target.log(timestamp, src_reference, severity, msg, data, exception)
 
-  def trace(self, msg, data=None):
-    return self.logmsg(msg, self.TRACE, data)
+  def trace(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.TRACE, data, exception)
 
-  def debug(self, msg, data=None):
-    return self.logmsg(msg, self.DEBUG, data)
+  def debug(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.DEBUG, data, exception)
 
-  def info(self, msg, data=None):
-    return self.logmsg(msg, self.INFO, data)
+  def info(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.INFO, data, exception)
 
-  def notice(self, msg, data=None):
-    return self.logmsg(msg, self.NOTICE, data)
+  def notice(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.NOTICE, data, exception)
 
-  def warn(self, msg, data=None):
-    return self.logmsg(msg, self.WARN, data)
+  def warn(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.WARN, data, exception)
 
-  def critical(self, msg, data=None):
-    return self.logmsg(msg, self.CRITICAL, data)
+  def critical(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.CRITICAL, data, exception)
 
-  def fatal(self, msg, data=None):
-    return self.logmsg(msg, self.FATAL, data)
+  def fatal(self, msg, data=None, exception=None):
+    return self.logmsg(msg, self.FATAL, data, exception)
   
-def log_trace(msg, data=None):
-  return Logger.default().trace(msg, data)
+def log_trace(msg, data=None, exception=None):
+  return Logger.default().trace(msg, data, exception)
 
-def log_debug(msg, data=None):
-  return Logger.default().debug(msg, data)
+def log_debug(msg, data=None, exception=None):
+  return Logger.default().debug(msg, data, exception)
 
-def log_info(msg, data=None):
-  return Logger.default().info(msg, data)
+def log_info(msg, data=None, exception=None):
+  return Logger.default().info(msg, data, exception)
 
-def log_notice(msg, data=None):
-  return Logger.default().notice(msg, data)
+def log_notice(msg, data=None, exception=None):
+  return Logger.default().notice(msg, data, exception)
 
-def log_warn(msg, data=None):
-  return Logger.default().warn(msg, data)
+def log_warn(msg, data=None, exception=None):
+  return Logger.default().warn(msg, data, exception)
 
-def log_critical(msg, data=None):
-  return Logger.default().critical(msg, data)
+def log_critical(msg, data=None, exception=None):
+  return Logger.default().critical(msg, data, exception)
 
-def log_fatal(msg, data=None):
-  return Logger.default().fatal(msg, data)
+def log_fatal(msg, data=None, exception=None):
+  return Logger.default().fatal(msg, data, exception)
 
 def setup_default_logger():
   default = Logger.default()

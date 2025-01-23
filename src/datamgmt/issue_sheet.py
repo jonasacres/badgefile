@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from .google.google_drive import authenticate_service_account, upload_csv_to_drive
+from .secrets import secret
 
 class IssueSheet:
   def __init__(self, badgefile):
@@ -96,7 +97,6 @@ class IssueSheet:
     self.upload_to_drive(path)
   
   def upload_to_drive(self, path):
-    service_account_file = os.path.expanduser("~/gocongress2025-0f356f9df4e4.json")
-    folder_id = "1AnJeOujx1j2-RGvkJsQWp_2tqe5g2V-F"
-    service = authenticate_service_account(service_account_file)
+    folder_id = secret("folder_id")
+    service = authenticate_service_account()
     upload_csv_to_drive(service, path, "issue_data.csv", folder_id)

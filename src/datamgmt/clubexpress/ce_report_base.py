@@ -6,6 +6,7 @@ from io import StringIO
 from ..report_manager import ReportManager
 from ..google.google_drive import authenticate_service_account, upload_csv_to_drive
 from log.logger import *
+from ..secrets import secret
 
 class CEReportBase:
   """Base class for ClubExpress reports like ActivityList and RegList."""
@@ -87,24 +88,25 @@ class CEReportBase:
     data = cls.report_data()
 
     from .ce_integration import CEIntegration
+    log_debug(f"{cls.report_key()}: Downloading from {uri}")
     csv_bytes = CEIntegration.shared().pull_report(uri, data)
     new_report = cls(csv_bytes)
 
     # Compare hash with the latest
     new_hash = new_report.hash()
-    log_debug(f"{cls.report_key()} hash: {new_hash}")
+    log_debug(f"{cls.report_key()} sha256 {new_hash}")
 
     latest_report = cls.latest()
     if latest_report is not None:
       if latest_report.hash() == new_hash:
         # Reuse existing copy, just update the DB so the last pulled time is recorded
         ReportManager.shared().pulled_report(cls.report_key(), new_hash, latest_report.path())
-        log_info(f"Matches existing {cls.report_key()} hash; reusing existing copy.")
+        log_debug(f"{cls.report_key()}: Matches existing copy (sha256 {new_hash}); reusing existing copy at {latest_report.path()}")
         latest_report.timestamp = new_report.timestamp  # refresh timestamp if needed
         return latest_report
 
     # Otherwise, save, upload, and record
-    log_info(f"Does not match existing {cls.report_key()} copy; saving new version.")
+    log_info(f"{cls.report_key()}: New version (sha256 {new_hash}); saving to {new_report.path()}")
     new_report.save()
     new_report.upload_to_drive()
     ReportManager.shared().pulled_report(cls.report_key(), new_hash, new_report.path())
@@ -136,12 +138,8 @@ class CEReportBase:
 
   def upload_to_drive(self):
     """Uploads the CSV to Google Drive using the shared credentials."""
-    # Subclasses or environment may override these values:
-    service_account_file = os.path.expanduser("~/gocongress2025-0f356f9df4e4.json")
-    folder_id = "1AnJeOujx1j2-RGvkJsQWp_2tqe5g2V-F"
-
-    service = authenticate_service_account(service_account_file)
-    upload_csv_to_drive(service, self.path(), self.__class__.google_drive_name(), folder_id) 
+    service = authenticate_service_account()
+    upload_csv_to_drive(service, self.path(), self.__class__.google_drive_name(), secret("folder_id")) 
 
   def header(self):
     if self.header_row == None:
