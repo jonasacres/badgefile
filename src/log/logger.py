@@ -129,7 +129,7 @@ def setup_default_logger():
   default = Logger.default()
   if not hasattr(default, '_Logger__setup'):
     from datamgmt.secrets import secret
-    
+
     default.add_target(Console())
     default.add_target(Textfile("badgefile.log"))
 
@@ -139,5 +139,5 @@ def setup_default_logger():
 
     default._Logger__setup = True
 
-setup_default_logger()
 run_id = f"{random.randint(0, 0xFFFFFFFF):08x}"
+setup_default_logger()
