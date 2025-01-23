@@ -89,6 +89,9 @@ class Attendee:
         return util.standardize_phone(self._info[key])
     return None
 
+  def regtime(self):
+    return datetime.strptime(self._info['regtime'], "%m/%d/%Y %I:%M:%S %p")
+
   def party(self, include_cancelled=False):
     party = [x for x in self._badgefile.attendees() if x.primary() == self.primary()]
 

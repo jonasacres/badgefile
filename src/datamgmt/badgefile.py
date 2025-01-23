@@ -7,6 +7,7 @@ from .clubexpress.activity_list import ActivityList
 from .tdlist import TDList
 from .issue_sheet import IssueSheet
 from .donor_report import DonorReport
+from .reg_history_report import RegHistoryReport
 from artifacts.directory import generate_directory
 from .google.google_drive import authenticate_service_account, upload_json_to_drive
 from .secrets import secret
@@ -41,6 +42,8 @@ class Badgefile:
     
     IssueSheet(self).generate("reports/issue_sheet.csv")
     DonorReport(self).generate("reports/donor_report.csv")
+    RegHistoryReport(self).generate("reports/reg_history_report.csv")
+
     self.generate_json()
     # self.upload_to_drive()
     
