@@ -12,6 +12,8 @@ class Discord(LogTarget):
     pass
 
   def log_msg(self, info):
+    if not self.webhook_url:
+      return None
     msg = "[%s] %s@%s %s %s\n%s" % (
       info["severity_str_short"],
       info["run_id"],

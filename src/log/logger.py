@@ -133,7 +133,7 @@ def setup_default_logger():
     default.add_target(Console())
     default.add_target(Textfile("badgefile.log"))
 
-    discord_target = Discord(secret("discord_log_webhook"))
+    discord_target = Discord(secret("discord_log_webhook", None))
     discord_target.set_severity(Logger.WARN)
     default.add_target(discord_target)
 

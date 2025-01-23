@@ -20,11 +20,15 @@ class Secrets:
     with open(self.path, "r") as f:
       self.secrets = yaml.safe_load(f)
 
-  def get(self, key):
+  def get(self, key, default_value="___placeholder___"):
     if not key in self.secrets:
-      log_critical(f"No such key in secrets: {key}")
-      return None
+      if default_value != "___placeholder___":
+        log_debug(f"No such key in secrets: {key} (falling back on supplied default)")
+        return default_value
+      else:
+        log_warn(f"No such key in secrets: {key} (no default supplied; falling back on None)")
+        return None
     return self.secrets[key]
   
-def secret(key):
-  return Secrets.shared().get(key)
+def secret(key, default_value="___placeholder___"):
+  return Secrets.shared().get(key, default_value)
