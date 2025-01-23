@@ -109,10 +109,29 @@ class CEIntegration:
         '__VIEWSTATEGENERATOR',
     ]
 
-    # We have to inject in certain constants as well -- these are buried elsewhere in the static site content, but aren't as easy to extract.
-    # So they just have hardcoded values here.
+    # We have to inject in certain constants as well. They get injected via Javascript. Thankfully, they either
+    # have easy constant values, or are parseable from elsewhere in the HTML.
+    
+    # script_manager_TSM is an interesting one. The HTML form has a hidden element with an empty value, which gets populated from Javascript.
+    # The script inclusion for that looks like this:
+    # <script src="/Telerik.Web.UI.WebResource.axd?_TSM_HiddenField_=script_manager_TSM&amp;compress=1&amp;_TSM_CombinedScripts_=SCRIPT_MANAGER_TSM_GOES_HERE" type="text/javascript"></script>
+    # so we can check the HTML for the script with src starting with "/Telerik.Web.UI.WebResource.axd", 
+    # then split on ? to extract the query string
+    # then URL-decode the result (eg. "%20" and "+" both become " "), translate html entties (eg. &amp; becomes &)
+    # extract the _TSM_CombinedScripts_ field of the query
+    # use the resulting value as the value of the 'script_manager_TSM' field in our form submission
+
+    script_tag = soup.find('script', {'src': lambda x: x and x.startswith('/Telerik.Web.UI.WebResource.axd')})
+    parsed_script_manager_tsm = None
+    if script_tag:
+        src = script_tag['src']
+        query_string = src.split('?')[1]
+        query_params = urllib.parse.parse_qs(urllib.parse.unquote(query_string))
+        if '_TSM_CombinedScripts_' in query_params:
+            parsed_script_manager_tsm = urllib.parse.unquote(query_params['_TSM_CombinedScripts_'][0])
+
     form_data = {
-        "script_manager_TSM": ";;System.Web.Extensions,+Version=4.0.0.0,+Culture=neutral,+PublicKeyToken=31bf3856ad364e35:en-US:e441b334-44bb-41f8-b8ef-43fec6e58811:ea597d4b:b25378d2;Telerik.Web.UI:en-US:8b7d6a7a-6133-413b-b622-bbc1f3ee15e4:16e4e7cd:365331c3:24ee1bba:2003d0b8:c128760b:88144a7a:1e771326:f46195d3:33715776:aa288e2d:258f1c72",
+        "script_manager_TSM": parsed_script_manager_tsm,
         "DES_JSE": 1,
         "changes_pending": "",
     }
