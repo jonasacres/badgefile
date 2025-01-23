@@ -208,11 +208,15 @@ class Attendee:
   def recalulate_donation_info(self):
     donations = [act for act in self.activities() if act.is_open() and act.is_donation()]
     self._info['donation_amount'] = 0
+    names = []
 
     if len(donations) > 0:
       for donation in donations:
-        if donation.is_open() and donation.is_donation():
+        if donation.is_open():
+          name_fields = ['foc_name_platinum', 'foc_name_gold', 'foc_name_silver']
           self._info['donation_amount'] += donation.fee()
+          selected_names = [name for name in name_fields if donation.info()[name] != None]
+          names += selected_names
     
     if self._info['donation_amount'] >= 250.0:
       self._info['donation_tier'] = 'platinum'
@@ -222,6 +226,14 @@ class Attendee:
       self._info['donation_tier'] = 'silver'
     else:
       self._info['donation_tier'] = 'nondonor'
+
+    # TODO: figure out how to get these from the activity sheet
+    is_anon = False
+    for name in names:
+      is_anon |= name.to_lower() in ['anon', 'anonymous']
+
+    self._info['donation_name'] = names[0] if len(names) > 0 else None
+    self._info['donation_is_anonymous'] = is_anon
 
     self.sync_to_db()
   

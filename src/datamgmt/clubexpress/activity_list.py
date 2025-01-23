@@ -111,4 +111,7 @@ class ActivityList(CEReportBase):
       "partial_week_first_day_comments":      "Partial Week  First Day Comments",
       "partial_week_last_day":                "Partial Week  Last Day",
       "partial_week_last_day_comments":       "Partial Week  Last Day Comments",
+      "foc_name_platinum":                    "Friends of the Congress  Platinum",
+      "foc_name_gold":                        "Friends of the Congress  Gold",
+      "foc_name_silver":                      "Friends of the Congress  Silver",
     }

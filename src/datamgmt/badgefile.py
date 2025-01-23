@@ -6,6 +6,7 @@ from .clubexpress.reglist import Reglist
 from .clubexpress.activity_list import ActivityList
 from .tdlist import TDList
 from .issue_sheet import IssueSheet
+from .donor_report import DonorReport
 from artifacts.directory import generate_directory
 from .google.google_drive import authenticate_service_account, upload_json_to_drive
 from .secrets import secret
@@ -39,8 +40,9 @@ class Badgefile:
       attendee.scan_issues()
     
     IssueSheet(self).generate("reports/issue_sheet.csv")
+    DonorReport(self).generate("reports/donor_report.csv")
     self.generate_json()
-    self.upload_to_drive()
+    # self.upload_to_drive()
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist
