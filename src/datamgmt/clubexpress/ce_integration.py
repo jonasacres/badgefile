@@ -128,7 +128,7 @@ class CEIntegration:
         query_string = src.split('?')[1]
         query_params = urllib.parse.parse_qs(urllib.parse.unquote(query_string))
         if '_TSM_CombinedScripts_' in query_params:
-            parsed_script_manager_tsm = urllib.parse.unquote(query_params['_TSM_CombinedScripts_'][0])
+            parsed_script_manager_tsm = query_params['_TSM_CombinedScripts_'][0]
 
     form_data = {
         "script_manager_TSM": parsed_script_manager_tsm,
