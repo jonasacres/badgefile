@@ -56,6 +56,7 @@ class Activity:
     return self
 
   def sync_to_db(self):
+    log_trace(f"syncing activity to db")
     self.ensure_activities_table()
     info = self.info()
     if 'json' in info:
@@ -84,6 +85,7 @@ class Activity:
     for defn in missing_defns:
       name, type = defn
       query = f"ALTER TABLE Activities ADD COLUMN {name} {type} DEFAULT NULL;"
+      log_debug(f"Adding column {name} of type {type}")
       self.db.execute(query)
     
     # TODO: add indexes on [badgefile_id] and [activity_registrant_id]
@@ -98,7 +100,8 @@ class Activity:
       implicit_keys.remove("badgefile_id") # we manually handle this column outside of implicit_column_definitions and explicit_column_definitions
     if "json" in implicit_keys:
       implicit_keys.remove("json") # ditto
-    return [ [key, "INTEGER" if isinstance(info[key], int) else "TEXT"] for key in implicit_keys ]
+    
+    return [ [key, "INTEGER" if isinstance(info[key], int) else "REAL" if isinstance(info[key], float) else "TEXT"] for key in implicit_keys ]
 
   def explicit_column_definitions(self):
     return [
@@ -109,7 +112,7 @@ class Activity:
     return self._info["activity_fee"]
 
   def is_open(self):
-    return self._info["status"].lower() == "open"
+    return self._info["status"].lower() in ["open", "paid"]
 
   def is_banquet(self):
     return "awards banquet" in self._info["activity_title"].lower()
@@ -120,7 +123,7 @@ class Activity:
     return "with alcohol" in self._info["activity_title"].lower()
 
   def is_donation(self):
-    return "friends of the congress" in self._info["activity_title"].lower()
+    return " circle ($" in self._info["activity_title"].lower()
   
   def is_registration_fee(self):
     return "registration fee" in self._info["activity_title"].lower()

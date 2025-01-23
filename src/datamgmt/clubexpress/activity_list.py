@@ -1,10 +1,11 @@
 import csv
+import re
 from datetime import datetime
 from io import StringIO
 
 from .activity import Activity
 from .ce_report_base import CEReportBase
-
+from log.logger import *
 # Describes a single copy of the "activity list" -- the Activity Registrant Data report from ClubExpress.
 
 class ActivityList(CEReportBase):
@@ -58,9 +59,12 @@ class ActivityList(CEReportBase):
       return raw_value # ensure these remain as strings, even if they happen to have been written exclusively with numerics
     elif raw_value == "":
       return None  # Blank string becomes None
-    elif raw_value.replace(".", "", 1).isdigit():
-      # Check if it's a float or int
-      return float(raw_value) if "." in raw_value else int(raw_value)
+    elif re.match(r'^-?[0-9]+(\.[0-9]+)$', raw_value):
+      # Check if it's a float or int, handling negative numbers
+      try:
+        return float(raw_value) if "." in raw_value else int(raw_value)
+      except ValueError:
+        return raw_value
     else:
       return raw_value  # Use the original string if it's not numeric
   

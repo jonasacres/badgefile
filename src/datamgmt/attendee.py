@@ -80,7 +80,7 @@ class Attendee:
     self._activities = None
   
   def populate_derived_fields(self):
-    self.donation_amount(True)
+    self.recalulate_donation_info()
 
   def phone(self):
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
@@ -205,15 +205,35 @@ class Attendee:
         return True
     return False
   
+  def recalulate_donation_info(self):
+    donations = [act for act in self.activities() if act.is_open() and act.is_donation()]
+    self._info['donation_amount'] = 0
+
+    if len(donations) > 0:
+      for donation in donations:
+        if donation.is_open() and donation.is_donation():
+          self._info['donation_amount'] += donation.fee()
+    
+    if self._info['donation_amount'] >= 250.0:
+      self._info['donation_tier'] = 'platinum'
+    elif self._info['donation_amount'] >= 50.0:
+      self._info['donation_tier'] = 'gold'
+    elif self._info['donation_amount'] > 0.0:
+      self._info['donation_tier'] = 'silver'
+    else:
+      self._info['donation_tier'] = 'nondonor'
+
+    self.sync_to_db()
+  
   def donation_amount(self, force=False):
     if force or not 'donation_amount' in self._info or self._info['donation_amount'] == None:
-      for activity in self.activities():
-        if activity.is_open() and activity.is_donation():
-          self._info['donation_amount'] = activity.fee()
-          self.sync_to_db()
-      self._info['donation_amount'] = 0
-      self.sync_to_db()
+      self.recalculate_donation_info()
     return self._info['donation_amount']
+  
+  def donation_tier(self, force=False):
+    if force or not 'donation_tier' in self._info or self._info['donation_tier'] == None:
+      self.recalculate_donation_info()
+    return self._info['donation_tier']
   
   def merge_activity_info(self):
     self.donation_amount(True) # force population of donation_amount

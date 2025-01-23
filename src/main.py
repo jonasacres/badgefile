@@ -62,6 +62,7 @@ def update():
 
 
 start_time = time.time()
+log_notice(f"=======================================")
 log_notice(f"Invoked as '{' '.join(sys.argv)}', pwd '{os.getcwd()}'")
 log_notice(f"Git: {git_summary()}")
 
