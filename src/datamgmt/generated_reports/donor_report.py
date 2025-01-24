@@ -1,7 +1,7 @@
 import csv
 import os
 from log.logger import *
-from integrations.google_drive import authenticate_service_account, upload_csv_to_drive
+from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 from util.secrets import secret
 
 class DonorReport:

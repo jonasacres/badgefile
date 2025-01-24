@@ -9,7 +9,7 @@ from log.logger import *
 from util.secrets import secret
 
 from .report_manager import ReportManager
-from integrations.google_drive import authenticate_service_account, upload_csv_to_drive
+from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 
 # TODO: consolidate this with other report classes into a common subclass that does common parts of latest/download and other operations
 

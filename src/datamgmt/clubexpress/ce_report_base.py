@@ -4,7 +4,7 @@ import hashlib
 import csv
 from io import StringIO
 from ..report_manager import ReportManager
-from integrations.google_drive import authenticate_service_account, upload_csv_to_drive
+from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 from log.logger import *
 from util.secrets import secret
 
@@ -37,7 +37,7 @@ class CEReportBase:
     """POST form data for pulling the specific report from ClubExpress."""
     # Get this by recording the HTTP POST for the desired Export (e.g. using Developer Tools in the browser)
     # Look at the request data for the form submission (this will also give you report_uri)
-    # Return a hash defining the following 4 keys. ce_integration.py will fill in the other keys for you, so you should
+    # Return a hash defining the following 4 keys. ClubExpressClient will fill in the other keys for you, so you should
     # ONLY need to supply these 4 keys! Copy-paste the values for each key from the form submission you captured.
     # DO NOT URL-ENCODE THESE VALUES. Decode them from what is presented in your tooling if needed!
     # 
@@ -87,9 +87,9 @@ class CEReportBase:
     uri = cls.report_uri()
     data = cls.report_data()
 
-    from integrations.ce_integration import CEIntegration
+    from integrations.clubexpress_client import ClubExpressClient
     log_debug(f"{cls.report_key()}: Downloading from {uri}")
-    csv_bytes = CEIntegration.shared().pull_report(uri, data)
+    csv_bytes = ClubExpressClient.shared().pull_report(uri, data)
     new_report = cls(csv_bytes)
 
     # Compare hash with the latest

@@ -12,7 +12,7 @@ from log.logger import *
 from util.secrets import secret
 
 # Pulls reports from ClubExpress.
-class CEIntegration:
+class ClubExpressClient:
   _shared = None
 
   @classmethod
@@ -23,7 +23,7 @@ class CEIntegration:
     username = secret("aga_username")
     password = secret("aga_password")
 
-    cls._shared = CEIntegration(username, password)
+    cls._shared = ClubExpressClient(username, password)
     return cls._shared
      
   # username and password are actual login credentials for admin account on usgo.org.

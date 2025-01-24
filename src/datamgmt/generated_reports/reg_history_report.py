@@ -1,7 +1,7 @@
 import os
 import csv
 from datetime import datetime
-from integrations.google_drive import update_sheets_worksheet, authenticate_service_account
+from integrations.google_api import update_sheets_worksheet, authenticate_service_account
 from util.secrets import secret
 
 from log.logger import *

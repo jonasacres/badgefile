@@ -3,7 +3,7 @@ import csv
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from integrations.google_drive import authenticate_service_account, upload_csv_to_drive
+from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 from util.secrets import secret
 
 class IssueSheet:
