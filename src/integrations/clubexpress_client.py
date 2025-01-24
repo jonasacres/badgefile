@@ -77,20 +77,31 @@ class ClubExpressClient:
     login_response = self.make_form_query(login_uri, login_form_data)
     log.debug(f"CE login response: HTTP {login_response.status_code}", login_response.text)
 
-  def make_form_query(self, uri, data):
+  def make_form_query(self, uri, data, allow_non2xx=False):
     attempts = 0
     max_attempts = 5
     delay = 10
 
     while attempts < max_attempts:
       try:
-        return self._make_form_query(uri, data)
+        response = self._make_form_query(uri, data)
+        log.trace(f"Received HTTP {response.status_code}, {len(response.text)} bytes")
+
+        bad_session_str = "alert('Sorry - your session expired and we could not process your request');window.top.closeModalPopup();"
+        if len(response.text) < 500 and bad_session_str in response.text:
+          log.info("Got session expired notice; logging in again")
+          self.login()
+          continue
+
+        if allow_non2xx or response.status_code // 100 == 2:
+          # successful http response AND it looks like a CSV file; return it
+          return response
       except Exception as e:
         attempts += 1
         if attempts == max_attempts:
           raise e
         log.info(f"Request for {uri} failed ({str(e)}), retrying in {delay}s (attempt {attempts}/{max_attempts})", exception=e)
-        time.sleep(delay)
+      time.sleep(delay)
     
     log.warn(f"Request for {uri} failed after {attempts} retries")
 
@@ -228,20 +239,14 @@ class ClubExpressClient:
       response = self.make_form_query(uri, data)
       possible_csv = response.text
 
-      if response.status_code // 100 == 2 and self.validate(possible_csv):
-        # successful http response AND it looks like a CSV file; return it
+      if self.validate(possible_csv):
         return possible_csv.encode("utf-8")
       
       # but if the response looks bad, then retry a few times
       attempts += 1
       log.info(f"Request failed, got non-csv file for {uri} (attempt {attempts}/{max_attempts})", data=possible_csv)
       log.debug(f"Waiting {delay}s before retrying...")
-
       time.sleep(delay)
-
-      if "Sorry - your session expired and we could not process your request" in possible_csv:
-        log.info("Got session expired notice; logging in again")
-        self.login()
     
     # we had problems and they didn't resolve themselves on retry, so throw an exception.
     log.warn(f"Failed to get CSV file from {uri} after {attempts} attempts")
