@@ -1,6 +1,6 @@
 import json
 from integrations.database import Database
-from log.logger import *
+from log.logger import log
 
 class Activity:
   @classmethod
@@ -31,7 +31,7 @@ class Activity:
   def with_report_row(cls, badgefile, report_row):
     attendee = cls.find_attendee(badgefile, report_row)
     if attendee is None:
-      log_critical(f"Can't find attendee for row f{report_row}")
+      log.critical(f"Can't find attendee for row f{report_row}")
       return None
     return cls(attendee, report_row)
 
@@ -54,7 +54,7 @@ class Activity:
     return self
 
   def sync_to_db(self):
-    log_trace(f"syncing activity to db")
+    log.trace(f"syncing activity to db")
     self.ensure_activities_table()
     info = self.info()
     if 'json' in info:
@@ -83,7 +83,7 @@ class Activity:
     for defn in missing_defns:
       name, type = defn
       query = f"ALTER TABLE Activities ADD COLUMN {name} {type} DEFAULT NULL;"
-      log_debug(f"Adding column {name} of type {type}")
+      log.debug(f"Adding column {name} of type {type}")
       self.db.execute(query)
     
     # TODO: add indexes on [badgefile_id] and [activity_registrant_id]

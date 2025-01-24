@@ -100,44 +100,21 @@ class Logger:
 
   def fatal(self, msg, data=None, exception=None):
     return self.logmsg(msg, self.FATAL, data, exception)
-  
-def log_trace(msg, data=None, exception=None):
-  return Logger.default().trace(msg, data, exception)
-
-def log_debug(msg, data=None, exception=None):
-  return Logger.default().debug(msg, data, exception)
-
-def log_info(msg, data=None, exception=None):
-  return Logger.default().info(msg, data, exception)
-
-def log_notice(msg, data=None, exception=None):
-  return Logger.default().notice(msg, data, exception)
-
-def log_warn(msg, data=None, exception=None):
-  return Logger.default().warn(msg, data, exception)
-
-def log_error(msg, data=None, exception=None):
-  return Logger.default().error(msg, data, exception)
-
-def log_critical(msg, data=None, exception=None):
-  return Logger.default().critical(msg, data, exception)
-
-def log_fatal(msg, data=None, exception=None):
-  return Logger.default().fatal(msg, data, exception)
 
 def setup_default_logger():
   default = Logger.default()
   if not hasattr(default, '_Logger__setup'):
-    from util.secrets import secret
 
     default.add_target(Console())
     default.add_target(Textfile("badgefile.log"))
 
+    from util.secrets import secret
     discord_target = Discord(secret("discord_log_webhook", None))
     discord_target.set_severity(Logger.WARN)
     default.add_target(discord_target)
 
     default._Logger__setup = True
 
+log = Logger.default()
 run_id = f"{random.randint(0, 0xFFFFFFFF):08x}"
 setup_default_logger()

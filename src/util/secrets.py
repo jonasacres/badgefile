@@ -1,6 +1,6 @@
 import yaml
 import os
-from log.logger import *
+from log.logger import log
 
 class Secrets:
   @classmethod
@@ -23,10 +23,10 @@ class Secrets:
   def get(self, key, default_value="___placeholder___"):
     if not key in self.secrets:
       if default_value != "___placeholder___":
-        log_debug(f"No such key in secrets: {key} (falling back on supplied default)")
+        log.debug(f"No such key in secrets: {key} (falling back on supplied default)")
         return default_value
       else:
-        log_warn(f"No such key in secrets: {key} (no default supplied; falling back on None)")
+        log.warn(f"No such key in secrets: {key} (no default supplied; falling back on None)")
         return None
     return self.secrets[key]
   

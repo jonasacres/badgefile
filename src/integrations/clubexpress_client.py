@@ -8,7 +8,7 @@ import time
 import csv
 import traceback
 from io import StringIO
-from log.logger import *
+from log.logger import log
 from util.secrets import secret
 
 # Pulls reports from ClubExpress.
@@ -74,7 +74,7 @@ class ClubExpressClient:
     }
     
     login_response = self.make_form_query(login_uri, login_form_data)
-    log_debug(f"CE login response: HTTP {login_response.status_code}", login_response.text)
+    log.debug(f"CE login response: HTTP {login_response.status_code}", login_response.text)
 
   def make_form_query(self, uri, data):
     attempts = 0
@@ -88,10 +88,10 @@ class ClubExpressClient:
         attempts += 1
         if attempts == max_attempts:
           raise e
-        log_info(f"Request for {uri} failed ({str(e)}), retrying in {delay}s (attempt {attempts}/{max_attempts})", traceback.format_exc())
+        log.info(f"Request for {uri} failed ({str(e)}), retrying in {delay}s (attempt {attempts}/{max_attempts})", traceback.format_exc())
         time.sleep(delay)
     
-    log_warn(f"Request for {uri} failed after {attempts} retries")
+    log.warn(f"Request for {uri} failed after {attempts} retries")
 
   def _make_form_query(self, uri, data):
     # ASP.net expects to see a bunch of hidden form parameters to fulfill our request, like VIEWSTATE.
@@ -233,13 +233,13 @@ class ClubExpressClient:
       
       # but if the response looks bad, then retry a few times
       attempts += 1
-      log_notice(f"Request failed, got non-csv file for {uri} (attempt {attempts}/{max_attempts})", possible_csv)
-      log_info(f"Waiting {delay}s before retrying...")
+      log.notice(f"Request failed, got non-csv file for {uri} (attempt {attempts}/{max_attempts})", possible_csv)
+      log.info(f"Waiting {delay}s before retrying...")
 
       time.sleep(delay)
     
     # we had problems and they didn't resolve themselves on retry, so throw an exception.
-    log_warn(f"Failed to get CSV file from {uri} after {attempts} attempts")
+    log.warn(f"Failed to get CSV file from {uri} after {attempts} attempts")
     raise Exception("Failed to get CSV")
   
   def add_report(self, report_name, uri, data):

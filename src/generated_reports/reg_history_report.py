@@ -4,7 +4,7 @@ from datetime import datetime
 from integrations.google_api import update_sheets_worksheet, authenticate_service_account
 from util.secrets import secret
 
-from log.logger import *
+from log.logger import log
 
 class RegHistoryReport:
   def __init__(self, badgefile):
@@ -12,13 +12,13 @@ class RegHistoryReport:
     pass
 
   def generate(self, path):
-    log_debug("reg_history_report: Generating report")
+    log.debug("reg_history_report: Generating report")
     self.history = self.load_history()
     self.save(path)
     self.upload()
 
   def save(self, path):
-    log_debug(f"reg_history_report: Saving to {path}")
+    log.debug(f"reg_history_report: Saving to {path}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     with open(path, mode='w', newline='', encoding='utf-8') as file:
@@ -42,7 +42,7 @@ class RegHistoryReport:
       raise Exception("Invalid history file")
     
     normalized = self.normalize_history(raw_history)
-    log_debug(f"reg_history_report: Loaded history file")
+    log.debug(f"reg_history_report: Loaded history file")
     return normalized
   
   def validate_history(self, raw_history):
@@ -53,7 +53,7 @@ class RegHistoryReport:
       if year == "date_labels":
         # we have a header row with date labels, it validates differently from the data rows
         if len(counts) != expected_cols:
-          log_warn(f"congress_history.csv: Row for date labels has {len(counts)} columns, expected {expected_cols}")
+          log.warn(f"congress_history.csv: Row for date labels has {len(counts)} columns, expected {expected_cols}")
           return False
         
         # Validate date label format (e.g. "1-Jan")
@@ -61,7 +61,7 @@ class RegHistoryReport:
           try:
             datetime.strptime(date_label, "%d-%b")
           except ValueError:
-            log_warn(f"congress_history.csv: Invalid date label format: {date_label}")
+            log.warn(f"congress_history.csv: Invalid date label format: {date_label}")
             return False
 
         continue
@@ -69,18 +69,18 @@ class RegHistoryReport:
       # OK, not the date label row, so this must be data for a year
       # Validate year is integer
       if not year.isdigit():
-        log_warn(f"congress_history.csv: Invalid year format: {year}")
+        log.warn(f"congress_history.csv: Invalid year format: {year}")
         return False
 
       # Validate all rows have same number of columns
       if len(counts) != expected_cols:
-        log_warn(f"congress_history.csv: Row for year {year} has {len(counts)} columns, expected {expected_cols}")
+        log.warn(f"congress_history.csv: Row for year {year} has {len(counts)} columns, expected {expected_cols}")
         return False
 
       # Validate all counts are integers or empty strings
       for count in counts:
         if count and not count.strip().replace('-','').isdigit():
-          log_warn(f"congress_history.csv: Invalid count format in year {year}: {count}")
+          log.warn(f"congress_history.csv: Invalid count format in year {year}: {count}")
           return False
 
     return True
@@ -133,7 +133,7 @@ class RegHistoryReport:
     return {current_year: counts}
 
   def upload(self):
-    log_debug("reg_history_report: Uploading to Google Sheets")
+    log.debug("reg_history_report: Uploading to Google Sheets")
     all_data = self.history | self.current_year_data(self.history["date_labels"])
     sheet_data = [["Year"] + all_data["date_labels"]]
     for year in sorted(all_data.keys(), key=lambda x: str(x)):

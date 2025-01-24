@@ -14,7 +14,7 @@ from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
 
-from log.logger import *
+from log.logger import log
 
 
 class Attendee:
@@ -149,7 +149,7 @@ class Attendee:
       elif "open" in rt:
         tournaments.append("open")
       else:
-        log_warn(f"Unknown tournament option: {rt}")
+        log.warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
       
     return sorted(tournaments)

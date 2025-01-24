@@ -5,7 +5,7 @@ from io import StringIO
 
 from .activity import Activity
 from .ce_report_base import CEReportBase
-from log.logger import *
+from log.logger import log
 # Describes a single copy of the "activity list" -- the Activity Registrant Data report from ClubExpress.
 
 class ActivityList(CEReportBase):

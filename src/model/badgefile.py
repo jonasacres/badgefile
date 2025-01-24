@@ -92,7 +92,7 @@ class Badgefile:
         if IdManager.shared().canonical_id(attendee.id()) == canonical_id:
           return attendee
       
-      log_warn(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
+      log.warn(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
       return None
 
     scored = [ [attendee, attendee.similarity_score(row)] for attendee in self.attendees() ]
@@ -161,10 +161,10 @@ class Badgefile:
       return candidates[0]
     elif len(candidates) == 0:
       # no matches; this is bad!! we have to manually solve this.
-      log_warn(f"Unable to locate primary registrant for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
+      log.warn(f"Unable to locate primary registrant for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
       return None
     else:
       # multiple matches; also very bad!! needs manual solution.
-      log_warn(f"Found multiple possible primary registrants for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
+      log.warn(f"Found multiple possible primary registrants for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
       return None
 

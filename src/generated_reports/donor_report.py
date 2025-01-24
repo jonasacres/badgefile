@@ -1,6 +1,6 @@
 import csv
 import os
-from log.logger import *
+from log.logger import log
 from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 from util.secrets import secret
 
@@ -9,7 +9,7 @@ class DonorReport:
     self.badgefile = badgefile
   
   def generate(self, path):
-    log_info(f"donor_report: generating donor report at {path}")
+    log.info(f"donor_report: generating donor report at {path}")
     def header_row():
       return ['badgefile_id', 'donation_tier', 'donation_name', 'donation_is_anonymous']
         
@@ -23,13 +23,13 @@ class DonorReport:
       writer.writerow({key:key for key in header_row()})
       writer.writerows(results)
 
-    log_debug(f"donor_report: Generation complete, {len(results)} attendees.")
+    log.debug(f"donor_report: Generation complete, {len(results)} attendees.")
     self.upload(path)
 
   def upload(self, path):
-    log_debug(f"donor_report: Uploading to Google Drive.")
+    log.debug(f"donor_report: Uploading to Google Drive.")
     folder_id = secret("folder_id")
     service = authenticate_service_account()
     upload_csv_to_drive(service, path, "donor_report.csv", folder_id)
-    log_debug(f"donor_report: Upload complete.")
+    log.debug(f"donor_report: Upload complete.")
 

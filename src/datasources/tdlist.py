@@ -5,7 +5,7 @@ import hashlib
 import os
 from datetime import datetime
 
-from log.logger import *
+from log.logger import log
 from util.secrets import secret
 
 from datasources.data_source_manager import DataSourceManager
@@ -39,11 +39,11 @@ class TDList:
   # download a copy from CE, then save it to disk and return a copy
   def download(cls):
     uri = "https://aga-functions.azurewebsites.net/api/GenerateTDListB"
-    log_debug(f"td_list: Downloading from {uri}")
+    log.debug(f"td_list: Downloading from {uri}")
     tsv = requests.get(uri).text.encode("utf-8")
     td_list = TDList(tsv)
 
-    log_debug(f"td_list: sha256 {td_list.hash()}")
+    log.debug(f"td_list: sha256 {td_list.hash()}")
     hash = td_list.hash()
 
     latest = TDList.latest()
@@ -51,12 +51,12 @@ class TDList:
       if latest.hash() == hash:
         # We don't need to save a copy if the report hasn't changed since last time.
         DataSourceManager.shared().pulled_datasource("td_list", hash, latest.path())
-        log_debug(f"td_list: Matches existing copy (sha256 {hash}); reusing existing copy at {latest.path()}")
+        log.debug(f"td_list: Matches existing copy (sha256 {hash}); reusing existing copy at {latest.path()}")
         existing = cls(csv)
         existing.path = latest.path()
         return existing
 
-    log_info(f"td_list: New version (sha256 {hash}); saving to {td_list.path()}")
+    log.info(f"td_list: New version (sha256 {hash}); saving to {td_list.path()}")
     td_list.save()
     td_list.upload()
     DataSourceManager.shared().pulled_datasource("td_list", hash, td_list.path())

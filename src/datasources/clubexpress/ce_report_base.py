@@ -5,7 +5,7 @@ import csv
 from io import StringIO
 from datasources.data_source_manager import DataSourceManager
 from integrations.google_api import authenticate_service_account, upload_csv_to_drive
-from log.logger import *
+from log.logger import log
 from util.secrets import secret
 
 class CEReportBase:
@@ -88,25 +88,25 @@ class CEReportBase:
     data = cls.report_data()
 
     from integrations.clubexpress_client import ClubExpressClient
-    log_debug(f"{cls.report_key()}: Downloading from {uri}")
+    log.debug(f"{cls.report_key()}: Downloading from {uri}")
     csv_bytes = ClubExpressClient.shared().pull_report(uri, data)
     new_report = cls(csv_bytes)
 
     # Compare hash with the latest
     new_hash = new_report.hash()
-    log_debug(f"{cls.report_key()} sha256 {new_hash}")
+    log.debug(f"{cls.report_key()} sha256 {new_hash}")
 
     latest_report = cls.latest()
     if latest_report is not None:
       if latest_report.hash() == new_hash:
         # Reuse existing copy, just update the DB so the last pulled time is recorded
         DataSourceManager.shared().pulled_datasource(cls.report_key(), new_hash, latest_report.path())
-        log_debug(f"{cls.report_key()}: Matches existing copy (sha256 {new_hash}); reusing existing copy at {latest_report.path()}")
+        log.debug(f"{cls.report_key()}: Matches existing copy (sha256 {new_hash}); reusing existing copy at {latest_report.path()}")
         latest_report.timestamp = new_report.timestamp  # refresh timestamp if needed
         return latest_report
 
     # Otherwise, save, upload, and record
-    log_info(f"{cls.report_key()}: New version (sha256 {new_hash}); saving to {new_report.path()}")
+    log.info(f"{cls.report_key()}: New version (sha256 {new_hash}); saving to {new_report.path()}")
     new_report.save()
     new_report.upload()
     DataSourceManager.shared().pulled_datasource(cls.report_key(), new_hash, new_report.path())

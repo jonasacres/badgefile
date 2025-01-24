@@ -2,7 +2,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.service_account import Credentials
 from googleapiclient.errors import HttpError
-from log.logger import *
+from log.logger import log
 
 import time
 import os
@@ -27,17 +27,17 @@ def retry_with_backoff(basename, func, max_wait=30):
   while True:
     try:
       if wait != start_wait:
-        log_info(f"{basename}: Making Google API request after delay of {wait}")
+        log.info(f"{basename}: Making Google API request after delay of {wait}")
       return func()
     except (HttpError, TimeoutError) as e:
       if isinstance(e, HttpError):
-        log_notice(f"{basename}: Caught HttpError waiting for Google Drive: {e}")
+        log.notice(f"{basename}: Caught HttpError waiting for Google Drive: {e}")
         if e.resp.status < 500:
-          log_warn(f"{basename}: Raising exception")
+          log.warn(f"{basename}: Raising exception")
           raise
       else:
-        log_notice(f"{basename}: Caught TimeoutError waiting for Google Drive: {e}")
-      log_info(f"{file_name}: Waiting {wait}s to retry")
+        log.notice(f"{basename}: Caught TimeoutError waiting for Google Drive: {e}")
+      log.info(f"{file_name}: Waiting {wait}s to retry")
       time.sleep(wait)
       wait = min(wait * 2, max_wait)
 
@@ -46,13 +46,13 @@ def locate_existing_files(service, basename, folder_id=None):
     if folder_id:
       query += f" and '{folder_id}' in parents"
 
-    log_trace(f"{basename}: Google drive API query -- \"{query}\"")
+    log.trace(f"{basename}: Google drive API query -- \"{query}\"")
   
     results = retry_with_backoff(basename,
         lambda: service['drive'].files().list(q=query, spaces='drive', fields="files(id, name)", 
                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
     )
-    log_trace(f"{basename}: query results {results}")
+    log.trace(f"{basename}: query results {results}")
     files = results.get('files', [])
     return files
 
@@ -63,7 +63,7 @@ def upload_file_to_drive(service, file_path, file_name, folder_id=None, mimetype
       raise FileNotFoundError(f"File not found: {file_path}")
 
     basename = file_name.removesuffix(".csv")
-    log_info(f"{basename}: Uploading from {file_path}, mimetype '{mimetype}', google mimetype '{google_mimetype}'")
+    log.info(f"{basename}: Uploading from {file_path}, mimetype '{mimetype}', google mimetype '{google_mimetype}'")
     media = MediaFileUpload(file_path, mimetype=mimetype)
     file_metadata = {'name': basename, 'mimeType': google_mimetype}
     if folder_id:
@@ -74,23 +74,23 @@ def upload_file_to_drive(service, file_path, file_name, folder_id=None, mimetype
     if files:
       # if more than one existing copy is present, delete all but one
       for file in files[1:]:
-        log_info(f"{basename} Deleting existing file {file['id']} {file['name']}")
+        log.info(f"{basename} Deleting existing file {file['id']} {file['name']}")
         retry_with_backoff(basename,
             lambda: service['drive'].files().delete(fileId=file['id'], supportsAllDrives=True).execute()
         )
-        log_debug(f"{basename}: Deleted existing file {file['id']} {file['name']}")
-      log_debug(f"{basename}: Updating existing file {files[0]['name']} at ID {files[0]['id']}")
+        log.debug(f"{basename}: Deleted existing file {file['id']} {file['name']}")
+      log.debug(f"{basename}: Updating existing file {files[0]['name']} at ID {files[0]['id']}")
       retry_with_backoff(basename,
           lambda: service['drive'].files().update(fileId=files[0]['id'], media_body=media, supportsAllDrives=True).execute()
       )
-      log_debug(f"{basename}: Updated file {files[0]['name']} successfully")
+      log.debug(f"{basename}: Updated file {files[0]['name']} successfully")
     else:
       # Upload the new file
-      log_debug(f"{basename}: Uploading to new location")
+      log.debug(f"{basename}: Uploading to new location")
       uploaded_file = retry_with_backoff(basename,
           lambda: service['drive'].files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
       )
-      log_debug(f"{basename}: Uploaded file successfully. File ID: {uploaded_file.get('id')}")
+      log.debug(f"{basename}: Uploaded file successfully. File ID: {uploaded_file.get('id')}")
 
 def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
   return upload_file_to_drive(service, file_path, file_name, folder_id, "text/csv", "application/vnd.google-apps.spreadsheet")
@@ -102,7 +102,7 @@ def upload_json_to_drive(service, file_path, file_name, folder_id=None):
 def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
   files = locate_existing_files(service, file_name, folder_id)
   if files is None or len(files) == 0:
-    log_critical(f"{file_name}: Unable to locate existing Google Sheets sheet matching name in folder {folder_id}")
+    log.critical(f"{file_name}: Unable to locate existing Google Sheets sheet matching name in folder {folder_id}")
     return False
   
   file = files[0]
@@ -132,9 +132,9 @@ def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
       ).execute()
     )
     
-    log_debug(f"{file_name}: Successfully updated worksheet")
+    log.debug(f"{file_name}: Successfully updated worksheet")
     return True
 
   except Exception as e:
-    log_critical(f"{file_name}: Encountered exception updating worksheet", exception=e)
+    log.critical(f"{file_name}: Encountered exception updating worksheet", exception=e)
     return False

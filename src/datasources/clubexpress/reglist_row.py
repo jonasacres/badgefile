@@ -1,4 +1,4 @@
-from log.logger import *
+from log.logger import log
 
 # wrap up a specific row from the reglist
 class ReglistRow:
@@ -14,7 +14,7 @@ class ReglistRow:
     for field in fields:
       index = self.reglist.index_for_field(field)
       if index is None:
-        log_warn(f"Failed to locate reglist column: {field} ({self.reglist.heading_map()[field]})")
+        log.warn(f"Failed to locate reglist column: {field} ({self.reglist.heading_map()[field]})")
       raw_value = self.row[index]
       
       if "phone" in field or field == "postcode":
