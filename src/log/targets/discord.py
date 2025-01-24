@@ -46,7 +46,7 @@ class Discord(LogTarget):
       msg += "```" + ''.join(traceback.format_tb(exc.__traceback__)) + "```"
 
     if info["data"] is not None:
-      msg += json.dumps(info["data"], indent=2)
+      msg += "\n```" + json.dumps(info["data"], indent=2) + "```"
 
     self.send_discord_message(msg)
   

@@ -11,6 +11,9 @@ class Console(LogTarget):
     src_reference_colorized = info["src_reference_short"]
     run_id_colorized = info['run_id']
     msg_colorized = info["msg"]
+    msg_delimiter = " -- "
+    msg_suffix = ""
+    src_len = ""
 
     color_not_banned = os.environ.get("NO_COLOR") is None
     color_supported_by_term = os.environ.get("TERM") in ["xterm-256color", "xterm-color", "xterm", "screen", "screen-256color", "screen-color", "xterm-kitty"]
@@ -48,13 +51,18 @@ class Console(LogTarget):
       color = SEVERITY_COLORS[info["severity_str"]]
       severity_colorized = f"{color}{info['severity_str_short']}{RESET}" if color else info['severity_str_short']
       msg_colorized = f"{color}{info['msg']}{RESET}" if color else info['msg']
+      msg_delimiter = "\n"
+      msg_suffix = "\n"
+      src_len = ""
     
-    print("[%s] %s %s %30s -- %s" % (
+    print(f"[%s] %s %s %{src_len}s%s%s%s" % (
            severity_colorized,
            run_id_colorized,
            timestamp_colorized,
            src_reference_colorized,
-           msg_colorized))
+           msg_delimiter,
+           msg_colorized,
+           msg_suffix))
     
     if info["exception"] is not None:
       exc = info["exception"]
