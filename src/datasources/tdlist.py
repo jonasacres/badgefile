@@ -8,7 +8,7 @@ from datetime import datetime
 from log.logger import *
 from util.secrets import secret
 
-from .report_manager import ReportManager
+from datasources.data_source_manager import DataSourceManager
 from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 
 # TODO: consolidate this with other report classes into a common subclass that does common parts of latest/download and other operations
@@ -21,7 +21,7 @@ class TDList:
   @classmethod
   # latest copy we pulled according to database
   def latest(cls):
-    latest_info = ReportManager.shared().last_report_info("td_list")
+    latest_info = DataSourceManager.shared().last_datasource_info("td_list")
     if latest_info == None:
       return None
     
@@ -50,7 +50,7 @@ class TDList:
     if latest is not None:
       if latest.hash() == hash:
         # We don't need to save a copy if the report hasn't changed since last time.
-        ReportManager.shared().pulled_report("td_list", hash, latest.path())
+        DataSourceManager.shared().pulled_datasource("td_list", hash, latest.path())
         log_debug(f"td_list: Matches existing copy (sha256 {hash}); reusing existing copy at {latest.path()}")
         existing = cls(csv)
         existing.path = latest.path()
@@ -59,7 +59,7 @@ class TDList:
     log_info(f"td_list: New version (sha256 {hash}); saving to {td_list.path()}")
     td_list.save()
     td_list.upload()
-    ReportManager.shared().pulled_report("td_list", hash, td_list.path())
+    DataSourceManager.shared().pulled_datasource("td_list", hash, td_list.path())
 
     return cls(tsv)
 
@@ -122,7 +122,7 @@ class TDList:
     return self._path
   
   def is_latest(self):
-    return ReportManager.shared().last_report_info("td_list")["hash"] == self.hash()
+    return DataSourceManager.shared().last_datasource_info("td_list")["hash"] == self.hash()
   
   def save(self):
     os.makedirs(TDList.directory(), exist_ok=True)

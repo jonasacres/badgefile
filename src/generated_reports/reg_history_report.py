@@ -99,7 +99,7 @@ class RegHistoryReport:
 
   def history_path(self):
     # return a path to "../static/congress_data.csv", relative to this source file
-    return os.path.join(os.path.dirname(__file__), "../../static/congress_history.csv")
+    return os.path.join(os.path.dirname(__file__), "../static/congress_history.csv")
   
   def current_year_data(self, date_labels):
     # Convert date labels to datetime objects for comparison

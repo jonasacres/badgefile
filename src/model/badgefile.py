@@ -1,12 +1,12 @@
 from integrations.database import Database
 from .attendee import Attendee
 from .id_manager import IdManager
-from .clubexpress.reglist import Reglist
-from .clubexpress.activity_list import ActivityList
-from .tdlist import TDList
-from .generated_reports.issue_sheet import IssueSheet
-from .generated_reports.donor_report import DonorReport
-from .generated_reports.reg_history_report import RegHistoryReport
+from datasources.clubexpress.reglist import Reglist
+from datasources.clubexpress.activity_list import ActivityList
+from datasources.tdlist import TDList
+from generated_reports.issue_sheet import IssueSheet
+from generated_reports.donor_report import DonorReport
+from generated_reports.reg_history_report import RegHistoryReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 

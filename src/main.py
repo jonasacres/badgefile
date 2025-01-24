@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from datamgmt.clubexpress.reglist import Reglist
-from datamgmt.badgefile import Badgefile
-from datamgmt.clubexpress.activity_list import ActivityList
-from datamgmt.tdlist import TDList
+from model.badgefile import Badgefile
+from datasources.clubexpress.reglist import Reglist
+from datasources.clubexpress.activity_list import ActivityList
+from datasources.tdlist import TDList
 from util.util import *
 from log.logger import *
 import sys

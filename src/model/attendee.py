@@ -9,9 +9,9 @@ from pathlib import Path
 from integrations.database import Database
 from .issue_manager import IssueManager
 from .id_manager import IdManager
-from .clubexpress.reglist import Reglist
-from .clubexpress.activity_list import ActivityList
-from .clubexpress.activity import Activity
+from datasources.clubexpress.reglist import Reglist
+from datasources.clubexpress.activity_list import ActivityList
+from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
 
 from log.logger import *

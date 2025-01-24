@@ -3,7 +3,7 @@ import os
 import hashlib
 import csv
 from io import StringIO
-from ..report_manager import ReportManager
+from datasources.data_source_manager import DataSourceManager
 from integrations.google_api import authenticate_service_account, upload_csv_to_drive
 from log.logger import *
 from util.secrets import secret
@@ -63,7 +63,7 @@ class CEReportBase:
     Return the latest copy of this report from disk, according to the database.
     If no existing copy or it's missing on disk, returns None.
     """
-    latest_info = ReportManager.shared().last_report_info(cls.report_key())
+    latest_info = DataSourceManager.shared().last_datasource_info(cls.report_key())
     if latest_info is None:
       return None
 
@@ -81,7 +81,7 @@ class CEReportBase:
   def download(cls):
     """
     Pull a new copy of this report from ClubExpress, save to disk, upload 
-    to drive, and register it in the ReportManager. Use an existing copy if unchanged.
+    to drive, and register it in the DataSourceManager. Use an existing copy if unchanged.
     """
     # Subclasses might override these classmethods if they have special URIs or data
     uri = cls.report_uri()
@@ -100,7 +100,7 @@ class CEReportBase:
     if latest_report is not None:
       if latest_report.hash() == new_hash:
         # Reuse existing copy, just update the DB so the last pulled time is recorded
-        ReportManager.shared().pulled_report(cls.report_key(), new_hash, latest_report.path())
+        DataSourceManager.shared().pulled_datasource(cls.report_key(), new_hash, latest_report.path())
         log_debug(f"{cls.report_key()}: Matches existing copy (sha256 {new_hash}); reusing existing copy at {latest_report.path()}")
         latest_report.timestamp = new_report.timestamp  # refresh timestamp if needed
         return latest_report
@@ -109,7 +109,7 @@ class CEReportBase:
     log_info(f"{cls.report_key()}: New version (sha256 {new_hash}); saving to {new_report.path()}")
     new_report.save()
     new_report.upload()
-    ReportManager.shared().pulled_report(cls.report_key(), new_hash, new_report.path())
+    DataSourceManager.shared().pulled_datasource(cls.report_key(), new_hash, new_report.path())
 
     return new_report
 
@@ -134,7 +134,7 @@ class CEReportBase:
 
   def is_latest(self):
     """Check (via report manager) if this copy's hash is the latest in the DB."""
-    return ReportManager.shared().last_report_info(self.report_key())["hash"] == self.hash()
+    return DataSourceManager.shared().last_datasource_info(self.report_key())["hash"] == self.hash()
 
   def upload(self):
     """Uploads the CSV to Google Drive using the shared credentials."""
