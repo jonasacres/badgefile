@@ -18,6 +18,8 @@ from log.logger import log
 
 
 class Attendee:
+  """Describes a single attendee at the Congress. Combines data from multiple datasources to present a cohesive view of each attendee."""
+
   def __init__(self, badgefile):
     self.db = Database.shared()
     self._info = {}

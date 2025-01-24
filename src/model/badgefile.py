@@ -13,8 +13,9 @@ from util.secrets import secret
 import json
 import os
 
-# Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress.
 class Badgefile:
+  """Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress."""
+
   def __init__(self):
     self._attendees = None
     self.db = Database.shared()

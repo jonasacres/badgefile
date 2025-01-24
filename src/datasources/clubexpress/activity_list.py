@@ -6,9 +6,11 @@ from io import StringIO
 from .activity import Activity
 from .ce_report_base import CEReportBase
 from log.logger import log
-# Describes a single copy of the "activity list" -- the Activity Registrant Data report from ClubExpress.
 
 class ActivityList(CEReportBase):
+  """Describes a single copy of the "activity list" -- the Activity Registrant Data report from ClubExpress. This report
+  shows each line-item that every participant has purchased within an event (e.g. admission fee, banquet, donation)"""
+  
   @classmethod
   def report_key(cls):
     return "activity_list"

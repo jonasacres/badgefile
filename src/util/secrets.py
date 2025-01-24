@@ -3,6 +3,8 @@ import os
 from log.logger import log
 
 class Secrets:
+  """Accesses stored secrets from secrets.yaml, which is not included in the git repository."""
+
   @classmethod
   def shared(cls):
     if not hasattr(cls, "_shared"):

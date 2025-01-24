@@ -5,6 +5,8 @@ from integrations.google_api import authenticate_service_account, upload_csv_to_
 from util.secrets import secret
 
 class DonorReport:
+  """Provides a list of donors by badgefile ID and tier level."""
+
   def __init__(self, badgefile):
     self.badgefile = badgefile
   

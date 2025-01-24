@@ -1,6 +1,8 @@
 import os
 
 class LogTarget:
+  """Base class for log targets. Don't instantiate directly."""
+
   def __init__(self):
     from .logger import Logger
     self._data_severity = Logger.INFO

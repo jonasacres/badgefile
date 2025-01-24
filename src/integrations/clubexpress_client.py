@@ -11,8 +11,9 @@ from io import StringIO
 from log.logger import log
 from util.secrets import secret
 
-# Pulls reports from ClubExpress.
 class ClubExpressClient:
+  """Provides an interface to authenticate with ClubExpress, download reports and submit forms."""
+
   _shared = None
 
   @classmethod

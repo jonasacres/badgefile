@@ -1,8 +1,8 @@
-from io import StringIO
 import csv
 import requests
 import hashlib
 import os
+from io import StringIO
 from datetime import datetime
 
 from log.logger import log
@@ -14,6 +14,8 @@ from integrations.google_api import authenticate_service_account, upload_csv_to_
 # TODO: consolidate this with other report classes into a common subclass that does common parts of latest/download and other operations
 
 class TDList:
+  """Tournament Director's list. Shows everyone's AGA membership status (name, rating, sigma, club, last renewal date, expiration date)."""
+  
   @classmethod
   def directory(cls):
     return "reports/TDList"

@@ -1,7 +1,10 @@
 from log.logger import log
 
-# wrap up a specific row from the reglist
 class ReglistRow:
+  """Describes a single row in the RegistrantData report."""
+
+  # TODO: in hindsight I think this is an unnecessary abstraction and can be removed.
+
   def __init__(self, reglist, row):
     self.reglist = reglist
     self.row = row

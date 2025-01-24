@@ -7,6 +7,8 @@ from util.secrets import secret
 from log.logger import log
 
 class RegHistoryReport:
+  """Updates a Google Sheet with current registration numbers, broken down by calendar intervals, for use in comparison to prior years."""
+  
   def __init__(self, badgefile):
     self.badgefile = badgefile
     pass

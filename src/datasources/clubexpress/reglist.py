@@ -5,9 +5,9 @@ from io import StringIO
 from .ce_report_base import CEReportBase
 from .reglist_row import ReglistRow
 
-# Describes a single copy of the "reglist" -- the Registrant Data report from ClubExpress.
-
 class Reglist(CEReportBase):
+  """Describes a single copy of the "reglist" -- the Registrant Data report from ClubExpress. This report describes each
+  individual Congress attendee registration."""
   @classmethod
   def report_key(cls):
     return "registrant_data"

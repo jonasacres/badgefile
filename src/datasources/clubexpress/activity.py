@@ -3,6 +3,8 @@ from integrations.database import Database
 from log.logger import log
 
 class Activity:
+  """Describes a single row from the Activity List."""
+  
   @classmethod
   def find_attendee(cls, badgefile, row):
     # first go by agaid if persent

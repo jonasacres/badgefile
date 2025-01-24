@@ -7,6 +7,8 @@ from log.logger import log
 import time
 import os
 
+"""Provides helper methods for dealing with Google API stuff."""
+
 # Authenticate with the service account
 def authenticate_service_account(service_account_file=None):
   if service_account_file is None:

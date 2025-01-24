@@ -3,6 +3,8 @@ import hashlib
 from integrations.database import Database
 
 class IdManager:
+  """Manages assignment of badgefile IDs and remapping of IDs."""
+
   _shared = None
   
   @classmethod

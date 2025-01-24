@@ -1,6 +1,8 @@
 import re
 import subprocess
 
+"""Utility methods for supporting various operations in the project."""
+
 def standardize_phone(phone_num):
   """
   Formats a valid US phone number to '123-456-7890'.

@@ -3,6 +3,8 @@ import json
 from integrations.database import Database
 
 class IssueManager:
+  """Manages recording of each issue that is detected in attendee registrations."""
+
   _shared = None
   
   @classmethod

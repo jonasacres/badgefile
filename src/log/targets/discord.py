@@ -6,6 +6,8 @@ import socket
 from ..log_target import LogTarget
 
 class Discord(LogTarget):
+  """Provides formatted log entries to a Discord webhook."""
+
   def __init__(self, webhook_url):
     super().__init__()
     self.webhook_url = webhook_url

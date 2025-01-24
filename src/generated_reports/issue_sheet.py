@@ -7,6 +7,8 @@ from integrations.google_api import authenticate_service_account, upload_csv_to_
 from util.secrets import secret
 
 class IssueSheet:
+  """Provides a list of each individual outstanding issue for all Congress attendees."""
+  
   def __init__(self, badgefile):
     self.badgefile = badgefile
 

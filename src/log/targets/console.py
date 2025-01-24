@@ -5,6 +5,8 @@ import sys
 from ..log_target import LogTarget
 
 class Console(LogTarget):
+  """Provides prettified console output to STDOUT, with optional colorization and simplified output for non-TTY sessions."""
+
   def log_msg(self, info):
     severity_colorized = info["severity_str_short"]
     timestamp_colorized = info["timestamp_str"]

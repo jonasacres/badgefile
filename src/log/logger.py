@@ -8,6 +8,8 @@ from .targets.console import Console
 from .targets.discord import Discord
 
 class Logger:
+  """Handles log messages."""
+
   TRACE    = 0
   DEBUG    = 1
   INFO     = 2

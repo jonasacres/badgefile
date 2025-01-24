@@ -1,6 +1,7 @@
 from integrations.database import Database
 
 class DataSourceManager:
+  """Tracks the hash and path of each previous datasource pull. Assists in de-duplicating stored copies of reports."""
   _shared = None
 
   @classmethod

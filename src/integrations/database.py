@@ -5,6 +5,8 @@ import os
 from log.logger import log
 
 class Database:
+  """Provides a convenience wrapper for database operations."""
+
   _shared = None
 
   @classmethod
