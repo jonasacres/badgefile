@@ -1,6 +1,6 @@
 import hashlib
 
-from .database import Database
+from integrations.database import Database
 
 class IdManager:
   _shared = None

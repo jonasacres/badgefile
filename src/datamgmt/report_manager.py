@@ -1,4 +1,4 @@
-from .database import Database
+from integrations.database import Database
 
 class ReportManager:
   _shared = None

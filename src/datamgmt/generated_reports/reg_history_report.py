@@ -1,7 +1,7 @@
 import os
 import csv
 from datetime import datetime
-from ..google.google_drive import update_sheets_worksheet, authenticate_service_account
+from integrations.google_drive import update_sheets_worksheet, authenticate_service_account
 from util.secrets import secret
 
 from log.logger import *
@@ -18,7 +18,7 @@ class RegHistoryReport:
     self.upload()
 
   def save(self, path):
-    log_debug("reg_history_report: Saving to {path}")
+    log_debug(f"reg_history_report: Saving to {path}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     with open(path, mode='w', newline='', encoding='utf-8') as file:

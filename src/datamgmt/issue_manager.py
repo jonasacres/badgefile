@@ -1,6 +1,6 @@
 import json
 
-from .database import Database
+from integrations.database import Database
 
 class IssueManager:
   _shared = None

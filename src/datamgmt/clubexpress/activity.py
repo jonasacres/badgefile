@@ -1,5 +1,5 @@
 import json
-from ..database import Database
+from integrations.database import Database
 from log.logger import *
 
 class Activity:

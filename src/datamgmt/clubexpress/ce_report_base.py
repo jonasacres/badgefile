@@ -4,7 +4,7 @@ import hashlib
 import csv
 from io import StringIO
 from ..report_manager import ReportManager
-from ..google.google_drive import authenticate_service_account, upload_csv_to_drive
+from integrations.google_drive import authenticate_service_account, upload_csv_to_drive
 from log.logger import *
 from util.secrets import secret
 
@@ -87,7 +87,7 @@ class CEReportBase:
     uri = cls.report_uri()
     data = cls.report_data()
 
-    from .ce_integration import CEIntegration
+    from integrations.ce_integration import CEIntegration
     log_debug(f"{cls.report_key()}: Downloading from {uri}")
     csv_bytes = CEIntegration.shared().pull_report(uri, data)
     new_report = cls(csv_bytes)

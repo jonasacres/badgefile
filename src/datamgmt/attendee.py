@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from .database import Database
+from integrations.database import Database
 from .issue_manager import IssueManager
 from .id_manager import IdManager
 from .clubexpress.reglist import Reglist

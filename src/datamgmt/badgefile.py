@@ -1,4 +1,4 @@
-from .database import Database
+from integrations.database import Database
 from .attendee import Attendee
 from .id_manager import IdManager
 from .clubexpress.reglist import Reglist
@@ -7,7 +7,7 @@ from .tdlist import TDList
 from .generated_reports.issue_sheet import IssueSheet
 from .generated_reports.donor_report import DonorReport
 from .generated_reports.reg_history_report import RegHistoryReport
-from .google.google_drive import authenticate_service_account, upload_json_to_drive
+from integrations.google_drive import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 
 import json
