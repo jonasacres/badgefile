@@ -89,7 +89,7 @@ class ClubExpressClient:
         attempts += 1
         if attempts == max_attempts:
           raise e
-        log.info(f"Request for {uri} failed ({str(e)}), retrying in {delay}s (attempt {attempts}/{max_attempts})", traceback.format_exc())
+        log.info(f"Request for {uri} failed ({str(e)}), retrying in {delay}s (attempt {attempts}/{max_attempts})", exception=e)
         time.sleep(delay)
     
     log.warn(f"Request for {uri} failed after {attempts} retries")
@@ -234,10 +234,14 @@ class ClubExpressClient:
       
       # but if the response looks bad, then retry a few times
       attempts += 1
-      log.notice(f"Request failed, got non-csv file for {uri} (attempt {attempts}/{max_attempts})", possible_csv)
-      log.info(f"Waiting {delay}s before retrying...")
+      log.info(f"Request failed, got non-csv file for {uri} (attempt {attempts}/{max_attempts})", data=possible_csv)
+      log.debug(f"Waiting {delay}s before retrying...")
 
       time.sleep(delay)
+
+      if "Sorry - your session expired and we could not process your request" in possible_csv:
+        log.info("Got session expired notice; logging in again")
+        self.login()
     
     # we had problems and they didn't resolve themselves on retry, so throw an exception.
     log.warn(f"Failed to get CSV file from {uri} after {attempts} attempts")
