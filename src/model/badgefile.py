@@ -4,9 +4,9 @@ from .id_manager import IdManager
 from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.tdlist import TDList
-from generated_reports.issue_sheet import IssueSheet
-from generated_reports.donor_report import DonorReport
-from generated_reports.reg_history_report import RegHistoryReport
+from artifacts.generated_reports.issue_sheet import IssueSheet
+from artifacts.generated_reports.donor_report import DonorReport
+from artifacts.generated_reports.reg_history_report import RegHistoryReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -40,9 +40,9 @@ class Badgefile:
       attendee.populate_derived_fields()
       attendee.scan_issues()
     
-    IssueSheet(self).generate("reports/issue_sheet.csv")
-    DonorReport(self).generate("reports/donor_report.csv")
-    RegHistoryReport(self).generate("reports/reg_history_report.csv")
+    IssueSheet(self).generate("artifacts/issue_sheet.csv")
+    DonorReport(self).generate("artifacts/donor_report.csv")
+    RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
 
     self.generate_json()
     # self.upload()
