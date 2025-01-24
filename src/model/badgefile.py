@@ -9,7 +9,7 @@ from generated_reports.donor_report import DonorReport
 from generated_reports.reg_history_report import RegHistoryReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
-from logger.log import log
+from log.logger import log
 
 import json
 import os
@@ -67,7 +67,7 @@ class Badgefile:
       json.dump({"attendees": attendees_data}, f, indent=2)
   
   def upload(self):
-    self.debug("badgefile: Uploading to Google Drive")
+    log.debug("badgefile: Uploading to Google Drive")
     service = authenticate_service_account()
     upload_json_to_drive(service, self.path(), "badgefile.json", secret("folder_id"))
 
@@ -76,18 +76,17 @@ class Badgefile:
       if attendee.id() == badgefile_id:
         return attendee
     
-    log.debug(f"badgefile: Unable to locate user with badgefile_id={badgefile_id}")
     return None
   
   # return list of all attendees
   def attendees(self):
     if self._attendees is None:
-      self.debug("badgefile: Loading attendees list")
+      log.debug("badgefile: Loading attendees list")
       Attendee(self).ensure_attendee_table() # shouldn't be instance method of Attendee
       rows = self.db.query("SELECT * FROM Attendees")
       self._attendees = [Attendee(self).load_db_row(row) for row in rows]
       self.ensure_consistency()
-      self.debug(f"badgefile: Loaded {len(self._attendees)} attendees")
+      log.debug(f"badgefile: Loaded {len(self._attendees)} attendees")
     return self._attendees
   
   # returns an Attendee corresponding to the user in the reglist if one exists, or None
