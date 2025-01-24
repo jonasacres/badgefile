@@ -2,6 +2,7 @@ import csv
 import re
 from datetime import datetime
 from io import StringIO
+from util.secrets import secret
 
 from .activity import Activity
 from .ce_report_base import CEReportBase
@@ -17,7 +18,7 @@ class ActivityList(CEReportBase):
 
   @classmethod
   def report_uri(cls):
-    return "https://usgo.org/popup.aspx?page_id=4036&club_id=454497&item_id=2516874"
+    return secret("congress_event_url")
   
   @classmethod
   def report_data(cls):

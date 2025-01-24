@@ -4,6 +4,7 @@ from io import StringIO
 
 from .ce_report_base import CEReportBase
 from .reglist_row import ReglistRow
+from util.secrets import secret
 
 class Reglist(CEReportBase):
   """Describes a single copy of the "reglist" -- the Registrant Data report from ClubExpress. This report describes each
@@ -14,7 +15,7 @@ class Reglist(CEReportBase):
 
   @classmethod
   def report_uri(cls):
-    return "https://usgo.org/popup.aspx?page_id=4036&club_id=454497&item_id=2516874"
+    return secret('congress_event_url')
   
   @classmethod
   def report_data(cls):
