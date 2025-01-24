@@ -3,9 +3,9 @@ import os
 import random
 from datetime import datetime
 
-from .textfile import Textfile
-from .console import Console
-from .discord import Discord
+from .targets.textfile import Textfile
+from .targets.console import Console
+from .targets.discord import Discord
 
 class Logger:
   TRACE    = 0
