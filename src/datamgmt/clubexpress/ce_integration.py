@@ -9,7 +9,7 @@ import csv
 import traceback
 from io import StringIO
 from log.logger import *
-from ..secrets import secret
+from util.secrets import secret
 
 # Pulls reports from ClubExpress.
 class CEIntegration:
