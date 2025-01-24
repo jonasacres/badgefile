@@ -4,7 +4,7 @@ from datamgmt.clubexpress.reglist import Reglist
 from datamgmt.badgefile import Badgefile
 from datamgmt.clubexpress.activity_list import ActivityList
 from datamgmt.tdlist import TDList
-from datamgmt.util import *
+from util.util import *
 from log.logger import *
 import sys
 import time

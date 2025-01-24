@@ -2,7 +2,7 @@ import csv
 import os
 from log.logger import *
 from ..google.google_drive import authenticate_service_account, upload_csv_to_drive
-from ..secrets import secret
+from util.secrets import secret
 
 class DonorReport:
   def __init__(self, badgefile):

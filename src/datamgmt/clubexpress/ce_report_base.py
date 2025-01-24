@@ -6,7 +6,7 @@ from io import StringIO
 from ..report_manager import ReportManager
 from ..google.google_drive import authenticate_service_account, upload_csv_to_drive
 from log.logger import *
-from ..secrets import secret
+from util.secrets import secret
 
 class CEReportBase:
   """Base class for ClubExpress reports like ActivityList and RegList."""

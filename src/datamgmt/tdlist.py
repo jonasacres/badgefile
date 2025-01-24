@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 from log.logger import *
-from .secrets import secret
+from util.secrets import secret
 
 from .report_manager import ReportManager
 from .google.google_drive import authenticate_service_account, upload_csv_to_drive

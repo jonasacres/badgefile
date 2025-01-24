@@ -12,7 +12,7 @@ from .id_manager import IdManager
 from .clubexpress.reglist import Reglist
 from .clubexpress.activity_list import ActivityList
 from .clubexpress.activity import Activity
-from .util import util
+from util.util import standardize_phone
 
 from log.logger import *
 
@@ -64,7 +64,7 @@ class Attendee:
     
     self._info["badge_rating"] = self.badge_rating()
     if self._info["emergency_contact_phone"] is not None:
-      self._info["emergency_contact_phone_std"] = util.standardize_phone(self._info["emergency_contact_phone"])
+      self._info["emergency_contact_phone_std"] = standardize_phone(self._info["emergency_contact_phone"])
 
     if sync:
       self.sync_to_db(bfid)
@@ -86,7 +86,7 @@ class Attendee:
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
     for key in phone_keys:
       if self._info[key] != None and self._info[key] != "":
-        return util.standardize_phone(self._info[key])
+        return standardize_phone(self._info[key])
     return None
 
   def regtime(self):

@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from ..google.google_drive import authenticate_service_account, upload_csv_to_drive
-from ..secrets import secret
+from util.secrets import secret
 
 class IssueSheet:
   def __init__(self, badgefile):

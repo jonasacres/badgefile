@@ -128,7 +128,7 @@ def log_fatal(msg, data=None, exception=None):
 def setup_default_logger():
   default = Logger.default()
   if not hasattr(default, '_Logger__setup'):
-    from datamgmt.secrets import secret
+    from util.secrets import secret
 
     default.add_target(Console())
     default.add_target(Textfile("badgefile.log"))

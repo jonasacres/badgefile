@@ -2,7 +2,7 @@ import os
 import csv
 from datetime import datetime
 from ..google.google_drive import update_sheets_worksheet, authenticate_service_account
-from ..secrets import secret
+from util.secrets import secret
 
 from log.logger import *
 
