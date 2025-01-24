@@ -1,14 +1,12 @@
 from .database import Database
 from .attendee import Attendee
 from .id_manager import IdManager
-from .report_manager import ReportManager
 from .clubexpress.reglist import Reglist
 from .clubexpress.activity_list import ActivityList
 from .tdlist import TDList
-from .issue_sheet import IssueSheet
-from .donor_report import DonorReport
-from .reg_history_report import RegHistoryReport
-from artifacts.directory import generate_directory
+from .generated_reports.issue_sheet import IssueSheet
+from .generated_reports.donor_report import DonorReport
+from .generated_reports.reg_history_report import RegHistoryReport
 from .google.google_drive import authenticate_service_account, upload_json_to_drive
 from .secrets import secret
 
@@ -45,7 +43,7 @@ class Badgefile:
     RegHistoryReport(self).generate("reports/reg_history_report.csv")
 
     self.generate_json()
-    # self.upload_to_drive()
+    # self.upload()
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist
@@ -65,7 +63,7 @@ class Badgefile:
     with open(self.path(), "w") as f:
       json.dump({"attendees": attendees_data}, f, indent=2)
   
-  def upload_to_drive(self):
+  def upload(self):
     service = authenticate_service_account()
     upload_json_to_drive(service, self.path(), "badgefile.json", secret("folder_id"))
 

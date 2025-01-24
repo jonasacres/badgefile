@@ -15,8 +15,9 @@ class Textfile(LogTarget):
     self.file = open(path, 'a')
 
   def log_msg(self, info):
-    self.file.write("[%s] %s %30s: %s\n" % (
+    self.file.write("[%s] %s %s %30s: %s\n" % (
                             info["severity_str_short"],
+                            info['run_id'],
                             info["timestamp_str"],
                             info["src_reference_short"],
                             info["msg"]))

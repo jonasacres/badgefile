@@ -108,7 +108,7 @@ class CEReportBase:
     # Otherwise, save, upload, and record
     log_info(f"{cls.report_key()}: New version (sha256 {new_hash}); saving to {new_report.path()}")
     new_report.save()
-    new_report.upload_to_drive()
+    new_report.upload()
     ReportManager.shared().pulled_report(cls.report_key(), new_hash, new_report.path())
 
     return new_report
@@ -136,7 +136,7 @@ class CEReportBase:
     """Check (via report manager) if this copy's hash is the latest in the DB."""
     return ReportManager.shared().last_report_info(self.report_key())["hash"] == self.hash()
 
-  def upload_to_drive(self):
+  def upload(self):
     """Uploads the CSV to Google Drive using the shared credentials."""
     service = authenticate_service_account()
     upload_csv_to_drive(service, self.path(), self.__class__.google_drive_name(), secret("folder_id")) 

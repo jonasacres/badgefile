@@ -22,7 +22,7 @@ class LogTarget:
       "run_id":              run_id,
       "severity":            severity,
       "severity_str":        Logger.SEVERITY_NAMES.get(severity, "UNKNOWN"),
-      "severity_str_short":  Logger.SEVERITY_NAMES.get(severity, str(severity))[0],
+      "severity_str_short":  str(severity),
       "src_reference":       src_reference, 
       "src_reference_short": os.path.basename(src_reference),
       "data":                data if severity >= self._data_severity else None,

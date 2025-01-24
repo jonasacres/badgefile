@@ -58,7 +58,7 @@ class TDList:
 
     log_info(f"td_list: New version (sha256 {hash}); saving to {td_list.path()}")
     td_list.save()
-    td_list.upload_to_drive()
+    td_list.upload()
     ReportManager.shared().pulled_report("td_list", hash, td_list.path())
 
     return cls(tsv)
@@ -129,6 +129,6 @@ class TDList:
     with open(self.path(), "w") as file:
       file.write(self.tsv.decode("utf-8"))
 
-  def upload_to_drive(self):
+  def upload(self):
     service = authenticate_service_account()
     upload_csv_to_drive(service, self.path(), "td_list.csv", secret("folder_id"))
