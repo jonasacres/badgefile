@@ -29,10 +29,8 @@ class Activity:
 
   @classmethod
   def with_report_row(cls, badgefile, report_row):
-    # TODO: find an attendee in the badgefile matching the supplied report row
     attendee = cls.find_attendee(badgefile, report_row)
     if attendee is None:
-      # TODO: scary log message; we can't find a matching attendee!
       log_critical(f"Can't find attendee for row f{report_row}")
       return None
     return cls(attendee, report_row)

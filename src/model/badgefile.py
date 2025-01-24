@@ -23,7 +23,6 @@ class Badgefile:
     return "artifacts/badgefile.json"
 
   def update(self):
-    # TODO: when does this become a "download"?
     for row in Reglist.latest().rows():
       self.update_or_create_attendee_from_reglist_row(row)
     
@@ -93,7 +92,7 @@ class Badgefile:
         if IdManager.shared().canonical_id(attendee.id()) == canonical_id:
           return attendee
       
-      # TODO: Scary log message here! The attendee has a badgefile_id, but we can't find any attendees who actually have that ID.
+      log_warn(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
       return None
 
     scored = [ [attendee, attendee.similarity_score(row)] for attendee in self.attendees() ]
@@ -162,10 +161,10 @@ class Badgefile:
       return candidates[0]
     elif len(candidates) == 0:
       # no matches; this is bad!! we have to manually solve this.
-      # TODO: scary log message
+      log_warn(f"Unable to locate primary registrant for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
       return None
     else:
       # multiple matches; also very bad!! needs manual solution.
-      # TODO: scary log message
+      log_warn(f"Found multiple possible primary registrants for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
       return None
 
