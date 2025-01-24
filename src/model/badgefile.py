@@ -100,7 +100,7 @@ class Badgefile:
         if IdManager.shared().canonical_id(attendee.id()) == canonical_id:
           return attendee
       
-      log.warn(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
+      log.debug(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
       return None
 
     scored = [ [attendee, attendee.similarity_score(row)] for attendee in self.attendees() ]
