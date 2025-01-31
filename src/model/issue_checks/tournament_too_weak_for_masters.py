@@ -2,6 +2,9 @@ def run_check(attendee):
   if not attendee.is_participant():
     return None
   
+  if not "masters" in attendee.tournaments():
+    return None
+  
   if attendee.effective_rank() is None:
     return {'msg': f"Requests Masters, but no rating on file", 'code': '5c'}
   if attendee.effective_rank() < 5.0:

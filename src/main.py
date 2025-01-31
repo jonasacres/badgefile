@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
+import sys
+import os
+
 from model.badgefile import Badgefile
 from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.tdlist import TDList
 from util.util import *
 from log.logger import log
-import sys
 import time
-import os
+
 
 def download():
   log.notice(f"Downloading fresh data.")
