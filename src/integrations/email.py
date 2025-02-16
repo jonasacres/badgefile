@@ -13,13 +13,15 @@ class Email:
     self.extra = extra
 
   def apply_template(self):
+    info = self.attendee.info() | self.extra
     template_path = os.path.join(os.path.dirname(__file__), f"../static/email_templates/{self.template}.txt")
+
     with open(template_path, 'r') as f:
       lines = f.readlines()
     
       # First line is subject, then blank line, then body
       subject = lines[0].replace("Subject: ", "").strip()
-      body = "".join(lines[2:])
+      body = "".join(lines[2:]).format(**{key: info[key] for key in info.keys()})
       return subject, body
 
   def send(self, server, force=False):
@@ -30,7 +32,7 @@ class Email:
     
     msg = self.create_html_email()
     log.debug(f"Sending email {self.template} to {self.attendee.info()['email']}")
-    # server.send_message(msg)
+    server.send_message(msg)
     log.debug(f"Marking email sent.")
     self.attendee.mark_email_sent(self.template)
 
@@ -38,11 +40,6 @@ class Email:
     subject, body = self.apply_template()
     info = self.attendee.info() | self.extra
     to_email = info["email"]
-
-    body = body.format(**{
-        key: info[key] 
-        for key in info.keys()
-    })
 
     log.trace(f"To: {to_email}\nSubject: {subject}\n\n{body}")
 
