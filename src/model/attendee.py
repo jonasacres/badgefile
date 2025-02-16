@@ -42,6 +42,20 @@ class Attendee:
     self._info.update(row)
     return self
   
+  def mark_email_sent(self, email, timestamp=None):
+    if timestamp is None:
+      timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    self._info['email_timestamp_' + email] = timestamp
+    self.sync_to_db()
+
+  def sent_emails(self):
+    prefix = 'email_timestamp_'
+    return [k[len(prefix):] for k in self._info.keys() 
+            if k.startswith(prefix) and self._info[k] is not None]
+  
+  def email_sent_time(self, email):
+    return self._info.get(f'email_timestamp_{email}', None)
+  
   def effective_rank(self):
     # TODO: allow rank override
     return self._info.get('aga_rating', None)

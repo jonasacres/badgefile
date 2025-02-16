@@ -1,6 +1,8 @@
 from datetime import datetime
 
 def run_check(attendee):
+  return None # short-circuited until we get youth form logic in place
+
   # TODO: find actual cutoff for requiring youth form
   cutoff = datetime(2007, 7, 12)
   dob = attendee.date_of_birth()

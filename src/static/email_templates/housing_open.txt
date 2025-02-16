@@ -1,0 +1,19 @@
+Subject: Housing & Meals Sign-Up Now Available for 2025 US Go Congress
+
+<p>Dear {name_given},</p>
+
+<p>We’re excited to welcome you to the 2025 US Go Congress! Housing and meal plan sign-ups are now open on our official website. Secure your accommodations and dining options by visiting:</p>
+
+<p><a href="https://www.gocongress.org">https://www.gocongress.org</a></p>
+
+<p>Then, click <b>Housing/Meals</b> on the left-side menu.</p>
+
+<p>Some housing types are limited, so we encourage you to book early to ensure your preferred options. If you have any questions, feel free to reach out to us.</p>
+
+<p>We look forward to seeing you at Congress!</p>
+
+
+<p>Best regards,</p>
+
+<p>Registrar Team<br />
+registrar@gocongress.org</p>
