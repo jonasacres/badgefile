@@ -3,5 +3,5 @@ def run_check(attendee):
     return None
   
   if attendee.info()["rank_comments"] is not None:
-    return { "msg": f"Rank comment: {attendee.info()['rank_comments']}", "code": "8a" }
+    return { "msg": f"Rank comment: {attendee.info()['rank_comments']}", "category": 'tournament', "code": "6a" }
   return None

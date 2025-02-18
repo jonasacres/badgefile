@@ -15,7 +15,7 @@ def run_check(attendee):
   banquet = activities[0]
   booked_under10 = "under 10" in banquet.info()['activity_title'].lower()
   if booked_under10 and over_10:
-    return {"msg": f"Banquet reservation is for Youth Under 10; too old (dob: {dob})", "code": "9c"}
+    return {"msg": f"Banquet reservation is for Youth Under 10; too old (dob: {dob})", "category": "banquet", "code": "9c"}
   elif not over_10 and not booked_under10:
-    return {"msg": f"Eligible for under-10 banquet pricing (dob: {dob})", "code": "9d"}
+    return {"msg": f"Eligible for under-10 banquet pricing (dob: {dob})", "category": "banquet", "code": "9d"}
   return None

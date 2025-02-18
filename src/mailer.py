@@ -13,7 +13,7 @@ def send_emails(template, recipients):
     log.info(f"Sending email {template} to {len(recipients)} recipients")
     for recipient in recipients:
       email = Email(template, recipient)
-      # email.send(server)
+      email.send(server)
   finally:
     log.info("Done sending e-mails")
     server.quit()

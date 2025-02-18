@@ -21,10 +21,6 @@ class IssueSheet:
       pri = attendee.primary()
       pri_info = pri.info()
 
-      birth_date = attendee.date_of_birth()
-      congress_date = datetime(2025, 7, 13)
-      age_at_congress = congress_date.year - birth_date.year - ((congress_date.month, congress_date.day) < (birth_date.month, birth_date.day))
-
       rt_lower = info['regtype'].lower()
       is_primary = "you -" in rt_lower
       is_youth = "- youth" in rt_lower
@@ -46,7 +42,7 @@ class IssueSheet:
         info['country'],
         info['languages'],
         info['date_of_birth'],
-        age_at_congress,
+        attendee.age_at_congress(),
         info['email'],
         attendee.phone(),
       ]

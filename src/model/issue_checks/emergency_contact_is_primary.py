@@ -22,6 +22,7 @@ def check_name(attendee):
       "msg": "Emergency contact matches primary attendee name",
       "code": "7a",
       "match_type": "name",
+      "category": "registration",
       "primary_id": primary_info["badgefile_id"]
     }
   
@@ -35,6 +36,7 @@ def check_email(attendee):
       "msg": "Emergency contact matches primary registrant email",
       "code": "7c",
       "match_type": "email",
+      "category": "registration",
       "primary_id": attendee.primary().id(),
     }
   return None
@@ -53,6 +55,7 @@ def check_phone(attendee):
         "msg": "Emergency contact matches primary registrant phone",
         "code": "7b",
         "match_type": "phone",
+        "category": "registration",
         "primary_id": attendee.primary().id(),
       }
   return None

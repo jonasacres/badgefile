@@ -3,6 +3,7 @@ def run_check(attendee):
     return {
       "msg": f"Total fees are very high (${attendee.info()['registrant_fees']})",
       "code": "4a",
+      'category': 'registration',
     }
   return None
 

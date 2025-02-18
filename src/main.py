@@ -6,6 +6,8 @@ import os
 from model.badgefile import Badgefile
 from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
+from datasources.clubexpress.housing_activity_list import HousingActivityList
+from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.tdlist import TDList
 from util.util import *
 from log.logger import log
@@ -27,6 +29,18 @@ def download():
   except Exception as exc:
     log.critical("Failed to download activity list", exception=exc)
 
+  log.info(f"Downloading housing reglist.")
+  try:
+    HousingReglist.download()
+  except Exception as exc:
+    log.critical("Failed to dowload housing reglist", exception=exc)
+
+  log.info(f"Downloading housing activity list.")
+  try:
+    HousingActivityList.download()
+  except Exception as exc:
+    log.critical("Failed to download housing activity list", exception=exc)
+
   log.info(f"Downloading TD list.")
   try:
     TDList.download()
@@ -38,6 +52,10 @@ def update():
     Reglist.download()
   if ActivityList.latest() == None:
     ActivityList.download()
+  if HousingReglist.latest() == None:
+    HousingReglist.download()
+  if HousingActivityList.latest() == None:
+    HousingActivityList.download()
   if TDList.latest() == None:
     TDList.download()
 

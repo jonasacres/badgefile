@@ -12,11 +12,11 @@ def run_check(attendee):
   expdate_fmt = expdate.strftime("%m/%d/%Y")
   
   if expdate < congress_start_cutoff:
-    return {"msg": f"AGA membership expires prior to Congress ({expdate_fmt})", "code": "1"}
+    return {"msg": f"AGA membership expires prior to Congress ({expdate_fmt})", "category": 'membership', "code": "1"}
   elif expdate < congress_end_cutoff:
-    return {"msg": f"AGA membership expires during Congress ({expdate_fmt})", "code": "1"}
+    return {"msg": f"AGA membership expires during Congress ({expdate_fmt})", "category": 'membership', "code": "1"}
   elif expdate < processing_cutoff:
-    return {"msg": f"AGA membership expires before ratings can be processed ({expdate_fmt})", "code": "1"}
+    return {"msg": f"AGA membership expires before ratings can be processed ({expdate_fmt})", "category": 'membership', "code": "1"}
   else:
     return None
 

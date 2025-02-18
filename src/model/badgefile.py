@@ -3,10 +3,14 @@ from .attendee import Attendee
 from .id_manager import IdManager
 from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
+from datasources.clubexpress.housing_activity_list import HousingActivityList
+from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.tdlist import TDList
 from artifacts.generated_reports.issue_sheet import IssueSheet
 from artifacts.generated_reports.donor_report import DonorReport
 from artifacts.generated_reports.reg_history_report import RegHistoryReport
+from artifacts.generated_reports.master_status import MasterStatusReport
+from artifacts.generated_reports.housing_registrations import HousingRegistrationsReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -31,7 +35,9 @@ class Badgefile:
     
     for attendee in self.attendees():
       attendee.invalidate_activities()
+    
     ActivityList.latest().rows(self) # merely asking for the rows causes them to be saved to the DB
+    HousingActivityList.latest().rows(self) # also force housing rows to DB
     
     TDList.latest().apply(self) # Now go apply ratings/expiration dates/chapters from the TD list
     
@@ -43,6 +49,8 @@ class Badgefile:
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
+    MasterStatusReport(self).update()
+    HousingRegistrationsReport(self).update()
 
     self.generate_json()
     # self.upload()

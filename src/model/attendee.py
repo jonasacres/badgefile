@@ -199,6 +199,11 @@ class Attendee:
     if not 'date_of_birth' in self._info or self._info['date_of_birth'] is None:
       return None
     return datetime.strptime(self._info['date_of_birth'], "%m/%d/%Y")
+
+  def age_at_congress(self):
+    congress_date = datetime(2025, 7, 13)
+    birth_date = self.date_of_birth()
+    return congress_date.year - birth_date.year - ((congress_date.month, congress_date.day) < (birth_date.month, birth_date.day))
   
   def is_attending_banquet(self):
     for activity in self.activities():
@@ -392,10 +397,12 @@ class Attendee:
   
   # return a dict of previously identified issues that are not marked as resolved in the database
   def open_issues(self):
+    # TODO: Strongly consider memoizing this!!
     return IssueManager.shared().open_issues_for_attendee(self)
 
   # return a list of previously identified issues regardless of status
   def all_issues(self):
+    # TODO: Strongly consider memoizing this!!
     return IssueManager.shared().all_issues_for_attendee(self)
 
   # scan for new issues and insert them into the database if no similar issue is open for this user;
@@ -445,8 +452,18 @@ class Attendee:
       if existing_issues[issue_type] != current_issues[issue_type]:
         IssueManager.shared().update(self, issue_type, current_issues[issue_type])
 
-    return current_issues      
+    return current_issues
   
+  def party_meal_plan(self):
+    meal_plans = [activity for activity in self.primary().activities() if activity.is_meal_plan() and activity.is_open()]
+    return meal_plans[0] if len(meal_plans) > 0 else None
+  
+  def party_housing(self):
+    return [activity for activity in self.primary().activities() if activity.is_housing() and activity.is_open()]
+  
+  def issue_categories(self):
+    return list(set(json.loads(issue)['category'] for issue in self.open_issues().values()))
+    
   # returns a list of reglist rows referring to this user
   def reglist_rows(self):
     return [x for x in Reglist.latest().rows() if x.attendee().id() == self.id()]

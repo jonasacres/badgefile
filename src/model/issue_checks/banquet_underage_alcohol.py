@@ -7,5 +7,5 @@ def run_check(attendee):
   minor = dob_date > cutoff_date # they're a minor if they'll be under 21 on the night of the banquet
 
   if minor and attendee.is_attending_banquet() and attendee.has_banquet_alcohol():
-    return {"msg": "Minor registered for banquet alcohol", "code": "9b"}
+    return {"msg": "Minor registered for banquet alcohol", "category": "banquet", "code": "9b"}
   

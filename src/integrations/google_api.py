@@ -39,7 +39,7 @@ def retry_with_backoff(basename, func, max_wait=30):
           raise
       else:
         log.notice(f"{basename}: Caught TimeoutError waiting for Google Drive: {e}")
-      log.info(f"{file_name}: Waiting {wait}s to retry")
+      log.info(f"{basename}: Waiting {wait}s to retry")
       time.sleep(wait)
       wait = min(wait * 2, max_wait)
 
@@ -140,3 +140,221 @@ def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
   except Exception as e:
     log.critical(f"{file_name}: Encountered exception updating worksheet", exception=e)
     return False
+  
+def create_sheet_if_not_exists(service, file_name, folder_id, sheet_name):
+  files = locate_existing_files(service, file_name, folder_id)
+  log.debug(f"Locating file {file_name} in folder {folder_id} with worksheet {sheet_name}")
+  
+  if not files:
+    # Create new spreadsheet
+    log.debug(f"Creating file {file_name}")
+    file_metadata = {
+      'name': file_name,
+      'mimeType': 'application/vnd.google-apps.spreadsheet'
+    }
+    if folder_id:
+      file_metadata['parents'] = [folder_id]
+      
+    file = retry_with_backoff(file_name,
+      lambda: service['drive'].files().create(
+        body=file_metadata,
+        fields='id',
+        supportsAllDrives=True
+      ).execute()
+    )
+    
+    # Rename first worksheet
+    requests = [{
+      'updateSheetProperties': {
+        'properties': {
+          'sheetId': 0,
+          'title': sheet_name
+        },
+        'fields': 'title'
+      }
+    }]
+    
+    log.debug(f"Renaming first worksheet of {file_name} to {sheet_name}")
+    retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().batchUpdate(
+        spreadsheetId=file['id'],
+        body={'requests': requests}
+      ).execute()
+    )
+    
+    return file['id']
+    
+  file = files[0]
+  
+  # Check if worksheet exists
+  spreadsheet = retry_with_backoff(file_name,
+    lambda: service['sheets'].spreadsheets().get(
+      spreadsheetId=file['id']
+    ).execute()
+  )
+  
+  log.debug(f"Located file {file_name} with id {file}")
+  sheet_exists = any(sheet['properties']['title'] == sheet_name 
+                    for sheet in spreadsheet['sheets'])
+                    
+  if not sheet_exists:
+    # Add new worksheet
+    log.debug(f"Adding worksheet {sheet_name} to existing file {file_name} with id {file}")
+    requests = [{
+      'addSheet': {
+        'properties': {
+          'title': sheet_name
+        }
+      }
+    }]
+    
+    retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().batchUpdate(
+        spreadsheetId=file['id'],
+        body={'requests': requests}
+      ).execute()
+    )
+    
+  return file['id']
+
+def read_sheet_data(service, file, sheet_name=None):
+  # Get spreadsheet metadata
+  spreadsheet = retry_with_backoff(file,
+    lambda: service['sheets'].spreadsheets().get(
+      spreadsheetId=file
+    ).execute()
+  )
+
+  # If sheet_name not specified, use first sheet
+  if sheet_name is None:
+    sheet_name = spreadsheet['sheets'][0]['properties']['title']
+
+  log.debug(f"Reading worksheet {sheet_name} of file id {file}")
+  # Read values from the sheet
+  result = retry_with_backoff(file,
+    lambda: service['sheets'].spreadsheets().values().get(
+      spreadsheetId=file,
+      range=f'{sheet_name}!A1:ZZ'
+    ).execute()
+  )
+
+  # Return empty list if no data
+  if 'values' not in result:
+    return []
+
+  return result['values']
+  
+def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None):
+  file = create_sheet_if_not_exists(service, file_name, folder_id, sheet_name)
+  existing_data = read_sheet_data(service, file, sheet_name)
+
+  if len(existing_data) == 0:
+    existing_data = [[v for v in sheet_header]]
+
+  mapped_rows = {}
+  seen_rows = {}
+  new_rows = []
+
+  for i, row in enumerate(existing_data):
+    if len(row) > key_index:
+      mapped_rows[row[key_index]] = i
+      seen_rows[row[key_index]] = False
+
+  updated_data = existing_data.copy()
+
+  for row in sheet_data:
+    key = str(row[key_index])
+    if key in mapped_rows:
+      for i, value in enumerate(row):
+        if i >= len(updated_data[mapped_rows[key]]):
+            updated_data[mapped_rows[key]].extend([None] * (i - len(updated_data[mapped_rows[key]]) + 1))
+        updated_data[mapped_rows[key]][i] = value
+    else:
+      new_rows.append(row)
+    seen_rows[key] = True
+
+  best_row_index = -1
+  best_row_count = 0
+  for row_index, row in enumerate(existing_data):
+    row_match_count = 0
+    for col_index, column in enumerate(row):
+      if col_index < len(sheet_header) and column in sheet_header:
+        row_match_count += 1
+    if row_match_count > best_row_count:
+      best_row_index = row_index
+      best_row_count = row_match_count
+  
+  if best_row_index < 0:
+    unseen = list(range(len(existing_data)+1))
+    for mapping in mapped_rows:
+      unseen.remove(mapped_rows[mapping])
+    best_row_index = unseen[0]
+
+  if best_row_index == len(updated_data):
+    updated_data.append(sheet_header)
+  else:
+    for i, value in enumerate(sheet_header):
+      if i >= len(updated_data[best_row_index]):
+          updated_data[best_row_index].extend([None] * (i - len(updated_data[best_row_index]) + 1))
+      updated_data[best_row_index][i] = value
+  seen_rows[sheet_header[key_index]] = True
+
+  updated_data.extend(new_rows)
+
+
+  for key, seen in seen_rows.items():
+    if not seen:
+      updated_data[mapped_rows[key]] = None
+
+  # Filter out None rows and prepare data for batch update
+  valid_rows = [(i, row) for i, row in enumerate(updated_data) if row is not None]
+  if valid_rows:
+    log.debug(f"Updating {len(valid_rows)} data rows in file {file_name}, worksheet {sheet_name}")
+    batch_data = {
+      'valueInputOption': 'RAW',
+      'data': [
+        {
+          'range': f'{sheet_name}!A{i+1}',
+          'values': [row]
+        } for i, row in valid_rows
+      ]
+    }
+    
+    retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().values().batchUpdate(
+        spreadsheetId=file,
+        body=batch_data
+      ).execute()
+    )
+  
+  # Delete rows that were marked as None
+  rows_to_delete = []
+  for i, row in enumerate(updated_data):
+    if row is None:
+      rows_to_delete.append(i + 1) # Add 1 since sheet rows are 1-based
+  
+  if rows_to_delete:
+    log.debug(f"Deleting {len(rows_to_delete)} rows from file {file_name}, worksheet {sheet_name}")
+    # Sort in descending order to avoid shifting indices when deleting
+    rows_to_delete.sort(reverse=True)
+    
+    # Create delete request for each row
+    requests = [{
+      'deleteDimension': {
+        'range': {
+          'sheetId': 0, # Default first sheet
+          'dimension': 'ROWS',
+          'startIndex': row - 1, # Convert back to 0-based
+          'endIndex': row # Delete 1 row
+        }
+      }
+    } for row in rows_to_delete]
+
+    # Execute all deletes in a single batch update
+    retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().batchUpdate(
+        spreadsheetId=file,
+        body={'requests': requests}
+      ).execute()
+    )
+  

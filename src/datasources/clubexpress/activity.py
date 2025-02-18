@@ -7,8 +7,8 @@ class Activity:
   
   @classmethod
   def find_attendee(cls, badgefile, row):
-    # first go by agaid if persent
-    # if not, use first, last, mi and trans ref num
+    # first go by agaid if present
+    # if not, use first, last, mi
     candidate = None
     if "badgefile_id" in row:
       candidate = badgefile.lookup_attendee(row["badgefile_id"])
@@ -33,7 +33,10 @@ class Activity:
   def with_report_row(cls, badgefile, report_row):
     attendee = cls.find_attendee(badgefile, report_row)
     if attendee is None:
-      log.critical(f"Can't find attendee for row f{report_row}")
+      if report_row['status'].lower() == 'cancelled':
+        log.debug(f"Can't find attendee for cancelled row f{report_row}")
+      else:
+        log.info(f"Can't find attendee for row f{report_row}")
       return None
     return cls(attendee, report_row)
 
@@ -110,6 +113,65 @@ class Activity:
 
   def fee(self):
     return self._info["activity_fee"]
+  
+  def regtime(self):
+    return self._info["regtime"]
+  
+  def is_meal_plan(self):
+    return "meal plan" in self._info["activity_title"].lower()
+  
+  def num_meal_plans(self):
+    if not self.is_meal_plan():
+      log.error(f"Attempted to calculate number of meal plans from non-mean-plan activity")
+      return None
+    
+    unit_price = 320
+    num_plans = self.fee() / unit_price
+    return num_plans
+  
+  def num_beds(self):
+    if not self.is_housing():
+      log.error(f"Attempted to calculate number of beds from non-housing activity")
+      return None
+    
+    if self.is_dorm_double():
+      return self.fee() / 360
+    
+    if self.is_dorm_single():
+      return self.fee() / 680
+    
+    if self.is_apt1_1room():
+      return self.fee() / 760
+    
+    if self.is_apt1_2room():
+      return self.fee() / 1520
+    
+    if self.is_apt2_1room():
+      return self.fee() / 920
+    
+    if self.is_apt2_2room():
+      return self.fee() / 1840
+  
+  def is_apt1_1room(self):
+    return "apartment style 1 with mini-kitchen (1 room of 2)" in self._info["activity_title"].lower()
+  
+  def is_apt1_2room(self):
+    return "apartment style 1 with mini-kitchen (2 rooms)" in self._info["activity_title"].lower()
+  
+  def is_apt2_1room(self):
+    return "apartment style 2 with full kitchen (1 room of 2)" in self._info["activity_title"].lower()
+  
+  def is_apt2_2room(self):
+    return "apartment style 2 with full kitchen (2 rooms)" in self._info["activity_title"].lower()
+  
+  def is_dorm_single(self):
+    return "dorm - single occupancy" in self._info["activity_title"].lower()
+  
+  def is_dorm_double(self):
+    return "dorm - double occupancy" in self._info["activity_title"].lower()
+  
+  def is_housing(self):
+    return self.is_apt1_1room() or self.is_apt1_2room() or self.is_apt2_1room() or self.is_apt2_2room() or self.is_dorm_single() or self.is_dorm_double()
 
   def is_open(self):
     return self._info["status"].lower() in ["open", "paid"]
