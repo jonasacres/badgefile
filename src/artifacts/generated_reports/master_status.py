@@ -13,11 +13,11 @@ class MasterStatusReport:
 
   def status_row(self, attendee):
     issue_categories = attendee.issue_categories()
-    housing_ok = 'housing' not in issue_categories
-    youth_ok = 'youthform' not in issue_categories
+    housing_ok    = 'housing'    not in issue_categories
+    youth_ok      = 'youthform'  not in issue_categories
     tournament_ok = 'tournament' not in issue_categories
     membership_ok = 'membership' not in issue_categories
-    payment_ok = 'payment' not in issue_categories
+    payment_ok    = 'payment'    not in issue_categories
     
     # Check for any issues in categories not already checked
     known_categories = {'housing', 'youthform', 'tournament', 'membership', 'payment'}
@@ -32,8 +32,8 @@ class MasterStatusReport:
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
       attendee.age_at_congress(),
-      "YES" if attendee.is_primary() else "NO",
       info['country'],
+      "YES" if attendee.is_primary() else "NO",
       primary.id(),
       
       f"{pri_info['name_family']}, {pri_info['name_given']} {pri_info['name_mi'] if pri_info['name_mi'] else ''}",
@@ -56,8 +56,8 @@ class MasterStatusReport:
       "Name",
       "AGAID",
       "Age at Congress",
-      "Is Primary?",
       "Country of Origin",
+      "Is Primary?",
       "Primary Reg. ID",
       "Primary Reg. Name",
       "Primary Reg. Email",

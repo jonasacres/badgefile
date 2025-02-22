@@ -96,3 +96,4 @@ def send_emails():
 if __name__ == "__main__":
     # I don't want to accidentally run this again and spam all our attendees, so I commented out the line to run the mailer...
     # send_emails()
+    pass
