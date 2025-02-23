@@ -59,6 +59,9 @@ class Attendee:
   def effective_rank(self):
     # TODO: allow rank override
     return self._info.get('aga_rating', None)
+  
+  def aga_rating(self):
+    return self._info.get('aga_rating', None)
 
   def load_reglist_row(self, row, sync=True):
     rowinfo = row.info()
@@ -178,9 +181,9 @@ class Attendee:
     return self._activities
   
   def membership_expiration(self):
-    if not 'aga_expiration' in self._info or self._info['aga_expiration'] is None:
+    if not 'aga_expiration_date' in self._info or self._info['aga_expiration_date'] is None:
       return None
-    return datetime.strptime(self._info['aga_expiration'], "%m/%d/%Y")
+    return datetime.strptime(self._info['aga_expiration_date'], "%m/%d/%Y")
 
   def badge_rating(self):
     rating = self._info.get("aga_rating", None)
@@ -194,6 +197,9 @@ class Attendee:
       return str(floor(rating)) + "d"
     else:
       return str(-ceil(rating)) + "k"
+  
+  def rating_override_requested(self):
+    return self._info["rank_playing"].lower() not in ["use aga rank", "not playing in any tournaments"]
   
   def date_of_birth(self):
     if not 'date_of_birth' in self._info or self._info['date_of_birth'] is None:
@@ -466,7 +472,7 @@ class Attendee:
   
   def issues_in_category(self, category):
     issues = [json.loads(issue_raw) for issue_raw in self.open_issues().values()]
-    return [issue for issue in issues if issue['category'] == 'housing']
+    return [issue for issue in issues if issue['category'] == category]
     
   # returns a list of reglist rows referring to this user
   def reglist_rows(self):

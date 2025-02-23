@@ -11,6 +11,8 @@ from artifacts.generated_reports.donor_report import DonorReport
 from artifacts.generated_reports.reg_history_report import RegHistoryReport
 from artifacts.generated_reports.master_status import MasterStatusReport
 from artifacts.generated_reports.housing_registrations import HousingRegistrationsReport
+from artifacts.generated_reports.tournaments_report import TournamentsReport
+from artifacts.generated_reports.membership_report import MembershipReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -51,6 +53,8 @@ class Badgefile:
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
     MasterStatusReport(self).update()
     HousingRegistrationsReport(self).update()
+    TournamentsReport(self).update()
+    MembershipReport(self).update()
 
     self.generate_json()
     # self.upload()
