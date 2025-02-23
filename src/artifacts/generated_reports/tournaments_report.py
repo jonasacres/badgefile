@@ -11,6 +11,8 @@ class TournamentsReport:
   def tournament_attendee_row(self, attendee):
     info = attendee.info()
     tournaments = attendee.tournaments()
+    issues = attendee.issues_in_category('tournament')
+    problems = " | ".join([issue['msg'] for issue in issues])
     
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
@@ -28,6 +30,8 @@ class TournamentsReport:
 
       attendee.aga_rating(),
       "YES" if attendee.rating_override_requested() else "NO",
+      "YES" if len(issues) > 0 else "NO",
+      problems
     ]
 
   def update(self):
@@ -45,6 +49,8 @@ class TournamentsReport:
       "Diehard?",
       "Official rating",
       "Request override?",
+      "Needs Review?",
+      "Problems",
       "TD Override",
       "Registrar Comments",
     ]

@@ -58,7 +58,7 @@ class HousingRegistrationsReport:
       "# Apt 1 (Whole)",
       "# Apt 2 (Half)",
       "# Apt 2 (Whole)",
-      "Problems?",
+      "Problems",
       "Approved?",
       "Registrar Comments",
     ]
