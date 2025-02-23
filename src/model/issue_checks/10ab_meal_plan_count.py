@@ -7,7 +7,7 @@ def run_check(attendee):
   if not attendee.party_meal_plan():
     return None
   
-  num_meal_plans = attendee.party_meal_plan().num_mean_plans()
+  num_meal_plans = attendee.party_meal_plan().num_meal_plans()
   party_size = len(attendee.party())
 
   if num_meal_plans > party_size:

@@ -129,7 +129,7 @@ class Activity:
     num_plans = self.fee() / unit_price
     return num_plans
   
-  def num_beds(self):
+  def num_units(self):
     if not self.is_housing():
       log.error(f"Attempted to calculate number of beds from non-housing activity")
       return None
@@ -151,7 +151,17 @@ class Activity:
     
     if self.is_apt2_2room():
       return self.fee() / 1840
-  
+
+  def num_beds(self):
+    if not self.is_housing():
+      log.error(f"Attempted to calculate number of beds from non-housing activity")
+      return None
+    
+    if self.is_apt1_2room() or self.is_apt2_2room():
+      return 2*self.num_units()
+    else:
+      return self.num_units()
+
   def is_apt1_1room(self):
     return "apartment style 1 with mini-kitchen (1 room of 2)" in self._info["activity_title"].lower()
   

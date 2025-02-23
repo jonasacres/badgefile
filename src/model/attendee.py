@@ -463,6 +463,10 @@ class Attendee:
   
   def issue_categories(self):
     return list(set(json.loads(issue)['category'] for issue in self.open_issues().values()))
+  
+  def issues_in_category(self, category):
+    issues = [json.loads(issue_raw) for issue_raw in self.open_issues().values()]
+    return [issue for issue in issues if issue['category'] == 'housing']
     
   # returns a list of reglist rows referring to this user
   def reglist_rows(self):
@@ -486,6 +490,27 @@ class Attendee:
       return self.badgefile().lookup_attendee(primary_registrant_id)
     
     return None
+
+  def is_subject_to_youth_form(self):
+    return self.age_at_congress() < 18
+  
+  def still_needs_youth_form(self):
+    if not self.is_subject_to_youth_form():
+      return False
+    if not hasattr(self, '_youth_response'):
+      from datasources.sheets.youth_form_responses import YouthFormResponses
+      responses = YouthFormResponses(self._badgefile) # instantiation causes data pull, which should set youth form info for all attendees
+      self.set_youth_info(responses.youth_form(self)) # defensively set ours again anyway, in case we're not in badgefile.attendees() for some reason
+    
+    if self._youth_response is None:
+      return True
+    
+    # right now, we don't do anything to check for problems in the youth form -- if we can associate a youth to a form, then we have a youth form on file
+    return False
+  
+  def set_youth_info(self, response):
+    self._youth_response = response
+
   
   def set_primary_registrant(self, primary_bfid):
     if primary_bfid != self._info.get("primary_registrant_id"):

@@ -1,5 +1,6 @@
 import os
 import csv
+import json
 from datetime import datetime
 from integrations.google_api import sync_sheet_table, authenticate_service_account
 from util.secrets import secret
@@ -17,6 +18,7 @@ class HousingRegistrationsReport:
     meals = attendee.party_meal_plan()
 
     num_beds = sum(booking.num_beds() for booking in housing if booking.num_beds() is not None)
+    problems = " | ".join([issue['msg'] for issue in attendee.issues_in_category('housing')])
     
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
@@ -29,12 +31,13 @@ class HousingRegistrationsReport:
       len(attendee.party()),
       meals.num_meal_plans() if meals else 0,
       num_beds,
-      sum([booking.num_beds() for booking in housing if booking.is_dorm_double()]),
-      sum([booking.num_beds() for booking in housing if booking.is_dorm_single()]),
-      sum([booking.num_beds() for booking in housing if booking.is_apt1_1room()]),
-      sum([booking.num_beds() for booking in housing if booking.is_apt1_2room()]),
-      sum([booking.num_beds() for booking in housing if booking.is_apt2_1room()]),
-      sum([booking.num_beds() for booking in housing if booking.is_apt2_2room()]),
+      sum([booking.num_units() for booking in housing if booking.is_dorm_double()]),
+      sum([booking.num_units() for booking in housing if booking.is_dorm_single()]),
+      sum([booking.num_units() for booking in housing if booking.is_apt1_1room()]),
+      sum([booking.num_units() for booking in housing if booking.is_apt1_2room()]),
+      sum([booking.num_units() for booking in housing if booking.is_apt2_1room()]),
+      sum([booking.num_units() for booking in housing if booking.is_apt2_2room()]),
+      problems,
     ]
 
   def update(self):
@@ -55,6 +58,7 @@ class HousingRegistrationsReport:
       "# Apt 1 (Whole)",
       "# Apt 2 (Half)",
       "# Apt 2 (Whole)",
+      "Problems?",
       "Approved?",
       "Registrar Comments",
     ]

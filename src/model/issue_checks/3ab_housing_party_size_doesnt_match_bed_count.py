@@ -3,11 +3,11 @@ def run_check(attendee):
     return None
   
   party_size = len(attendee.party())
-  num_beds = sum([room.num_beds() for room in attendee.party_housing()])
+  num_beds = int(sum([room.num_beds() for room in attendee.party_housing()]))
 
   if party_size > num_beds:
-    return {"msg": f"Party size exceeds bed count ({len(attendee.party())} > {num_beds})", "category": 'housing', "code": "3a"}
+    return {"msg": f"Party size exceeds bed count ({len(attendee.party())} ppl > {num_beds} bed)", "category": 'housing', "code": "3a"}
   elif party_size < num_beds:
-    return {"msg": f"Party size is less than bed count ({len(attendee.party())} < {num_beds})", "category": 'housing', "code": "3b"}
+    return {"msg": f"Party size is less than bed count ({len(attendee.party())} ppl < {num_beds} bed)", "category": 'housing', "code": "3b"}
   else:
     return None

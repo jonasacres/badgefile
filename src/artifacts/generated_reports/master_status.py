@@ -28,6 +28,12 @@ class MasterStatusReport:
     primary = attendee.primary()
     pri_info = attendee.primary().info()
 
+    if attendee.party_housing() is None or len(attendee.party_housing()) == 0:
+      housing_status = "NONE"
+    else:
+      # TODO: PENDING if waiting for approval, REJECTED if rejected, OK if approved
+      housing_status = "PENDING"
+
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
@@ -43,11 +49,11 @@ class MasterStatusReport:
       info['regtime'],
 
       "OK" if all_good        else "PENDING",
-      "OK" if housing_ok      else "PENDING", # TODO: NONE if no housing on file; PENDING if waiting for approval; REJECTED if rejected
+      housing_status,
       "OK" if youth_ok        else "PENDING",
       "OK" if tournament_ok   else "PENDING",
       "OK" if membership_ok   else "PENDING",
-      "OK" if payment_ok      else "PENDING",
+      "NOT IMPLEMENTED", # "OK" if payment_ok      else "PENDING",
       "OK" if other_issues_ok else "PENDING",
     ]
 

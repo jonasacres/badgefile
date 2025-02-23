@@ -1,15 +1,7 @@
 from datetime import datetime
 
 def run_check(attendee):
-  return None # short-circuited until we get youth form logic in place
-
-  # TODO: find actual cutoff for requiring youth form
-  cutoff = datetime(2007, 7, 12)
-  dob = attendee.date_of_birth()
-
-  if dob >= cutoff:
-    has_youth_form = False # TODO: get a way to access this. apparently there will be a Google Sheet?
-    if not has_youth_form:
-      return {'msg': "Youth form required", 'category': 'youthform', 'code': '2d'}
-  
-  return None
+  if attendee.still_needs_youth_form():
+    return {'msg': "Youth form required", 'category': 'youthform', 'code': '2d'}
+  else:
+    return None

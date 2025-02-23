@@ -358,3 +358,40 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
       ).execute()
     )
   
+  # After all data updates and row deletions are complete, check and update table range
+  spreadsheet = retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().get(
+          spreadsheetId=file
+      ).execute()
+  )
+
+  import json
+  log.debug(f"Spreadsheet\n{json.dumps(spreadsheet, indent=2)}")
+
+  for sheet in spreadsheet['sheets']:
+    if sheet['properties']['title'] != sheet_name:
+      continue
+    if not 'bandedRanges' in sheet or len(sheet['bandedRanges']) == 0:
+      continue
+    for bandedRange in sheet['bandedRanges']:
+      if bandedRange['range']['startRowIndex'] != 0:
+        continue
+        
+      # Update the banded range to match the new data length
+      bandedRange['range']['endRowIndex'] = len(updated_data)
+      
+      # Send update request
+      retry_with_backoff(file_name,
+        lambda: service['sheets'].spreadsheets().batchUpdate(
+          spreadsheetId=file,
+          body={
+            'requests': [{
+              'updateBanding': {
+                'bandedRange': bandedRange,
+                'fields': 'range.endRowIndex'
+              }
+            }]
+          }
+        ).execute()
+      )
+
