@@ -3,5 +3,5 @@ def run_check(attendee):
     return None
   
   if attendee.rating_override_requested():
-    return { "msg": "Rank override requested", "category": 'membership', "code": "6c" }
+    return { "msg": "Rank override requested", "category": 'tournament', "code": "6c" }
   return None
