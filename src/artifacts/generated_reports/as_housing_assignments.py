@@ -37,6 +37,7 @@ class HousingAssignmentsReport:
       attendee.id(),
       activity.regtime(),
       self.format_room_type(activity),
+      activity.num_beds(),
       activity.roommate_request(),
       activity.roommate_request_comments(),
     ]
@@ -47,6 +48,7 @@ class HousingAssignmentsReport:
       "Pri. Reg. AGAID",
       "Booking Time",
       "Room Type",
+      "Num. Beds",
       "Roommate Request",
       "Roommate Request Comments",
       "Occupant ID",
