@@ -43,7 +43,7 @@ class Activity:
   @classmethod
   def with_db_row(cls, badgefile, db_row):
     return cls.with_report_row(badgefile, db_row)
-
+  
   def __init__(self, attendee, row):
     self.db = Database.shared()
     self.attendee = attendee
@@ -110,7 +110,6 @@ class Activity:
     return [
     ]
   
-
   def fee(self):
     return self._info["activity_fee"]
   
@@ -211,7 +210,7 @@ class Activity:
     return "partial week" in self._info["activity_title"].lower()
 
   def roommate_request(self):
-    return " | ".join([self._info["roommate_a"], self._info["roommate_b"], self._info["roommate_c"]])
+    return " | ".join([x for x in [self._info["roommate_a"], self._info["roommate_b"], self._info["roommate_c"]] if x])
   
   def roommate_request_comments(self):
-    return " | ".join([self._info["roommate_a_comments"], self._info["roommate_b_comments"], self._info["roommate_c_comments"]])
+    return " | ".join([x for x in [self._info["roommate_a_comments"], self._info["roommate_b_comments"], self._info["roommate_c_comments"]] if x])

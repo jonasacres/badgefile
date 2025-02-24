@@ -6,7 +6,7 @@ from util.secrets import secret
 
 from log.logger import log
 
-class MasterStatusReport:
+class OverviewReport:
   def __init__(self, badgefile):
     self.badgefile = badgefile
     pass
@@ -84,6 +84,6 @@ class MasterStatusReport:
     service = authenticate_service_account()
     
     log.debug("master_status_report: Updating")
-    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Master Status", secret("folder_id"))
+    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Overview", secret("folder_id"))
 
 

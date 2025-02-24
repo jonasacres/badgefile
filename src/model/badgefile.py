@@ -9,10 +9,11 @@ from datasources.tdlist import TDList
 from artifacts.generated_reports.issue_sheet import IssueSheet
 from artifacts.generated_reports.donor_report import DonorReport
 from artifacts.generated_reports.reg_history_report import RegHistoryReport
-from artifacts.generated_reports.master_status import MasterStatusReport
-from artifacts.generated_reports.housing_registrations import HousingRegistrationsReport
-from artifacts.generated_reports.tournaments_report import TournamentsReport
-from artifacts.generated_reports.membership_report import MembershipReport
+from artifacts.generated_reports.as_overview import OverviewReport
+from artifacts.generated_reports.as_housing_registrations import HousingRegistrationsReport
+from artifacts.generated_reports.as_housing_assignments import HousingAssignmentsReport
+from artifacts.generated_reports.as_tournaments_report import TournamentsReport
+from artifacts.generated_reports.as_membership_report import MembershipReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -51,8 +52,9 @@ class Badgefile:
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
-    MasterStatusReport(self).update()
+    OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
+    HousingAssignmentsReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()
 

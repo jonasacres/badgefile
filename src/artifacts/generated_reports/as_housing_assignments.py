@@ -6,7 +6,7 @@ from util.secrets import secret
 
 from log.logger import log
 
-class HousingRegistrationsReport:
+class HousingAssignmentsReport:
   def __init__(self, badgefile):
     self.badgefile = badgefile
     pass
@@ -35,7 +35,8 @@ class HousingRegistrationsReport:
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
-      act_info["activity_title"],
+      activity.regtime(),
+      self.format_room_type(activity),
       activity.roommate_request(),
       activity.roommate_request_comments(),
     ]
@@ -44,6 +45,7 @@ class HousingRegistrationsReport:
     sheet_header = [
       "Name",
       "Pri. Reg. AGAID",
+      "Booking Time",
       "Room Type",
       "Roommate Request",
       "Roommate Request Comments",
@@ -53,10 +55,21 @@ class HousingRegistrationsReport:
       "Physical Room #",
     ]
     
-    sheet_data = [self.housing_registration_row(att) for att in self.badgefile.attendees() if att.is_primary() and len(att.party_housing()) > 0]
+    housing_activities = []
+    seen_ids = set()
+    
+    for attendee in self.badgefile.attendees():
+      for activity in attendee.activities():
+        if activity.is_housing() and activity.is_open() and activity.info()["activity_registrant_id"] not in seen_ids:
+          housing_activities.append(activity)
+          seen_ids.add(activity.info()["activity_registrant_id"])
+
+    housing_activities.sort(key=lambda activity: activity.info()["activity_registrant_id"])
+    
+    sheet_data = [self.housing_registration_row(act) for act in housing_activities]
     service = authenticate_service_account()
     
-    log.debug("housing_registration_report: Updating")
+    log.debug("housing_assignments: Updating")
     sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Housing Assignments", secret("folder_id"))
 
 
