@@ -54,7 +54,7 @@ class Badgefile:
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
     OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
-    HousingAssignmentsReport(self).update()
+    # HousingAssignmentsReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()
 
