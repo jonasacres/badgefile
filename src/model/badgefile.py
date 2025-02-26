@@ -12,6 +12,7 @@ from artifacts.generated_reports.reg_history_report import RegHistoryReport
 from artifacts.generated_reports.as_overview import OverviewReport
 from artifacts.generated_reports.as_housing_registrations import HousingRegistrationsReport
 from artifacts.generated_reports.as_housing_assignments import HousingAssignmentsReport
+from artifacts.generated_reports.as_email import EmailReport
 from artifacts.generated_reports.as_tournaments_report import TournamentsReport
 from artifacts.generated_reports.as_membership_report import MembershipReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
@@ -55,6 +56,7 @@ class Badgefile:
     OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
     # HousingAssignmentsReport(self).update()
+    EmailReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()
 
