@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from model.badgefile import Badgefile
 from util.secrets import secret
 from log.logger import log
+from model.email_history import EmailHistory
 
 class Email:
   def __init__(self, template, attendee, extra={}):
@@ -25,16 +26,28 @@ class Email:
       return subject, body
 
   def send(self, server, force=False):
-    sent_time = self.attendee.email_sent_time(self.template)
+    sent_emails = EmailHistory.shared().emails_for_user(self.attendee.id())
+    sent_time = sent_emails.get(self.template)
+    email_to = self.attendee.info()['email']
+
     if sent_time != None:
-      log.info(f"Email {self.template} already sent to {self.attendee.info()['email']} at {sent_time}; not sending again without force flag")
+      log.info(f"Email {self.template} already sent to {email_to} at {sent_time}; not sending again without force flag")
       return False
     
-    msg = self.create_html_email()
-    log.debug(f"Sending email {self.template} to {self.attendee.info()['email']}")
-    server.send_message(msg)
+    msg, html_body, plaintext_body = self.create_html_email()
+    if secret("email_enable") is True:
+      log.debug(f"Sending email {self.template} to {email_to}")
+      server.send_message(msg)
+    else:
+      log.debug(f"Not sending email {self.template} to {email_to} -- email disabled in configuration")
+    
     log.debug(f"Marking email sent.")
-    self.attendee.mark_email_sent(self.template)
+    EmailHistory.shared().sent_email_for_user(self.attendee.id(),
+                                              self.template,
+                                              msg['From'],
+                                              msg['To'],
+                                              msg['Subject'],
+                                              plaintext_body)
 
   def create_html_email(self):
     subject, body = self.apply_template()
@@ -55,7 +68,7 @@ class Email:
     msg.attach(MIMEText(body, 'plain'))
     msg.attach(MIMEText(html_body, 'html'))
     
-    return msg
+    return [msg, html_body, body]
 
 
 def connect_smtp():

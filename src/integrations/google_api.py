@@ -244,7 +244,7 @@ def read_sheet_data(service, file, sheet_name=None):
 
   return result['values']
   
-def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None):
+def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None, valueInputOption='RAW'):
   file = create_sheet_if_not_exists(service, file_name, folder_id, sheet_name)
   existing_data = read_sheet_data(service, file, sheet_name)
 
@@ -311,7 +311,7 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   if valid_rows:
     log.debug(f"Updating {len(valid_rows)} data rows in file {file_name}, worksheet {sheet_name}")
     batch_data = {
-      'valueInputOption': 'RAW',
+      'valueInputOption': valueInputOption,
       'data': [
         {
           'range': f'{sheet_name}!A{i+1}',
