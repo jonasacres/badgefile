@@ -101,7 +101,7 @@ def upload_csv_to_drive(service, file_path, file_name, folder_id=None):
 def upload_json_to_drive(service, file_path, file_name, folder_id=None):
   return upload_file_to_drive(service, file_path, file_name, folder_id, "application/json", "application/json")
 
-def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
+def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None, sheet_name="Data"):
   files = locate_existing_files(service, file_name, folder_id)
   if files is None or len(files) == 0:
     log.critical(f"{file_name}: Unable to locate existing Google Sheets sheet matching name in folder {folder_id}")
@@ -119,7 +119,7 @@ def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
     retry_with_backoff(file_name,
       lambda: service['sheets'].spreadsheets().values().clear(
         spreadsheetId=file['id'],
-        range='Data!A1:ZZ',
+        range=f'{sheet_name}!A1:ZZ',
         body={}
       ).execute()
     )
@@ -128,7 +128,7 @@ def update_sheets_worksheet(service, file_name, sheet_data, folder_id=None):
     retry_with_backoff(file_name,
       lambda: service['sheets'].spreadsheets().values().update(
         spreadsheetId=file['id'],
-        range='Data!A1',
+        range=f'{sheet_name}!A1',
         valueInputOption='RAW',
         body=body
       ).execute()
@@ -366,7 +366,7 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   )
 
   import json
-  log.debug(f"Spreadsheet\n{json.dumps(spreadsheet, indent=2)}")
+  log.trace(f"Spreadsheet\n{json.dumps(spreadsheet, indent=2)}")
 
   for sheet in spreadsheet['sheets']:
     if sheet['properties']['title'] != sheet_name:

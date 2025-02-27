@@ -15,6 +15,8 @@ from artifacts.generated_reports.as_housing_assignments import HousingAssignment
 from artifacts.generated_reports.as_email import EmailReport
 from artifacts.generated_reports.as_tournaments_report import TournamentsReport
 from artifacts.generated_reports.as_membership_report import MembershipReport
+from artifacts.generated_reports.as_other_issues import OtherIssuesReport
+from artifacts.generated_reports.as_aggregate import AggregateReport
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -53,12 +55,15 @@ class Badgefile:
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
+    
+    AggregateReport(self).update()
     OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
     # HousingAssignmentsReport(self).update()
     EmailReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()
+    OtherIssuesReport(self).update()
 
     self.generate_json()
     # self.upload()
