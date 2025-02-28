@@ -11,8 +11,12 @@ class TournamentsReport:
   def tournament_attendee_row(self, attendee):
     info = attendee.info()
     tournaments = attendee.tournaments()
-    issues = attendee.issues_in_category('tournament')
+    
+    # issues is every issue EXCEPT rank override request (code 6b)
+    issues = [issue for issue in attendee.issues_in_category('tournament') if issue['code'] != '6b']
+    
     problems = " | ".join([issue['msg'] for issue in issues])
+    needs_override = attendee.rating_override_requested() # TODO: we'll want to check against existing "Override Rating" column; if set, this is false
     
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
@@ -30,7 +34,7 @@ class TournamentsReport:
 
       attendee.aga_rating(),
       "YES" if attendee.rating_override_requested() else "NO",
-      "YES" if len(issues) > 0 else "NO",
+      "YES" if len(issues) > 0 or needs_override else "NO",
       problems
     ]
 
@@ -52,6 +56,7 @@ class TournamentsReport:
       "Needs Review?",
       "Problems",
       "Override Rating (Editable)",
+      "Ignore Problems (Editable)",
       "Comments (Editable)",
     ]
     
