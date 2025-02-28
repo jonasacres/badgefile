@@ -38,8 +38,8 @@ class OtherIssuesReport:
       "Issue Category",
       "Issue Code",
       "Issue Description",
-      "Ignore?",
-      "Comments",
+      "Ignore? (Editable)",
+      "Comments (Editable)",
     ]
     
     attendee_issues = []

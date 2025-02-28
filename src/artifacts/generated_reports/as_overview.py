@@ -77,7 +77,7 @@ class OverviewReport:
       "Membership?",
       "Paid?",
       "Other issues?",
-      "Comments",
+      "Comments (Editable)",
     ]
     
     sheet_data = [self.status_row(att) for att in self.badgefile.attendees()]

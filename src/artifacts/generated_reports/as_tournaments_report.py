@@ -51,8 +51,8 @@ class TournamentsReport:
       "Request override?",
       "Needs Review?",
       "Problems",
-      "TD Override",
-      "Registrar Comments",
+      "Override Rating (Editable)",
+      "Comments (Editable)",
     ]
     
     sheet_data = [self.tournament_attendee_row(att) for att in self.badgefile.attendees() if att.is_participant()]

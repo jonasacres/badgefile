@@ -36,6 +36,7 @@ class MembershipReport:
       "Member Type",
       "Expiration Date",
       "Needs Renew?",
+      "Comments (Editable)",
     ]
     
     sheet_data = [self.membership_attendee_row(att) for att in self.badgefile.attendees() if att.is_participant()]

@@ -59,8 +59,8 @@ class HousingRegistrationsReport:
       "# Apt 2 (Half)",
       "# Apt 2 (Whole)",
       "Problems",
-      "Approved?",
-      "Registrar Comments",
+      "Approved? (Editable)",
+      "Comments (Editable)",
     ]
     
     sheet_data = [self.housing_registration_row(att) for att in self.badgefile.attendees() if att.is_primary() and len(att.party_housing()) > 0]
