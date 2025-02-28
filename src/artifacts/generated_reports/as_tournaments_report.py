@@ -12,8 +12,8 @@ class TournamentsReport:
     info = attendee.info()
     tournaments = attendee.tournaments()
     
-    # issues is every issue EXCEPT rank override request (code 6b)
-    issues = [issue for issue in attendee.issues_in_category('tournament') if issue['code'] != '6b']
+    # issues is every issue EXCEPT rank override request (code 6c)
+    issues = [issue for issue in attendee.issues_in_category('tournament') if issue['code'] != '6c']
     
     problems = " | ".join([issue['msg'] for issue in issues])
     needs_override = attendee.rating_override_requested() # TODO: we'll want to check against existing "Override Rating" column; if set, this is false
