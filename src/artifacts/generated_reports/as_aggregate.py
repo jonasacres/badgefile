@@ -32,8 +32,8 @@ class AggregateReport:
       len([att for att in population if att.age_at_congress() >= 23]),
     ]
   
-  def make_heading_row(self, title):
-    return [ title ]
+  def make_heading_row(self, row):
+    return row
   
   def make_simple_row(self, title, count):
     return [
@@ -44,8 +44,8 @@ class AggregateReport:
   def render_row(self, row):
     if len(row) == 0:
       return []
-    if len(row) == 1:
-      return self.make_heading_row(row[0])
+    if not any(isinstance(x, list) for x in row):
+      return self.make_heading_row(row)
     if row[0] == "Registration":
       return self.make_registration_row(row[0], row[1])
     if isinstance(row[1], list):
@@ -62,6 +62,11 @@ class AggregateReport:
     for pri in primaries:
       for housing_item in pri.party_housing():
         housing.append(housing_item)
+
+    num_dorm_beds_booked = sum([item.num_units() for item in housing if item.is_dorm_double()]) + 2*sum([item.num_units() for item in housing if item.is_dorm_single()])
+    num_apt1_beds_booked = sum([item.num_units() for item in housing if item.is_apt1_1room()]) + 2*sum([item.num_units() for item in housing if item.is_apt1_2room()])
+    num_apt2_beds_booked = sum([item.num_units() for item in housing if item.is_apt2_1room()]) + 2*sum([item.num_units() for item in housing if item.is_apt2_2room()])
+    num_vip_beds_booked = 0
 
     row_defs = [
       ["Registration", real_attendees],
@@ -88,8 +93,9 @@ class AggregateReport:
       ["Seniors", [att for att in real_attendees if "seniors" in att.tournaments()]],
       ["Die-hard", [att for att in real_attendees if "diehard" in att.tournaments()]],
       [],
-      ["Banquet"],
+      ["Dining"],
       ["Banquet Admission", [att for att in real_attendees if att.is_attending_banquet()]],
+      ["Meal Plans", sum([pri.party_meal_plan().num_meal_plans() for pri in primaries if pri.party_meal_plan() is not None])],
       [],
       ["Translators"],
       ["Chinese", [att for att in translators if "chinese" in att.languages()]],
@@ -97,14 +103,19 @@ class AggregateReport:
       ["Japanese", [att for att in translators if "japanese" in att.languages()]],
       ["Spanish", [att for att in translators if "spanish" in att.languages()]],
       [],
-      ["Hospitality"],
-      ["Meal Plans", sum([pri.party_meal_plan().num_meal_plans() for pri in primaries if pri.party_meal_plan() is not None])],
-      ["Double-occupancy Dorm Room", sum([item.num_units() for item in housing if item.is_dorm_double()])],
+      ["Hospitality", "# Booked"],
+      ["Double-occupancy Dorm Bed", sum([item.num_units() for item in housing if item.is_dorm_double()])],
       ["Single-occupancy Dorm Room", sum([item.num_units() for item in housing if item.is_dorm_single()])],
       ["Kitchenette (1 room of 2)", sum([item.num_units() for item in housing if item.is_apt1_1room()])],
       ["Kitchenette (both rooms)", sum([item.num_units() for item in housing if item.is_apt1_2room()])],
       ["Full Kitchen (1 room of 2)", sum([item.num_units() for item in housing if item.is_apt2_1room()])],
       ["Full Kitchen (both rooms)", sum([item.num_units() for item in housing if item.is_apt2_2room()])],
+      [],
+      ["Housing Occupancy", "# Beds Booked", "# Beds", "% Occupied"],
+      ["Dorm Beds", num_dorm_beds_booked, 636, "%.02f%%" % (100 * num_dorm_beds_booked/636.0)],
+      ["Kitchenette Bedrooms", num_apt1_beds_booked, 96, "%.02f%%" % (100 * num_apt1_beds_booked/96.0)],
+      ["Kitchen Bedrooms", num_apt2_beds_booked, 127, "%.02f%%" % (100 * num_apt2_beds_booked/127.0)],
+      ["VIP Bedrooms", num_vip_beds_booked, 8, "%.02f%%" % (100 * num_vip_beds_booked/8.0)],
     ]
 
     sheet_header = ["", "Total", "Youth (0-17)", "YA (18-23)", "Adults", "", "Parties of 1", "Parties of 2", "Parties of 3", "Parties of 4", "Parties of 5+"]
