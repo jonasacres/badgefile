@@ -116,6 +116,16 @@ class AggregateReport:
       ["Kitchenette Bedrooms", num_apt1_beds_booked, 96, "%.02f%%" % (100 * num_apt1_beds_booked/96.0)],
       ["Kitchen Bedrooms", num_apt2_beds_booked, 127, "%.02f%%" % (100 * num_apt2_beds_booked/127.0)],
       ["VIP Bedrooms", num_vip_beds_booked, 8, "%.02f%%" % (100 * num_vip_beds_booked/8.0)],
+      [],
+      ["T-Shirt Sizes"],
+      ["None",              sum(1 for att in real_attendees if att.info()["tshirt"] == "None")],
+      ["Youth",             sum(1 for att in real_attendees if att.info()["tshirt"] == "Youth")],
+      ["Adult - Small",     sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - Small")],
+      ["Adult - Medium",    sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - Medium")],
+      ["Adult - Large",     sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - Large")],
+      ["Adult - X-Large",   sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - X-Large")],
+      ["Adult - XX-Large",  sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - XX-Large")],
+      ["Adult - XXX-Large", sum(1 for att in real_attendees if att.info()["tshirt"] == "Adult - XXX-Large")],
     ]
 
     sheet_header = ["", "Total", "Youth (0-17)", "YA (18-23)", "Adults", "", "Parties of 1", "Parties of 2", "Parties of 3", "Parties of 4", "Parties of 5+"]
