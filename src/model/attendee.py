@@ -197,6 +197,9 @@ class Attendee:
     birth_date = self.date_of_birth()
     return congress_date.year - birth_date.year - ((congress_date.month, congress_date.day) < (birth_date.month, birth_date.day))
   
+  def full_name(self):
+    return f"{self._info['name_family']}, {self._info['name_given']} {self._info['name_mi']}"
+  
   def is_attending_banquet(self):
     for activity in self.activities():
       if activity.is_open() and activity.is_banquet():

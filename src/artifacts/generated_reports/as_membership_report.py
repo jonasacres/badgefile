@@ -9,13 +9,16 @@ class MembershipReport:
     pass
 
   def membership_attendee_row(self, attendee):
+    pri = attendee.primary()
     info = attendee.info()
+    pri_info = pri.info()
     needs_renewal = any([issue['code'] == '1a' for issue in attendee.issues_in_category('membership')])
     
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
       info['email'],
+      pri_info['email'],
       attendee.phone(),
       attendee.age_at_congress(),
       info['country'],
@@ -30,6 +33,7 @@ class MembershipReport:
       "Name",
       "AGAID",
       "Email",
+      "Pri. Email",
       "Phone",
       "Age at Congress",
       "Country of Origin",

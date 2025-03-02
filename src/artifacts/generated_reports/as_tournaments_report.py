@@ -9,7 +9,9 @@ class TournamentsReport:
     pass
 
   def tournament_attendee_row(self, attendee):
+    pri = attendee.primary()
     info = attendee.info()
+    pri_info = pri.info()
     tournaments = attendee.tournaments()
     
     # issues is every issue EXCEPT rank override request (code 6c)
@@ -22,6 +24,7 @@ class TournamentsReport:
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
       info['email'],
+      pri_info['email'],
       attendee.phone(),
       attendee.age_at_congress(),
       info['country'],
@@ -43,6 +46,7 @@ class TournamentsReport:
       "Name",
       "AGAID",
       "Email",
+      "Pri. Email",
       "Phone",
       "Age at Congress",
       "Country of Origin",

@@ -197,12 +197,14 @@ class Activity:
     return " circle ($" in self._info["activity_title"].lower()
   
   def is_registration_fee(self):
-    return "registration fee" in self._info["activity_title"].lower()
+    at = self._info["activity_title"].lower()
+    return "registration fee" in at or "registration for youth" in at
   
   def is_full_week_registration(self):
     if not self.is_registration_fee():
       return None
-    return "full week" in self._info["activity_title"].lower()
+    at = self._info["activity_title"].lower()
+    return "full week" in at or "registration for youth" in at
   
   def is_partial_week_registration(self):
     if not self.is_registration_fee():

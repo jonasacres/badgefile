@@ -41,6 +41,11 @@ class Badgefile:
     
     for attendee in self.attendees():
       attendee.invalidate_activities()
+
+    for attendee in self.attendees():
+      if attendee.is_partial_week() or attendee.is_full_week():
+        continue
+      print(f"Weird case: {attendee.full_name()} {attendee.id()}")
     
     ActivityList.latest().rows(self) # merely asking for the rows causes them to be saved to the DB
     HousingActivityList.latest().rows(self) # also force housing rows to DB
