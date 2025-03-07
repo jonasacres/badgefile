@@ -64,7 +64,7 @@ class Badgefile:
     AggregateReport(self).update()
     OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
-    # HousingAssignmentsReport(self).update()
+    HousingAssignmentsReport(self).update()
     EmailReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()

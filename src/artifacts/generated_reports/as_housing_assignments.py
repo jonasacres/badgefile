@@ -27,17 +27,20 @@ class HousingAssignmentsReport:
     else:
       return activity.info()["activity_title"]
 
-  def housing_registration_row(self, activity):
+  def housing_registration_row(self, unit):
+    activity = unit["activity"]
+    unit_id = unit["id"]
     attendee = activity.attendee
     info = attendee.info()
     act_info = activity.info()
 
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
+      unit_id,
       attendee.id(),
       activity.regtime(),
       self.format_room_type(activity),
-      activity.num_beds(),
+      activity.num_beds() / activity.num_units(),
       activity.roommate_request(),
       activity.roommate_request_comments(),
     ]
@@ -45,6 +48,7 @@ class HousingAssignmentsReport:
   def update(self):
     sheet_header = [
       "Name",
+      "Housing unit ID",
       "Pri. Reg. AGAID",
       "Booking Time",
       "Room Type",
@@ -60,6 +64,7 @@ class HousingAssignmentsReport:
     housing_activities = []
     seen_ids = set()
     
+    # activity_registrant_id is a unique ID for each line item in the housing registration, NOT the attendee ID
     for attendee in self.badgefile.attendees():
       for activity in attendee.activities():
         if activity.is_housing() and activity.is_open() and activity.info()["activity_registrant_id"] not in seen_ids:
@@ -67,8 +72,14 @@ class HousingAssignmentsReport:
           seen_ids.add(activity.info()["activity_registrant_id"])
 
     housing_activities.sort(key=lambda activity: activity.info()["activity_registrant_id"])
+    housing_units = []
+
+    # if activity.num_units() > 1, then we need to add a row for each unit
+    for activity in housing_activities:
+      for i in range(int(activity.num_units() + 0.5)):
+        housing_units.append({"activity": activity, "id":f"{activity.info()['activity_registrant_id']}.{i}"})
     
-    sheet_data = [self.housing_registration_row(act) for act in housing_activities]
+    sheet_data = [self.housing_registration_row(unit) for unit in housing_units]
     service = authenticate_service_account()
     
     log.debug("housing_assignments: Updating")
