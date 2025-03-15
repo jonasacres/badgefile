@@ -545,5 +545,5 @@ class Attendee:
     self.sync_to_db()
 
   def is_housing_approved(self):
-    return self._info.get("housing_approved", False) == True
+    return self.primary().info().get("housing_approved", False) == True
   
