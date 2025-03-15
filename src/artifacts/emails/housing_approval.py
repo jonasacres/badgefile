@@ -8,7 +8,7 @@ class HousingApprovalEmail:
   
   def recipients(self):
     # everyone who is approved for housing and didn't get the approval e-mail yet (which has a youth version and adult version)
-    all_approved = [attendee for attendee in self.badgefile.attendees() if attendee.is_housing_approved()]
+    all_approved = [attendee for attendee in self.badgefile.attendees() if attendee.is_housing_approved() and attendee.is_primary()]
     all_emailed_adult = EmailHistory.shared().recipients_for_email("2b-housing-approved-adult")
     all_emailed_youth = EmailHistory.shared().recipients_for_email("2c-housing-approved-youth")
 
