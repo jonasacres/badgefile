@@ -62,7 +62,8 @@ def update():
   log.notice(f"Updating badgefile.")
   bf = Badgefile()
   bf.update()
-
+  bf.update_attendees()
+  bf.run_approvals()
 
 start_time = time.time()
 log.notice(f"=======================================")

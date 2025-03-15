@@ -65,6 +65,16 @@ class EmailHistory:
       (badgefile_id, email_type, timestamp, email_from, email_to, email_subject, email_body)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     """, [badgefile_id, email_type, time_sent, email_from, email_to, email_subject, email_body])
+  
+  def recipients_for_email(self, email_type):
+    # return a list of badgefile_ids that received a given email_type
+    results = self.database.query("""
+      SELECT DISTINCT badgefile_id
+      FROM email_history
+      WHERE email_type = ?
+      ORDER BY badgefile_id
+    """, [email_type])
+    return [row['badgefile_id'] for row in results]
 
   def sync_emails(self):
     import os
@@ -92,7 +102,7 @@ class EmailHistory:
       sha256 = hashlib.sha256(hash_input.encode()).hexdigest()[0:15]
       
       # Format timestamp
-      timestamp = datetime.strptime(email_data['timestamp'], '%Y-%m-%d %H:%M:%S')
+      timestamp = datetime.strptime(email_data['timestamp'].split('.')[0], '%Y-%m-%d %H:%M:%S')
       timestamp_str = timestamp.strftime('%Y%m%d_%H%M%S')
       
       # Create filename

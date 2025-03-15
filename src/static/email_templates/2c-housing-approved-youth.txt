@@ -1,0 +1,17 @@
+Subject: Housing & Meals Approved!
+
+<p>Dear {name_given},</p>
+
+<p>Great news! Your Housing & Meals selections for the 2025 U.S. Go Congress have been approved. You are now welcome to log in and pay your remaining balance.</p>
+
+<p>To view your balance and complete your payment, please visit <a href="https://www.usgo.org/">https://www.usgo.org/</a> and sign in.  You will be prompted that you have a pending payment.</p>
+
+<h3>** IMPORTANT **</h3>
+<p><b>BUT FIRST:</b>  did you know that youth (17 and under) and young adults (18 - 22) attending college or graduate school can receive scholarships worth hundreds of dollars which can be applied towards your congress housing bill?  For details, view the congress’s <a href="https://usgo.org/prices/">Pricing</a> page and scroll down to the bottom.</p>
+
+<p>If you think you will qualify for one of the scholarships, go ahead and fill out the appropriate form on that page to apply. There is a discount code on the form. Use that coupon code when you pay your housing bill to receive your scholarship. In the unlikely case your application does not end up getting approved, we will contact you for payment of the scholarship amount. If you have further questions at this point, please reach out to us.</p>
+
+<p>Best,</p>
+
+<p>Registrar Team<br />
+<a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a></p>

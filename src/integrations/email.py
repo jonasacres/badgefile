@@ -2,12 +2,39 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from model.badgefile import Badgefile
 from util.secrets import secret
 from log.logger import log
 from model.email_history import EmailHistory
 
 class Email:
+  _default_server = None
+
+  @classmethod
+  def default_server(cls):
+    if cls._default_server is None:
+      if not secret("email_enable"):
+        log.notice("returning dummy for email server since e-mail is disabled")
+        return "e-mail disabled"
+      
+      # Initialize SMTP connection
+      smtp_server = 'mail.smtp2go.com'
+      smtp_port = 587
+      smtp_user = secret('smtp_username')
+      smtp_pass = secret('smtp_password')
+      
+      # Connect to SMTP server
+      log.info(f"Connecting as SMTP user {smtp_user}@{smtp_server}:{smtp_port}")
+      server = smtplib.SMTP(smtp_server, smtp_port)
+
+      log.debug("Starting TLS connection to SMTP server")
+      server.starttls()
+
+      log.debug("Authenticating with SMTP server")
+      server.login(smtp_user, smtp_pass)
+      cls._default_server = server
+
+    return cls._default_server
+
   def __init__(self, template, attendee, extra={}):
     self.template = template
     self.attendee = attendee
@@ -25,8 +52,9 @@ class Email:
       body = "".join(lines[2:]).format(**{key: info[key] for key in info.keys()})
       return subject, body
 
-  def send(self, server, force=False):
-    sent_emails = EmailHistory.shared().emails_for_user(self.attendee.id())
+  def send(self, server=None, force=False):
+    server = server or Email.default_server()
+    sent_emails = EmailHistory.shared().latest_emails_for_user(self.attendee.id())
     sent_time = sent_emails.get(self.template)
     email_to = self.attendee.info()['email']
 

@@ -249,7 +249,7 @@ class Attendee:
     # TODO: figure out how to get these from the activity sheet
     is_anon = False
     for name in names:
-      is_anon |= name.to_lower() in ['anon', 'anonymous']
+      is_anon |= name.lower() in ['anon', 'anonymous']
 
     self._info['donation_name'] = names[0] if len(names) > 0 else None
     self._info['donation_is_anonymous'] = is_anon
@@ -323,6 +323,10 @@ class Attendee:
       implicit_keys.remove("badgefile_id") # we manually handle this column outside of implicit_column_definitions and explicit_column_definitions
     if "json" in implicit_keys:
       implicit_keys.remove("json") # ditto
+    
+    # remove anything that is a list or dict; those can't go into the sqlite table
+    implicit_keys = [k for k in implicit_keys if not isinstance(info[k], (list, dict))]
+
     return [ [key, "INTEGER" if isinstance(info[key], int) else "TEXT"] for key in implicit_keys ]
 
   def explicit_column_definitions(self):
@@ -511,3 +515,35 @@ class Attendee:
     if primary_bfid != self._info.get("primary_registrant_id"):
       self._info["primary_registrant_id"] = primary_bfid
       self.sync_to_db()
+
+
+  def set_housing_approval(self, approved):
+    was_approved = self._info.get("housing_approved", False) == True
+
+    if approved == was_approved:
+      return
+
+    ever_approved = self._info.get("housing_ever_approved", False) == True
+    ever_disapproved = self._info.get("housing_ever_disapproved", False) == True
+
+    self._info["housing_approved"] = approved
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if approved:
+      log.info(f"Recording new housing approval for {self.id()}; housing_ever_approved={ever_approved}")
+      self._info["housing_approval_time"] = now
+      if not ever_approved:
+        self._info["housing_first_approval_time"] = now
+        self._info["housing_ever_approved"] = True
+    else:
+      log.info(f"Recording new housing disapproval for {self.id()}; housing_ever_disapproved={ever_disapproved}")
+      self._info["housing_disapproval_time"] = now
+      if not ever_disapproved:
+        self._info["housing_first_disapproval_time"] = now
+        self._info["housing_ever_disapproved"] = True
+    
+    self.sync_to_db()
+
+  def is_housing_approved(self):
+    return self._info.get("housing_approved", False) == True
+  

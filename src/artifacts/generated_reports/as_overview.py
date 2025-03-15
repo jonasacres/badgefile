@@ -31,8 +31,7 @@ class OverviewReport:
     if attendee.party_housing() is None or len(attendee.party_housing()) == 0:
       housing_status = "NONE"
     else:
-      # TODO: PENDING if waiting for approval, REJECTED if rejected, OK if approved
-      housing_status = "PENDING"
+      housing_status = "OK" if attendee.is_housing_approved() else "PENDING"
 
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",

@@ -1,0 +1,16 @@
+Subject: Housing & Meals Approved!
+
+<p>Dear {name_given},</p>
+
+<p>Great news! Your Housing & Meals selections for the 2025 U.S. Go Congress have been approved. You are now welcome to log in and pay your remaining balance.</p>
+
+<p>Paying early helps us run the Congress more efficiently and ensures a smooth experience for all attendees. We appreciate your prompt payment!</p>
+
+<p>To view your balance and complete your payment, please visit <a href="https://www.usgo.org/">https://www.usgo.org/</a> and sign in.  You will be prompted that you have a pending payment.</p>
+
+<p>If you have further questions at this point, please reach out to us.</p>
+
+<p>Best,</p>
+
+<p>Registrar Team<br />
+<a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a></p>

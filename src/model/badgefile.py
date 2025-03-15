@@ -17,9 +17,11 @@ from artifacts.generated_reports.as_tournaments_report import TournamentsReport
 from artifacts.generated_reports.as_membership_report import MembershipReport
 from artifacts.generated_reports.as_other_issues import OtherIssuesReport
 from artifacts.generated_reports.as_aggregate import AggregateReport
+from artifacts.emails.housing_approval import HousingApprovalEmail
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
+from model.registrar_sheet import RegistrarSheet
 
 import json
 import os
@@ -34,7 +36,21 @@ class Badgefile:
   def path(self):
     return "artifacts/badgefile.json"
 
+  def run_approvals(self):
+    sheet = RegistrarSheet(self)
+    sheet.update_from_housing_registration()
+    HousingApprovalEmail(self).send()
+    EmailReport(self).update()
+
   def update(self):
+    self.update_attendees()
+    self.update_raw_reports()
+    self.update_attendee_status_sheet()
+
+    self.generate_json()
+    self.upload()
+
+  def update_attendees(self):
     log.debug("Updating badgefile")
     for row in Reglist.latest().rows():
       self.update_or_create_attendee_from_reglist_row(row)
@@ -56,11 +72,13 @@ class Badgefile:
     for attendee in self.attendees():
       attendee.populate_derived_fields()
       attendee.scan_issues()
-    
+  
+  def update_raw_reports(self):
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
-    
+ 
+  def update_attendee_status_sheet(self):
     AggregateReport(self).update()
     OverviewReport(self).update()
     HousingRegistrationsReport(self).update()
@@ -69,9 +87,6 @@ class Badgefile:
     TournamentsReport(self).update()
     MembershipReport(self).update()
     OtherIssuesReport(self).update()
-
-    self.generate_json()
-    # self.upload()
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist

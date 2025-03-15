@@ -14,7 +14,7 @@ class EmailReport:
     info = attendee.info()
     
     email_columns = [
-      f'=HYPERLINK("{emails[type]["email_copy_url"]}", "{datetime.strptime(emails[type]["timestamp"], "%Y-%m-%d %H:%M:%S").strftime("%-m/%-d/%Y")}")' if type in emails
+      f'=HYPERLINK("{emails[type]["email_copy_url"]}", "{datetime.strptime(emails[type]["timestamp"].split(".")[0], "%Y-%m-%d %H:%M:%S").strftime("%-m/%-d/%Y")}")' if type in emails
       else ''
       for type in email_types
     ]
