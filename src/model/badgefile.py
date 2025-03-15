@@ -39,7 +39,7 @@ class Badgefile:
   def run_approvals(self):
     sheet = RegistrarSheet(self)
     sheet.update_from_housing_registration()
-    HousingApprovalEmail(self).send()
+    # HousingApprovalEmail(self).send()
     EmailReport(self).update()
 
   def update(self):
