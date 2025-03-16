@@ -83,6 +83,6 @@ class HousingAssignmentsReport:
     service = authenticate_service_account()
     
     log.debug("housing_assignments: Updating")
-    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Housing Assignments", secret("folder_id"))
+    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Housing Assignments", secret("folder_id"), valueInputOption='USER_ENTERED')
 
 
