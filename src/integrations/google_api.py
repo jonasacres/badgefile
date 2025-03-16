@@ -217,7 +217,7 @@ def create_sheet_if_not_exists(service, file_name, folder_id, sheet_name):
     
   return file['id']
 
-def read_sheet_data(service, file, sheet_name=None):
+def read_sheet_data(service, file, sheet_name=None, include_formulas=False):
   # Get spreadsheet metadata
   spreadsheet = retry_with_backoff(file,
     lambda: service['sheets'].spreadsheets().get(
@@ -230,13 +230,23 @@ def read_sheet_data(service, file, sheet_name=None):
     sheet_name = spreadsheet['sheets'][0]['properties']['title']
 
   log.debug(f"Reading worksheet {sheet_name} of file id {file}")
+  
   # Read values from the sheet
-  result = retry_with_backoff(file,
-    lambda: service['sheets'].spreadsheets().values().get(
-      spreadsheetId=file,
-      range=f'{sheet_name}!A1:ZZ'
-    ).execute()
-  )
+  if include_formulas:
+    result = retry_with_backoff(file,
+      lambda: service['sheets'].spreadsheets().values().get(
+        spreadsheetId=file,
+        range=f'{sheet_name}!A1:ZZ',
+        valueRenderOption='FORMULA'
+      ).execute()
+    )
+  else:
+    result = retry_with_backoff(file,
+      lambda: service['sheets'].spreadsheets().values().get(
+        spreadsheetId=file,
+        range=f'{sheet_name}!A1:ZZ'
+      ).execute()
+    )
 
   # Return empty list if no data
   if 'values' not in result:
@@ -244,9 +254,12 @@ def read_sheet_data(service, file, sheet_name=None):
 
   return result['values']
   
-def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None, valueInputOption='RAW'):
+def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None, valueInputOption='RAW', preserve_columns_after=None):
   file = create_sheet_if_not_exists(service, file_name, folder_id, sheet_name)
-  existing_data = read_sheet_data(service, file, sheet_name)
+  
+  # Read data with formulas if we're preserving columns
+  include_formulas = preserve_columns_after is not None
+  existing_data = read_sheet_data(service, file, sheet_name, include_formulas)
 
   if len(existing_data) == 0:
     existing_data = [[v for v in sheet_header]]
@@ -265,10 +278,16 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   for row in sheet_data:
     key = str(row[key_index])
     if key in mapped_rows:
-      for i, value in enumerate(row):
+      # Determine how many columns to update
+      columns_to_update = len(row)
+      if preserve_columns_after is not None and preserve_columns_after < columns_to_update:
+        columns_to_update = preserve_columns_after
+      
+      # Update only the columns we want to change
+      for i in range(columns_to_update):
         if i >= len(updated_data[mapped_rows[key]]):
             updated_data[mapped_rows[key]].extend([None] * (i - len(updated_data[mapped_rows[key]]) + 1))
-        updated_data[mapped_rows[key]][i] = value
+        updated_data[mapped_rows[key]][i] = row[i]
     else:
       new_rows.append(row)
     seen_rows[key] = True
@@ -300,7 +319,6 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   seen_rows[sheet_header[key_index]] = True
 
   updated_data.extend(new_rows)
-
 
   for key, seen in seen_rows.items():
     if not seen:

@@ -77,12 +77,13 @@ class HousingAssignmentsReport:
     # if activity.num_units() > 1, then we need to add a row for each unit
     for activity in housing_activities:
       for i in range(int(activity.num_units() + 0.5)):
-        housing_units.append({"activity": activity, "id":f"{activity.info()['activity_registrant_id']}.{i}"})
+        housing_units.append({"activity": activity, "id":f"{activity.info()['activity_registrant_id']}-{i}"})
     
     sheet_data = [self.housing_registration_row(unit) for unit in housing_units]
     service = authenticate_service_account()
     
     log.debug("housing_assignments: Updating")
-    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Housing Assignments", secret("folder_id"), valueInputOption='USER_ENTERED')
+    # Only update the first 8 columns (our actual data), preserve any columns after that
+    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Housing Assignments", secret("folder_id"), valueInputOption='USER_ENTERED', preserve_columns_after=8)
 
 
