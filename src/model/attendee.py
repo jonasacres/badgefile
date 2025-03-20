@@ -465,6 +465,9 @@ class Attendee:
   
   def issues_in_category(self, category):
     issues = [json.loads(issue_raw) for issue_raw in self.open_issues().values()]
+    for issue in issues:
+      if 'category' not in issue:
+        log.error(f"ERROR: Issue for attendee {self.id()} {self.full_name()} missing 'category' field: {issue}")
     return [issue for issue in issues if issue['category'] == category]
     
   # returns a list of reglist rows referring to this user
