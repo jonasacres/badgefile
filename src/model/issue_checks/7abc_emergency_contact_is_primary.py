@@ -17,7 +17,7 @@ def check_name(attendee):
     f"{primary_info['name_family']} {primary_info['name_given']} {primary_info['name_mi']}".lower(),
   ]
 
-  if attendee.info()['emergency_contact_name'].lower() in match_names:
+  if str(attendee.info()['emergency_contact_name']).lower() in match_names:
     return {
       "msg": "Emergency contact matches primary attendee name",
       "code": "7a",
