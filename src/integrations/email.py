@@ -58,7 +58,7 @@ class Email:
     sent_time = sent_emails.get(self.template)
     email_to = self.attendee.info()['email']
 
-    if sent_time != None:
+    if sent_time != None and not force:
       log.info(f"Email {self.template} already sent to {email_to} at {sent_time}; not sending again without force flag")
       return False
     

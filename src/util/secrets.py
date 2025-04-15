@@ -32,5 +32,13 @@ class Secrets:
         return None
     return self.secrets[key]
   
+  def set(self, key, value):
+    self.secrets[key] = value
+    return self.secrets[key]
+  
 def secret(key, default_value="___placeholder___"):
   return Secrets.shared().get(key, default_value)
+
+def override_secret(key, value):
+  return Secrets.shared().set(key, value)
+  
