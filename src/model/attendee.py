@@ -30,6 +30,10 @@ class Attendee:
   def badgefile(self):
     return self._badgefile
   
+  def badge(self):
+    from artifacts.pdfs.badge import Badge
+    return Badge(self)
+  
   def latest_reglist(self):
     # need this accessor for our issue checks to access latest raw reglist
     return Reglist.latest()
@@ -86,6 +90,16 @@ class Attendee:
   
   def populate_derived_fields(self):
     self.recalulate_donation_info()
+
+  def title(self):
+    info = self.info()
+    if "title" in info and info["title"] != "":
+      return info["title"]
+    
+    if self.is_participant:
+      return "Player"
+    else:
+      return "Non-participant"
 
   def phone(self):
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
@@ -234,7 +248,7 @@ class Attendee:
         if donation.is_open():
           name_fields = ['foc_name_platinum', 'foc_name_gold', 'foc_name_silver']
           self._info['donation_amount'] += donation.fee()
-          selected_names = [name for name in name_fields if donation.info()[name] != None]
+          selected_names = [donation.info()[name] for name in name_fields if donation.info()[name] != None]
           names += selected_names
     
     if self._info['donation_amount'] >= 250.0:
