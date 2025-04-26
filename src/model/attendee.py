@@ -89,7 +89,7 @@ class Attendee:
     self._activities = None
   
   def populate_derived_fields(self):
-    self.recalulate_donation_info()
+    self.recalculate_donation_info()
 
   def title(self):
     info = self.info()
@@ -238,7 +238,7 @@ class Attendee:
         return True
     return False
   
-  def recalulate_donation_info(self):
+  def recalculate_donation_info(self):
     donations = [act for act in self.activities() if act.is_open() and act.is_donation()]
     self._info['donation_amount'] = 0
     names = []
