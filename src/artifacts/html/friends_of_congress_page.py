@@ -213,26 +213,59 @@ class DonorPage:
     <div class="donor-list">
 """
     
-    # Add donor cards
+    # Group donors by tier and separate anonymous from named donors
+    tier_groups = {
+        "platinum": {"named": [], "anonymous": 0},
+        "gold": {"named": [], "anonymous": 0},
+        "silver": {"named": [], "anonymous": 0}
+    }
+    
     for donor in donors:
-      name = donor.info()['donation_name']
-      if donor.info()['donation_is_anonymous'] or not name:
-        name = '<span class="anonymous">Anonymous Donor</span>'
-      
       tier = donor.info()['donation_tier'].lower()
-      tier_class = tier
-      tier_range = ""
-      
-      if tier == "platinum":
-          tier_range = "$500+"
-      elif tier == "gold":
-          tier_range = "$50-$499"
-      elif tier == "silver":
-          tier_range = "$10-$49"
-      
-      html += f"""        <div class="donor-card {tier_class}">
+      if tier not in tier_groups:
+          continue
+          
+      if donor.info()['donation_is_anonymous'] or not donor.info()['donation_name']:
+          tier_groups[tier]["anonymous"] += 1
+      else:
+          tier_groups[tier]["named"].append(donor)
+    
+    # Add donor cards by tier, with named donors first followed by anonymous group
+    for tier in ["platinum", "gold", "silver"]:
+        # Add named donors in this tier
+        for donor in tier_groups[tier]["named"]:
+            name = donor.info()['donation_name']
+            tier_class = tier
+            tier_range = ""
+            
+            if tier == "platinum":
+                tier_range = "$500+"
+            elif tier == "gold":
+                tier_range = "$50-$499"
+            elif tier == "silver":
+                tier_range = "$10-$49"
+            
+            html += f"""        <div class="donor-card {tier_class}">
             <div class="name">{name}</div>
-            <div class="tier">{donor.info()['donation_tier'].title()} Tier</div>
+            <div class="tier">{tier.title()} Tier</div>
+            <div class="tier-range">{tier_range}</div>
+        </div>
+"""
+        
+        # Add anonymous donors card if there are any
+        if tier_groups[tier]["anonymous"] > 0:
+            tier_range = ""
+            if tier == "platinum":
+                tier_range = "$500+"
+            elif tier == "gold":
+                tier_range = "$50-$499"
+            elif tier == "silver":
+                tier_range = "$10-$49"
+                
+            anonymous_count = tier_groups[tier]["anonymous"]
+            html += f"""        <div class="donor-card {tier}">
+            <div class="name">{anonymous_count} Anonymous Donor{'s' if anonymous_count > 1 else ''}</div>
+            <div class="tier">{tier.title()} Tier</div>
             <div class="tier-range">{tier_range}</div>
         </div>
 """
