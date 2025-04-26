@@ -69,14 +69,33 @@ class DonorPage:
             gap: 20px;
         }
         .donor-card {
-            border-radius: 8px;
+            border-radius: 20px;
             padding: 20px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+            background-size: 200% 100%;
         }
         .donor-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .donor-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.1) 1px,
+                transparent 1px,
+                transparent 5px
+            );
+            pointer-events: none;
         }
         .tier {
             font-weight: bold;
@@ -92,6 +111,22 @@ class DonorPage:
             border-left: 5px solid #a9a9a9;
             position: relative;
             overflow: hidden;
+        }
+        .platinum::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.2) 25%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: brushEffect 3s infinite linear;
+            pointer-events: none;
         }
         .platinum:before {
             content: '';
