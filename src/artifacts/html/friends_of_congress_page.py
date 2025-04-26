@@ -69,25 +69,96 @@ class DonorPage:
             gap: 20px;
         }
         .donor-card {
-            background-color: white;
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .donor-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         .tier {
             font-weight: bold;
-            color: #3a5a78;
             margin-bottom: 5px;
+        }
+        .tier-range {
+            font-size: 0.9em;
+            margin-top: 5px;
+            color: #555;
+        }
+        .platinum {
+            background: linear-gradient(135deg, #e5e4e2 0%, #b8b8b8 30%, #e8e8e8 50%, #b8b8b8 70%, #e5e4e2 100%);
+            border-left: 5px solid #a9a9a9;
+            position: relative;
+            overflow: hidden;
+        }
+        .platinum:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255,0,0,0.8) 0%, rgba(255,255,255,0) 6%),
+                radial-gradient(circle at 50% 60%, rgba(0,255,0,0.8) 0%, rgba(255,255,255,0) 7%),
+                radial-gradient(circle at 80% 40%, rgba(0,0,255,0.8) 0%, rgba(255,255,255,0) 10%),
+                radial-gradient(circle at 30% 80%, rgba(255,255,0,0.8) 0%, rgba(255,255,255,0) 8%),
+                radial-gradient(circle at 70% 10%, rgba(255,0,255,0.8) 0%, rgba(255,255,255,0) 9%),
+                radial-gradient(circle at 12% 45%, rgba(0,255,255,0.8) 0%, rgba(255,255,255,0) 2%);
+            mix-blend-mode: color-dodge;
+            pointer-events: none;
+            opacity: 0.9;
+            animation: sparkle 5s infinite alternate;
+        }
+        @keyframes sparkle {
+            0% {
+                opacity: 0.7;
+                background-position: 0% 0%;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.7;
+                background-position: 100% 100%;
+            }
+        }
+        .platinum .tier {
+            color: #404040;
+            text-shadow: 0px 1px 1px rgba(255,255,255,0.7);
+        }
+        .gold {
+            background: linear-gradient(135deg, #fff4d1 0%, #ffd700 50%, #fff4d1 100%);
+            border-left: 5px solid #FFD700;
+        }
+        .gold .tier {
+            color: #8B6914;
+        }
+        .silver {
+            background: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 50%, #f5f5f5 100%);
+            border-left: 5px solid #C0C0C0;
+        }
+        .silver .tier {
+            color: #505050;
         }
         .name {
             font-size: 1.2em;
             font-weight: bold;
             margin-bottom: 5px;
             color: #222;
+            text-shadow: 0px 1px 1px rgba(255,255,255,0.5);
+            position: relative;
+            z-index: 1;
+        }
+        .platinum .name {
+            color: #303030;
+            text-shadow: 0px 1px 2px rgba(255,255,255,0.7);
         }
         .anonymous {
             font-style: italic;
-            color: #777;
+            color: #555;
             font-size: 1.0em;
         }
         .footer {
@@ -113,9 +184,21 @@ class DonorPage:
       if donor.info()['donation_is_anonymous'] or not name:
         name = '<span class="anonymous">Anonymous Donor</span>'
       
-      html += f"""        <div class="donor-card">
+      tier = donor.info()['donation_tier'].lower()
+      tier_class = tier
+      tier_range = ""
+      
+      if tier == "platinum":
+          tier_range = "$500+"
+      elif tier == "gold":
+          tier_range = "$50-$499"
+      elif tier == "silver":
+          tier_range = "$10-$49"
+      
+      html += f"""        <div class="donor-card {tier_class}">
             <div class="name">{name}</div>
             <div class="tier">{donor.info()['donation_tier'].title()} Tier</div>
+            <div class="tier-range">{tier_range}</div>
         </div>
 """
     
