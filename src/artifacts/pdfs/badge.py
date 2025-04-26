@@ -117,6 +117,9 @@ class BadgeRenderer:
     info_enclosure.add_leaf_text_centered(city_state, style(20, colors.black), y=1.65*inch)
     info_enclosure.add_leaf_text_centered(self.attendee.badge_rating(), style(48, colors.black, bold=True), y=0.25*inch)
 
+    self.layout_country_flag(info_enclosure)
+    self.layout_language_flags(info_enclosure)
+
     return info_enclosure
   
   def layout_title_section(self, y):
@@ -128,10 +131,48 @@ class BadgeRenderer:
     return title_enclosure
 
   def layout_country_flag(self, box):
-    pass
+    country = self.attendee.info()["country"].lower()
+    flag_img = f"src/static/flags/{country}.png"
+
+    img = Image.open(flag_img)
+    width_px, height_px = img.size
+    aspect_ratio = height_px / width_px
+    
+
+    flag_width = 0.8*inch
+    flag_height = flag_width * aspect_ratio
+    flag_box = box.inset(0.15 * inch, 0.2 *inch, flag_width, flag_height)
+    flag_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
+    flag_box.add_leaf_image_centered(flag_img)
 
   def layout_language_flags(self, box):
-    pass
+    flag_width = 0.4 * inch
+    flag_height = flag_width / 1.5
+    flag_margin = 0.05 * inch
+
+    lang_defs = {
+      "english":  ["src/static/flags/uk.png",  0.0, 0.0],
+      "japanese": ["src/static/flags/jpn.png", flag_width + flag_margin, flag_height + flag_margin],
+      "korean":   ["src/static/flags/kor.png", flag_width + flag_margin, 0.0],
+      "chinese":  ["src/static/flags/chn.png", 0.0, flag_height + flag_margin],
+      "spanish":  ["src/static/flags/spn.png", 0.0, 2*(flag_height + flag_margin)],
+    }
+
+    lang_box = box.inset(2.3 * inch, 0.125 *inch, 2*flag_width + flag_margin, 3*flag_height + 2*flag_margin)
+    # langauges = self.attendee.languages()
+    languages = [
+      "english",
+      "japanese",
+      "korean",
+      "chinese",
+      "spanish"
+    ]
+
+    for language in languages:
+      flag_img, flag_x, flag_y = lang_defs[language]
+      box = lang_box.inset(flag_x, flag_y, flag_width, flag_height)
+      box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
+      box.add_leaf_image_centered(flag_img)
 
 class InsetBox:
   def __init__(self, x, y, width, height, parent=None, canvas=None):
@@ -182,9 +223,6 @@ class InsetBox:
       canvas.setFillColor(fill_color)
       canvas.setStrokeColor(stroke_color)
       canvas.setLineWidth(stroke_width)
-
-      print(f"Rectangle origin: ({inset.absolute_coords()[0]}, {inset.absolute_coords()[1]})")
-      print(f"Rectangle dimensions: {inset.width} x {inset.height}")
 
       canvas.roundRect(
           *inset.absolute_coords(),
@@ -258,8 +296,6 @@ class InsetBox:
     
     def draw_the_image(canvas):
       img_left, img_bottom = inset.absolute_coords()
-      print(f"Image {image_path}: @({img_left}, {img_bottom}) / ({img_x}, {img_y}), {img_width}x{img_height}")
-      print(f"\tEnclosure: @({self.left()}, {self.bottom()}), {self.width}x{self.height}")
       canvas.drawImage(img_reader, img_left, img_bottom, width=img_width, height=img_height, mask='auto')
 
     inset.draw_func = lambda canvas: draw_the_image(canvas)
