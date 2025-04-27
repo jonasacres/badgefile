@@ -141,7 +141,7 @@ class BadgeRenderer:
 
     flag_width = 0.8*inch
     flag_height = flag_width * aspect_ratio
-    flag_box = box.inset(0.15 * inch, 0.2 *inch, flag_width, flag_height)
+    flag_box = box.inset(0.15 * inch, 0.25 *inch, flag_width, flag_height)
     flag_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
     flag_box.add_leaf_image_centered(flag_img)
 
@@ -150,15 +150,18 @@ class BadgeRenderer:
     flag_height = flag_width / 1.5
     flag_margin = 0.05 * inch
 
+    hz_space = flag_width + flag_margin
+    vt_space = flag_height + flag_margin
+
     lang_defs = {
-      "english":  ["src/static/flags/uk.png",  0.0, 0.0],
-      "japanese": ["src/static/flags/jpn.png", flag_width + flag_margin, flag_height + flag_margin],
-      "korean":   ["src/static/flags/kor.png", flag_width + flag_margin, 0.0],
-      "chinese":  ["src/static/flags/chn.png", 0.0, flag_height + flag_margin],
-      "spanish":  ["src/static/flags/spn.png", 0.0, 2*(flag_height + flag_margin)],
+      "english":  ["src/static/flags/uk.png",  0 * hz_space, 0 * vt_space],
+      "korean":   ["src/static/flags/kor.png", 1 * hz_space, 0 * vt_space],
+      "chinese":  ["src/static/flags/chn.png", 0 * hz_space, 1 * vt_space],
+      "japanese": ["src/static/flags/jpn.png", 1 * hz_space, 1 * vt_space],
+      "spanish":  ["src/static/flags/spn.png", 0 * hz_space, 2 * vt_space],
     }
 
-    lang_box = box.inset(2.3 * inch, 0.125 *inch, 2*flag_width + flag_margin, 3*flag_height + 2*flag_margin)
+    lang_box = box.inset(2.3 * inch, 0.25 *inch, 2*hz_space, 3*vt_space)
     # langauges = self.attendee.languages()
     languages = [
       "english",
