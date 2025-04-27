@@ -111,7 +111,21 @@ class DonorPage:
             border-left: 5px solid #a9a9a9;
             position: relative;
             overflow: hidden;
+            background-size: 200% 200%;
+            animation: gradientShift 30s ease infinite;
         }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes brushEffect {
+            0% { background-position: -100% 0; }
+            100% { background-position: 100% 0; }
+        }
+        
         .platinum::after {
             content: '';
             position: absolute;
@@ -188,8 +202,13 @@ class DonorPage:
             z-index: 1;
         }
         .platinum .name {
-            color: #303030;
-            text-shadow: 0px 1px 2px rgba(255,255,255,0.7);
+            color: #000000;
+            text-shadow: 0px 1px 2px rgba(128,128,128,0.7);
+            font-size: 1.4em;
+            background: linear-gradient(to right, #000000, #202020);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .anonymous {
             font-style: italic;
@@ -264,7 +283,7 @@ class DonorPage:
                 
             anonymous_count = tier_groups[tier]["anonymous"]
             html += f"""        <div class="donor-card {tier}">
-            <div class="name">{anonymous_count} Anonymous Donor{'s' if anonymous_count > 1 else ''}</div>
+            <div class="name">{'Anonymous Donor' if anonymous_count == 1 else f"{anonymous_count} Anonymous Donors"}</div>
             <div class="tier">{tier.title()} Tier</div>
             <div class="tier-range">{tier_range}</div>
         </div>

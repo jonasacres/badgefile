@@ -265,7 +265,7 @@ class Attendee:
     for name in names:
       is_anon |= name.lower() in ['anon', 'anonymous']
 
-    self._info['donation_name'] = names[0] if len(names) > 0 else None
+    self._info['donation_name'] = names[0] if len(names) > 0 else f"{self._info['name_given']} {self._info['name_family']}"
     self._info['donation_is_anonymous'] = is_anon
 
     self.sync_to_db()
