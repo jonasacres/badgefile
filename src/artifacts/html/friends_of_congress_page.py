@@ -364,6 +364,23 @@ class DonorPage:
             color: #777;
             font-size: 0.9em;
         }
+        .donate-button {
+            display: inline-block;
+            background-color: #014a7d;
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            font-size: 1.3em;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .donate-button:hover {
+            background-color: #01355a;
+        }
     </style>
 </head>
 <body>
@@ -436,7 +453,8 @@ class DonorPage:
     html += """    </div>
     
     <div class="footer">
-        <p>The American Go Association appreciates your continued support.</p>
+        <p>It's not too late to join our circle of friends!</p>
+        <a href="https://usgo.org/content.aspx?page_id=301&club_id=454497" class="donate-button">Donate</a>
     </div>
 </body>
 </html>"""
