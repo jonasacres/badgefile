@@ -83,14 +83,8 @@ class CEReportBase:
     Pull a new copy of this report from ClubExpress, save to disk, upload 
     to drive, and register it in the DataSourceManager. Use an existing copy if unchanged.
     """
-    # Subclasses might override these classmethods if they have special URIs or data
-    uri = cls.report_uri()
-    data = cls.report_data()
-
-    from integrations.clubexpress_client import ClubExpressClient
-    log.debug(f"{cls.report_key()}: Downloading from {uri}")
-    csv_bytes = ClubExpressClient.shared().pull_report(uri, data)
-    new_report = cls(csv_bytes)
+    
+    new_report = cls.get_csv()
 
     # Compare hash with the latest
     new_hash = new_report.hash()
@@ -111,6 +105,18 @@ class CEReportBase:
     new_report.upload()
     DataSourceManager.shared().pulled_datasource(cls.report_key(), new_hash, new_report.path())
 
+    return new_report
+  
+  @classmethod
+  def get_csv(cls):
+    # Subclasses might override these classmethods if they have special URIs or data
+    uri = cls.report_uri()
+    data = cls.report_data()
+
+    from integrations.clubexpress_client import ClubExpressClient
+    log.debug(f"{cls.report_key()}: Downloading from {uri}")
+    csv_bytes = ClubExpressClient.shared().pull_report(uri, data)
+    new_report = cls(csv_bytes)
     return new_report
 
   def save(self):

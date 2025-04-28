@@ -7,6 +7,7 @@ import base64
 import time
 import csv
 import traceback
+import json
 from io import StringIO
 from log.logger import log
 from util.secrets import secret
@@ -176,12 +177,101 @@ class ClubExpressClient:
     
     # URL encode the form data as a single string, and set the Referer field so it looks
     # like we're coming from the page with the form
-    data = urllib.parse.urlencode(form_data)
+    request_body = urllib.parse.urlencode(form_data)
     my_headers = self.headers.copy()
     my_headers["Referer"] = uri
 
     # issue the request and return the response
-    return self.session.post(uri, headers=self.headers, data=data)
+    return self.session.post(uri, headers=self.headers, data=request_body)
+  
+  def iterated_form_query(self, uri, watch_fields=[], data_tiers={}):
+    log.info(f"Performing iterated request for {uri} (initial GET)")
+    data = self._do_iterated_form_query(uri, watch_fields)
+
+    for i, tier in enumerate(data_tiers):
+      log.info(f"Performing iterated request for {uri} (POST {i})")
+      data = data | tier
+      data = data | self._do_iterated_form_query(uri, watch_fields, data)
+      log.debug(f"Data: {json.dumps(data)}")
+    
+    return data
+
+  def _do_iterated_form_query(self, uri, watch_fields=[], data=None):
+    if(self.session is None):
+      self.login()
+    
+    if data is None:
+      http_resp = self.session.get(uri, headers=self.headers)
+    else:
+      request_body = urllib.parse.urlencode(data)
+      my_headers = {
+        "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
+        "Accept": 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': str(len(request_body)),
+        'Origin': 'null',
+        'Dnt': '1',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'iframe',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Priority': 'u=4',
+        'Te': 'trailers',
+      }
+      
+      log.debug(f"Request body: {request_body}")
+      http_resp = self.session.post(uri, headers=my_headers, data=request_body)
+    print(http_resp.text)
+    
+    soup = BeautifulSoup(http_resp.text, 'html.parser')
+    default_field_names = [
+        'style_sheet_manager_TSSM',
+        '__EVENTARGUMENT',
+        '__VIEWSTATE',
+        '__VIEWSTATEGENERATOR',
+    ]
+    
+    field_names = default_field_names + list(set(watch_fields) - set(default_field_names))
+
+    script_tag = soup.find('script', {'src': lambda x: x and x.startswith('/Telerik.Web.UI.WebResource.axd')})
+    parsed_script_manager_tsm = data.get("script_manager_TSM", None) if data else None
+    log.info(f"found script tag: {script_tag != None}")
+    if script_tag:
+        src = script_tag['src']
+        query_string = src.split('?')[1]
+        query_params = urllib.parse.parse_qs(urllib.parse.unquote(query_string))
+        if '_TSM_CombinedScripts_' in query_params:
+          parsed_script_manager_tsm = query_params['_TSM_CombinedScripts_'][0]
+
+    form_data = {
+      "script_manager_TSM": parsed_script_manager_tsm,
+    }
+
+    field_count = soup.find('input', {'name': "__VIEWSTATEFIELDCOUNT"})
+    if field_count:
+      field_count_value = field_count.get('value', '')
+      form_data["__VIEWSTATEFIELDCOUNT"] = field_count_value
+      num_fields = int(field_count_value)
+      for i in range(1, num_fields):
+        field_names.append("__VIEWSTATE" + str(i))
+
+    # now go get the fields from the form data.
+    for name in field_names:
+      input_tag = soup.find('input', {'name': name})
+      if input_tag:
+        form_data[name] = input_tag.get('value', '')
+        log.debug(f"found form value: {name} = '{form_data[name]}'")
+      elif name in default_field_names:
+        form_data[name] = ''
+        log.debug(f"defaulted form value: {name} = '{form_data[name]}'")
+  
+    # inject in any additional data specified by our requestor, unless overridden by response
+    if data is not None:
+      form_data = data | form_data
+    return form_data
 
   def validate(self, potential_csv):
     # return True if this looks like a valid CSV file; false otherwise
@@ -228,7 +318,6 @@ class ClubExpressClient:
       # Write the file if it doesn't exist or hash doesn't match
       with open(filename, "w") as file:
         file.write(csv)
-
   
   def pull_report(self, uri, data):
     attempts = 0

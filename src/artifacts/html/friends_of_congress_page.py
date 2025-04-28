@@ -1,11 +1,77 @@
 import os
 from log.logger import log
+from datasources.clubexpress.payments_report import PaymentsReport
 
 class DonorPage:
   """Provides a list of donors by badgefile ID and tier level in HTML format."""
 
   def __init__(self, badgefile):
     self.badgefile = badgefile
+
+  def donors_from_registration(self):
+    donors = [donor for donor in self.badgefile.attendees() if donor.info().get('donation_tier') != 'nondonor' and float(donor.info().get('donation_amount', 0.0)) > 0]
+    for donor in donors:
+      donor.recalculate_donation_info()
+    return [donor.info() for donor in donors]
+  
+  def tier_for_amount(self, amount):
+    if amount < 10:
+      return "nondonor"
+    elif amount < 50:
+      return "silver"
+    elif amount < 250:
+      return "gold"
+    else:
+      return "platinum"
+  
+  def donors_from_renewals(self):
+    report = PaymentsReport.latest()
+    transactions = report.transactions()
+    donor_rows = []
+
+    for tx in transactions:
+      for row in tx['rows']:
+        if "Support the US Go Congress" in row['description'] or "Donation: US Go Congress" in row['description']:
+          donor_rows.append({
+            "donation_name": f"{tx['name'][0]} {tx['name'][1]}",
+            "donation_tier": self.tier_for_amount(row['amount']),
+            "donation_amount": row['amount'],
+            "donation_is_anonymous": False,
+          })
+    
+    return donor_rows
+  
+  def merge_donors(self, donors):
+    by_name = {}
+    
+    for donor in donors:
+      lc_name = donor['donation_name'].lower()
+      if not lc_name in by_name:
+        by_name[lc_name] = []
+      by_name[lc_name].append(donor)
+    
+    merged_list = []
+    for name, donors in by_name.items():
+      if name in ["anon", "anonymous"]:
+        merged_list += donors
+      else:
+        merged_amount = 0.0
+        for donor in donors:
+          if donor["donation_is_anonymous"]:
+            merged_list.append(donor)
+          else:
+            merged_amount += donor['donation_amount']
+        if merged_amount > 0:
+          merged_donor = {
+            'donation_name': donors[0]['donation_name'],
+            'donation_amount': merged_amount,
+            'donation_tier': self.tier_for_amount(merged_amount),
+            'donation_is_anonymous': False,
+          }
+          print(f"{merged_donor['donation_name']} ${merged_donor['donation_amount']} -> {merged_donor['donation_tier']}")
+          merged_list.append(merged_donor)
+    
+    return merged_list
   
   def generate(self, path=None):
     if path is None:
@@ -17,12 +83,11 @@ class DonorPage:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     
     # Get donor data
-    donors = [donor for donor in self.badgefile.attendees() if donor.info().get('donation_tier') != 'nondonor' and float(donor.info().get('donation_amount', 0.0)) > 0]
-    for donor in donors:
-      donor.recalculate_donation_info()
+    donors = self.donors_from_registration() + self.donors_from_renewals()
+    donors = self.merge_donors(donors)
     
     # Sort donors by donation amount, highest first
-    donors.sort(key=lambda x: float(x.info().get('donation_amount', 0.0)), reverse=True)
+    donors.sort(key=lambda x: float(x.get('donation_amount', 0.0)), reverse=True)
     
     # Generate HTML content
     html_content = self._generate_html(donors)
@@ -240,11 +305,11 @@ class DonorPage:
     }
     
     for donor in donors:
-      tier = donor.info()['donation_tier'].lower()
+      tier = donor['donation_tier'].lower()
       if tier not in tier_groups:
           continue
           
-      if donor.info()['donation_is_anonymous'] or not donor.info()['donation_name']:
+      if donor['donation_is_anonymous'] or not donor['donation_name']:
           tier_groups[tier]["anonymous"] += 1
       else:
           tier_groups[tier]["named"].append(donor)
@@ -253,14 +318,14 @@ class DonorPage:
     for tier in ["platinum", "gold", "silver"]:
         # Add named donors in this tier
         for donor in tier_groups[tier]["named"]:
-            name = donor.info()['donation_name']
+            name = donor['donation_name']
             tier_class = tier
             tier_range = ""
             
             if tier == "platinum":
-                tier_range = "$500+"
+                tier_range = "$250+"
             elif tier == "gold":
-                tier_range = "$50-$499"
+                tier_range = "$50-$249"
             elif tier == "silver":
                 tier_range = "$10-$49"
             
