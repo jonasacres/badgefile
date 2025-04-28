@@ -1,6 +1,10 @@
 import os
 from log.logger import log
 from datasources.clubexpress.payments_report import PaymentsReport
+from util.secrets import secret
+import boto3
+import time
+from botocore.exceptions import ClientError
 
 class DonorPage:
   """Provides a list of donors by badgefile ID and tier level in HTML format."""
@@ -68,7 +72,6 @@ class DonorPage:
             'donation_tier': self.tier_for_amount(merged_amount),
             'donation_is_anonymous': False,
           }
-          print(f"{merged_donor['donation_name']} ${merged_donor['donation_amount']} -> {merged_donor['donation_tier']}")
           merged_list.append(merged_donor)
     
     return merged_list
@@ -97,6 +100,81 @@ class DonorPage:
       file.write(html_content)
     
     log.debug(f"donor_report: Generation complete, {len(donors)} donors listed.")
+    return self
+
+  def upload(self, path=None):
+    s3_bucket = secret("foc_s3_bucket")
+    aws_access_key = secret("aws_access_key")
+    aws_secret = secret("aws_secret")
+
+    if aws_access_key is None or aws_secret is None:
+      log.info("No AWS credentials defined; not uploading Friends of Congress page to S3")
+      return self
+    
+    if s3_bucket is None:
+      log.info("No S3 bucket configured for Friends of Congress page; not uploading")
+      return self
+    
+    if path is None:
+      path = "artifacts/html/friends_of_congress/index.html"
+    
+    try:
+      log.info(f"Uploading Friends of Congress page to S3 ({s3_bucket})...")
+
+      # Initialize S3 client
+      s3_client = boto3.client(
+        's3',
+        aws_access_key_id=secret("aws_access_key"),
+        aws_secret_access_key=secret("aws_secret")
+      )
+      
+      # Upload file to S3
+      s3_client.upload_file(
+        path,
+        s3_bucket,
+        'index.html',  # Always use index.html as the destination filename
+        ExtraArgs={'ContentType': 'text/html'}
+      )
+      
+      log.info(f"Successfully uploaded Friends of Congress page to S3 bucket '{s3_bucket}'")
+    except ClientError as e:
+      log.error(f"Failed to upload Friends of Congress page to S3: {str(e)}")
+    except Exception as e:
+      log.error(f"Unexpected error uploading Friends of Congress page to S3: {str(e)}")
+
+    cloudfront_id = secret("foc_cloudfront_id")
+    if cloudfront_id is not None:
+      log.info(f"Invalidating Friends of Congress S3 distribution ({cloudfront_id})")
+      try:
+        # Initialize CloudFront client
+        cloudfront_client = boto3.client(
+          'cloudfront',
+          aws_access_key_id=secret("aws_access_key"),
+          aws_secret_access_key=secret("aws_secret")
+        )
+        
+        # Create invalidation
+        response = cloudfront_client.create_invalidation(
+          DistributionId=cloudfront_id,
+          InvalidationBatch={
+            'Paths': {
+              'Quantity': 1,
+              'Items': ['/*']  # Invalidate all paths
+            },
+            'CallerReference': str(int(time.time()))  # Unique reference using timestamp
+          }
+        )
+        
+        invalidation_id = response['Invalidation']['Id']
+        log.info(f"CloudFront invalidation created: {invalidation_id}")
+      except Exception as e:
+        log.error(f"Failed to create CloudFront invalidation: {str(e)}")
+    else:
+      log.debug("No Friends of Congress cloudfront distribution defined; not invalidating")
+      
+    
+    return self
+
   
   def _generate_html(self, donors):
     """Generate HTML content for the donor report."""

@@ -16,5 +16,5 @@ if "download" in sys.argv:
   PaymentsReport.download()
 
 badgefile = Badgefile()
-DonorPage(badgefile).generate()
+DonorPage(badgefile).generate().upload()
 print("Generated donor page")

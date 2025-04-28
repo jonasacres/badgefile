@@ -274,7 +274,6 @@ class PaymentsReport(CEReportBase):
 
     # handling currency as floats is always risky business, but we'll run with it for now...
     # if roundoff error on pennies becomes an issue, switch to integer cents (amount * 100)
-    print(mapped_row["charge_date"])
     mapped_row["amount"] = float(mapped_row["amount"].replace(',', ''))
     mapped_row["charge_date"] = datetime.strptime(mapped_row["charge_date"], '%m/%d/%Y')
     mapped_row["ref_num"] = int(mapped_row["ref_num"].replace(',', ''))

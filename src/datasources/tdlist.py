@@ -105,6 +105,7 @@ class TDList:
       attendee = badgefile.lookup_attendee(tdlist_info['aga_id'])
       if attendee is not None:
         attendee.merge_tdlist_info(tdlist_info)
+    log.debug("td_list: done merging")
   
   # TODO: this appears in 3 places without alteration. REALLY should have a common util class in this project!
   def translate_value(self, field, raw_value):

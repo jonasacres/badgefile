@@ -8,6 +8,7 @@ from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
+from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
 from util.util import *
 from log.logger import log
@@ -47,6 +48,12 @@ def download():
   except Exception as exc:
     log.critical("Failed to download TD list", exception=exc)
 
+  log.info(f"Downloading payments report.")
+  try:
+    PaymentsReport.download()
+  except Exception as exc:
+    log.critical("Failed to download payments report", exception=exc)
+
 def update():
   if Reglist.latest() == None:
     Reglist.download()
@@ -58,6 +65,8 @@ def update():
     HousingActivityList.download()
   if TDList.latest() == None:
     TDList.download()
+  if PaymentsReport.latest() == None:
+    PaymentsReport.download()
 
   log.notice(f"Updating badgefile.")
   bf = Badgefile()

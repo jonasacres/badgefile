@@ -27,6 +27,7 @@ pkgs.mkShell {
     python.pkgs.google-api-python-client
     python.pkgs.python-dateutil
     python.pkgs.pyyaml
+    python.pkgs.boto3
   ];
 
   shellHook = ''

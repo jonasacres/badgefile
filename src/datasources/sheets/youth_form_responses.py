@@ -29,6 +29,8 @@ class YouthFormResponses:
 
     for attendee in self.badgefile.attendees():
       attendee.set_youth_info(self.responses.get(attendee.id(), None))
+    
+    log.debug("Finished reading youth forms")
   
   def row_looks_legit(self, row):
     try:

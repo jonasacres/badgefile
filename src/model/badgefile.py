@@ -5,6 +5,7 @@ from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
+from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
 from artifacts.generated_reports.issue_sheet import IssueSheet
 from artifacts.generated_reports.donor_report import DonorReport
@@ -18,6 +19,7 @@ from artifacts.generated_reports.as_membership_report import MembershipReport
 from artifacts.generated_reports.as_other_issues import OtherIssuesReport
 from artifacts.generated_reports.as_aggregate import AggregateReport
 from artifacts.emails.housing_approval import HousingApprovalEmail
+from artifacts.html.friends_of_congress_page import DonorPage
 from integrations.google_api import authenticate_service_account, upload_json_to_drive
 from util.secrets import secret
 from log.logger import log
@@ -72,6 +74,7 @@ class Badgefile:
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
+    DonorPage(self).generate().upload()
  
   def update_attendee_status_sheet(self):
     AggregateReport(self).update()
