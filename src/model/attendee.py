@@ -53,8 +53,11 @@ class Attendee:
   def aga_rating(self):
     return self._info.get('aga_rating', None)
 
-  def load_reglist_row(self, row, sync=True):
-    rowinfo = row.info()
+  def load_reglist_row(self, rowinfo, sync=True):
+    if hasattr(rowinfo, 'info') and callable(getattr(rowinfo, 'info')):
+      rowinfo = rowinfo.info()
+    else:
+      rowinfo = rowinfo
     self._info.update(rowinfo)
 
     agaid = self._info.get("aga_id")

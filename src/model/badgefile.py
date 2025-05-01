@@ -196,8 +196,11 @@ class Badgefile:
   def correlate_primary_registrants(self):
     # go through all attendees, and make sure we set the primary registrant for each.
     for attendee in self.attendees():
-      primary_bfid = self.locate_primary_for_attendee(attendee).id()
-      attendee.set_primary_registrant(primary_bfid)
+      try:
+        primary_bfid = self.locate_primary_for_attendee(attendee).id()
+        attendee.set_primary_registrant(primary_bfid)
+      except Exception as exc:
+        log.warn(f"Encountered an exception finding primary registrant for {attendee.full_name()}", exception=exc)
   
   def locate_primary_for_attendee(self, attendee):
     # easiest case: the attendee is marked as the primary for a registration. no searching needed!
@@ -224,10 +227,10 @@ class Badgefile:
       return candidates[0]
     elif len(candidates) == 0:
       # no matches; this is bad!! we have to manually solve this.
-      log.warn(f"Unable to locate primary registrant for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
+      log.warn(f"Unable to locate primary registrant for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
       return None
     else:
       # multiple matches; also very bad!! needs manual solution.
-      log.warn(f"Found multiple possible primary registrants for attendee {attendee['name_given']} {attendee['name_family']} ({attendee['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
+      log.warn(f"Found multiple possible primary registrants for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
       return None
 
