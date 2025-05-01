@@ -1,7 +1,6 @@
-
 def run_check(attendee):
-  reglist_rows = [row.info() for row in attendee.latest_reglist().rows()]
-  matches_user = [row for row in reglist_rows if attendee.badgefile().find_attendee_from_report_row(row).id() == attendee.id()]
+  rrbid = attendee.reglist_cacher().reglist_rows_by_id(attendee.latest_reglist(), attendee.badgefile())
+  matches_user = rrbid[attendee.id()]
   active = [row for row in matches_user if row['status'].lower() == "open"]
 
   if len(active) < 2:

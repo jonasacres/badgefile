@@ -322,6 +322,7 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
 
   for key, seen in seen_rows.items():
     if not seen:
+      log.info(f"NOT SEEN: {key} {mapped_rows[key]+1}")
       updated_data[mapped_rows[key]] = None
 
   # Filter out None rows and prepare data for batch update
@@ -349,6 +350,7 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   rows_to_delete = []
   for i, row in enumerate(updated_data):
     if row is None:
+      log.info(f"DELETING ROW: {i}")
       rows_to_delete.append(i + 1) # Add 1 since sheet rows are 1-based
   
   if rows_to_delete:
@@ -356,11 +358,28 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
     # Sort in descending order to avoid shifting indices when deleting
     rows_to_delete.sort(reverse=True)
     
+    # Get the actual sheetId for the specified sheet_name
+    spreadsheet = retry_with_backoff(file_name,
+      lambda: service['sheets'].spreadsheets().get(
+        spreadsheetId=file
+      ).execute()
+    )
+    
+    sheet_id = None
+    for sheet in spreadsheet['sheets']:
+      if sheet['properties']['title'] == sheet_name:
+        sheet_id = sheet['properties']['sheetId']
+        break
+    
+    if sheet_id is None:
+      log.warn(f"{file_name}: Could not find sheet ID for worksheet {sheet_name}, skipping row deletion")
+      return
+    
     # Create delete request for each row
     requests = [{
       'deleteDimension': {
         'range': {
-          'sheetId': 0, # Default first sheet
+          'sheetId': sheet_id,  # Use the actual sheet ID instead of assuming 0
           'dimension': 'ROWS',
           'startIndex': row - 1, # Convert back to 0-based
           'endIndex': row # Delete 1 row

@@ -27,6 +27,7 @@ from model.registrar_sheet import RegistrarSheet
 
 import json
 import os
+import time
 
 class Badgefile:
   """Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress."""
@@ -65,10 +66,25 @@ class Badgefile:
     
     TDList.latest().apply(self) # Now go apply ratings/expiration dates/chapters from the TD list
     
+    log.debug("Ensuring consistency...")
+    start_time = time.time()
     self.ensure_consistency()
+    elapsed_ms = (time.time() - start_time) * 1000
+    log.debug(f"Consistency check completed in {elapsed_ms:.2f} ms")
+
+    log.debug("Populating derived fields...")
+    start_time = time.time()
     for attendee in self.attendees():
       attendee.populate_derived_fields()
+    elapsed_ms = (time.time() - start_time) * 1000
+    log.debug(f"Populating derived fields completed in {elapsed_ms:.2f} ms")
+
+    log.debug("Scanning attendees for issues...")
+    start_time = time.time()
+    for attendee in self.attendees():
+      log.trace(f"Checking {attendee.full_name()}")
       attendee.scan_issues()
+    log.debug(f"Scanning attendees for issues completed in {elapsed_ms:.2f} ms")
   
   def update_raw_reports(self):
     IssueSheet(self).generate("artifacts/issue_sheet.csv")

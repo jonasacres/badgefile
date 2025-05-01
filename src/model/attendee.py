@@ -212,7 +212,10 @@ class Attendee:
     return congress_date.year - birth_date.year - ((congress_date.month, congress_date.day) < (birth_date.month, birth_date.day))
   
   def full_name(self):
-    return f"{self._info['name_family']}, {self._info['name_given']} {self._info['name_mi']}"
+    if self._info['name_mi'] is not None:
+      return f"{self._info['name_family']}, {self._info['name_given']} {self._info['name_mi']}"
+    else:
+      return f"{self._info['name_family']}, {self._info['name_given']}"
   
   def is_attending_banquet(self):
     for activity in self.activities():
@@ -432,23 +435,37 @@ class Attendee:
     if not self.is_cancelled():
       # Run all the issue check scripts, but only for non-cancelled attendees
       # (thus cancelled attendees have no outstanding issues)
+      import time
+      
       for filename in os.listdir(issue_dir):
         if "__" in filename:
           continue
         if filename.endswith(".py"):
           file_path = os.path.join(issue_dir, filename)
-        
-        # Dynamically import the script
-        issue_type = filename[:-3]  # Strip .py extension
-        spec = importlib.util.spec_from_file_location(issue_type, file_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        
-        # Check for a function named 'run_check' and execute it
-        if hasattr(module, "run_check"):
-          issue_data = module.run_check(self)
-          if issue_data is not None:  # Only collect non-None results
-            current_issues[issue_type] = issue_data
+          
+          # Measure import time
+          start_import_time = time.time()
+          
+          # Dynamically import the script
+          issue_type = filename[:-3]  # Strip .py extension
+          spec = importlib.util.spec_from_file_location(issue_type, file_path)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          
+          import_time_ms = (time.time() - start_import_time) * 1000
+          
+          # Check for a function named 'run_check' and execute it
+          if hasattr(module, "run_check"):
+            start_check_time = time.time()
+            issue_data = module.run_check(self)
+            check_time_ms = (time.time() - start_check_time) * 1000
+            total_time_ms = import_time_ms + check_time_ms
+            if total_time_ms > 5.0:
+              log.debug(f"Issue check {issue_type} execution completed in {check_time_ms:.2f} ms (total: {total_time_ms:.2f} ms)")
+            if issue_data is not None:  # Only collect non-None results
+              current_issues[issue_type] = issue_data
+          elif total_time_ms > 5.0:
+            log.debug(f"Issue check {issue_type} has no run_check function (import only: {import_time_ms:.2f} ms)")
 
     existing_issues = self.open_issues()
     new_issues = list(current_issues.keys() - existing_issues.keys())
@@ -564,3 +581,33 @@ class Attendee:
   def is_housing_approved(self):
     return self.primary().info().get("housing_approved", False) == True
   
+  def reglist_cacher(self):
+    # this is a werid hack to make 2g_registration_duplicate work
+    return ReglistCacher.shared()
+  
+class ReglistCacher:
+  _instance = None
+  
+  @classmethod
+  def shared(cls):
+    if cls._instance is None:
+      cls._instance = ReglistCacher()
+    return cls._instance
+  
+  def __init__(self):
+    self._reglist_rows_by_id = None
+
+  def reglist_rows_by_id(self, reglist, badgefile):
+    if self._reglist_rows_by_id is not None:
+      return self._reglist_rows_by_id
+    
+    rrbid = {}
+    reglist_rows = [row.info() for row in reglist.rows()]
+    for row in reglist_rows:
+      attendee = badgefile.find_attendee_from_report_row(row)
+      if not attendee.id() in rrbid:
+        rrbid[attendee.id()] = []
+      rrbid[attendee.id()].append(row)
+
+    self._reglist_rows_by_id = rrbid
+    return self._reglist_rows_by_id
