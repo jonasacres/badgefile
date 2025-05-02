@@ -203,6 +203,13 @@ class Badgefile:
         log.warn(f"Encountered an exception finding primary registrant for {attendee.full_name()}", exception=exc)
   
   def locate_primary_for_attendee(self, attendee):
+    # Debug: print each key-value pair from attendee.info()
+    if attendee.id() == 26378:
+      print(attendee.is_primary())
+      info = attendee.info()
+      for key in sorted(info.keys()):
+        print(f"  {key:<20}: |{info[key]}|")
+      
     # easiest case: the attendee is marked as the primary for a registration. no searching needed!
     if attendee.is_primary():
       return attendee
