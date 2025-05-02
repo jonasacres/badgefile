@@ -115,7 +115,7 @@ class Attendee:
     return datetime.strptime(self._info['regtime'], "%m/%d/%Y %I:%M:%S %p")
 
   def party(self, include_cancelled=False):
-    party = [x for x in self._badgefile.attendees() if x.primary() == self.primary()]
+    party = self._badgefile.parties()[self.primary()]
 
     if not include_cancelled:
       party = [x for x in party if not x.is_cancelled()]

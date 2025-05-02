@@ -44,6 +44,31 @@ class Activity:
   def with_db_row(cls, badgefile, db_row):
     return cls.with_report_row(badgefile, db_row)
   
+  @classmethod
+  def prune_to_activity_registrant_ids(cls, id_list):
+    # Ensure id_list contains unique values
+    unique_ids = set(id_list)
+    log.debug(f"Pruning Activities table to {len(unique_ids)} identifiers")
+    
+    db = Database.shared()
+    
+    # Get all existing activity_registrant_ids from the database
+    existing_ids_rows = db.query("SELECT DISTINCT activity_registrant_id FROM Activities")
+    existing_ids = [row['activity_registrant_id'] for row in existing_ids_rows]
+    
+    # Find IDs that exist in the database but not in our current list
+    ids_to_delete = set(existing_ids) - unique_ids
+    
+    if ids_to_delete:
+        log.debug(f"Deleting {len(ids_to_delete)} activities that are no longer present in CE reports")
+        # Convert to list for SQL parameter binding
+        ids_list = list(ids_to_delete)
+        # Use parameterized query for safety
+        placeholders = ','.join(['?' for _ in ids_list])
+        db.execute(f"DELETE FROM Activities WHERE activity_registrant_id IN ({placeholders})", ids_list)
+    else:
+        log.debug("No activities to prune")
+  
   def __init__(self, attendee, row):
     self.db = Database.shared()
     self.attendee = attendee

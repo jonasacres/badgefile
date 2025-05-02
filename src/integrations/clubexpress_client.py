@@ -192,7 +192,7 @@ class ClubExpressClient:
       log.info(f"Performing iterated request for {uri} (POST {i})")
       data = data | tier
       data = data | self._do_iterated_form_query(uri, watch_fields, data)
-      log.debug(f"Data: {json.dumps(data)}")
+      log.trace(f"Data: {json.dumps(data)}")
     
     return data
 
@@ -222,9 +222,8 @@ class ClubExpressClient:
         'Te': 'trailers',
       }
       
-      log.debug(f"Request body: {request_body}")
+      log.trace(f"Request body: {request_body}")
       http_resp = self.session.post(uri, headers=my_headers, data=request_body)
-    print(http_resp.text)
     
     soup = BeautifulSoup(http_resp.text, 'html.parser')
     default_field_names = [
@@ -238,7 +237,6 @@ class ClubExpressClient:
 
     script_tag = soup.find('script', {'src': lambda x: x and x.startswith('/Telerik.Web.UI.WebResource.axd')})
     parsed_script_manager_tsm = data.get("script_manager_TSM", None) if data else None
-    log.info(f"found script tag: {script_tag != None}")
     if script_tag:
         src = script_tag['src']
         query_string = src.split('?')[1]
@@ -263,10 +261,8 @@ class ClubExpressClient:
       input_tag = soup.find('input', {'name': name})
       if input_tag:
         form_data[name] = input_tag.get('value', '')
-        log.debug(f"found form value: {name} = '{form_data[name]}'")
       elif name in default_field_names:
         form_data[name] = ''
-        log.debug(f"defaulted form value: {name} = '{form_data[name]}'")
   
     # inject in any additional data specified by our requestor, unless overridden by response
     if data is not None:

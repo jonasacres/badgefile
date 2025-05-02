@@ -3,6 +3,7 @@ from .attendee import Attendee
 from .id_manager import IdManager
 from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
+from datasources.clubexpress.activity import Activity
 from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
@@ -34,6 +35,7 @@ class Badgefile:
 
   def __init__(self):
     self._attendees = None
+    self._parties = None
     self.db = Database.shared()
 
   def path(self):
@@ -60,9 +62,13 @@ class Badgefile:
     
     for attendee in self.attendees():
       attendee.invalidate_activities()
-    ActivityList.latest().rows(self) # merely asking for the rows causes them to be saved to the DB
     
-    HousingActivityList.latest().rows(self) # also force housing rows to DB
+    # by doing the ActivityList/HousingActivityList.latest().rows(), we ensure all the current rows are in the DB
+    # problem: if someone cancels an event manually in CE, the row is deleted from the report, and not marked as cancelled
+    # so we have to list all the activity_registrant_ids that are in the sheets, then hand them to a method that deletes anything in the Activities tables not in that list
+    all_act_ids  = [act.info()['activity_registrant_id'] for act in ActivityList.latest().rows(self) if act is not None] # merely asking for the rows causes them to be saved to the DB
+    all_act_ids += [act.info()['activity_registrant_id'] for act in HousingActivityList.latest().rows(self) if act is not None] # also force housing rows to DB
+    Activity.prune_to_activity_registrant_ids(all_act_ids)
     
     TDList.latest().apply(self) # Now go apply ratings/expiration dates/chapters from the TD list
     
@@ -143,6 +149,18 @@ class Badgefile:
       self.ensure_consistency()
       log.debug(f"badgefile: Loaded {len(self._attendees)} attendees")
     return self._attendees
+  
+  def parties(self):
+    if self._parties is None:
+      log.debug("badgefile: Organizing party lists")
+      parties = {}
+      for attendee in self._attendees:
+        if not attendee.primary() in parties:
+          parties[attendee.primary()] = []
+        party = parties[attendee.primary()]
+        party.append(attendee)
+      self._parties = parties
+    return self._parties
   
   # returns an Attendee corresponding to the user in the reglist if one exists, or None
   # if none exists.
