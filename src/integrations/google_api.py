@@ -322,7 +322,6 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
 
   for key, seen in seen_rows.items():
     if not seen:
-      log.info(f"NOT SEEN: {key} {mapped_rows[key]+1}")
       updated_data[mapped_rows[key]] = None
 
   # Filter out None rows and prepare data for batch update
@@ -350,7 +349,6 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
   rows_to_delete = []
   for i, row in enumerate(updated_data):
     if row is None:
-      log.info(f"DELETING ROW: {i}")
       rows_to_delete.append(i + 1) # Add 1 since sheet rows are 1-based
   
   if rows_to_delete:

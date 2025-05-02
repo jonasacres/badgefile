@@ -163,6 +163,7 @@ class Badgefile:
 
     # no attendees yet
     if len(scored) == 0:
+      log.debug(f"No existing member matches '{row['name_given']} {row['name_family']}', born {row['date_of_birth']}")
       return None
     
     best_score = scored[0][1]
@@ -170,11 +171,11 @@ class Badgefile:
 
     # TODO: 100 chosen arbitrarily for both conditions below; think this through or find through trial and error
     # honestly the score system probably sucks as a general concept
-    if best_score < 100:
-      return None
-    if delta < 100:
+    if best_score < 100 or delta < 100:
+      log.debug(f"No existing member matches '{row['name_given']} {row['name_family']}', born {row['date_of_birth']}")
       return None
     
+    log.debug(f"Existing member matches '{row['name_given']} {row['name_family']}', born {row['date_of_birth']}, mobile {row['phone_mobile']}: ID {scored[0][0].id()}, score {scored[0][1]}")
     return scored[0][0]
   
   # returns an Attendee corresponding to the user in the reglist. uses an existing Attendee
@@ -203,13 +204,6 @@ class Badgefile:
         log.warn(f"Encountered an exception finding primary registrant for {attendee.full_name()}", exception=exc)
   
   def locate_primary_for_attendee(self, attendee):
-    # Debug: print each key-value pair from attendee.info()
-    if attendee.id() == 26378:
-      print(attendee.is_primary())
-      info = attendee.info()
-      for key in sorted(info.keys()):
-        print(f"  {key:<20}: |{info[key]}|")
-      
     # easiest case: the attendee is marked as the primary for a registration. no searching needed!
     if attendee.is_primary():
       return attendee
@@ -228,7 +222,7 @@ class Badgefile:
     # sometimes people are non-primary registrants on a different transaction, so now we have to try to match on primary_registrant_name
     # primary_registrant_name is based on "%s %s" % (first_name, last_name) so look for that
     prn = attendee.info()["primary_registrant_name"]
-    candidates = [att for att in self.attendees() if f"{att.info()['name_given']} {att.info()['name_family']}" == prn]
+    candidates = [att for att in self.attendees() if f"{att.info()['name_given']} {att.info()['name_family']}" == prn and att.is_primary()]
     if len(candidates) == 1:
       # we found exactly one match, which is the best outcome.
       return candidates[0]

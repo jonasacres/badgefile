@@ -387,15 +387,15 @@ class Attendee:
       # all of these are basically conclusive, though AGA number is the gold standard
       [99999, ["aga_id"]],
       [10000, ["name_given", "name_family", "date_of_birth"]],
-      [9000, ["name_given", "name_family", "name_mi"]],
-      [9000, ["name_given", "name_family", "phone_cell"]], # TODO: standardize phone numbers (both format AND source field)
+      # [9000, ["name_given", "name_family", "name_mi"]], # A pair of registrants both named "Sungjun Lee" broke this match.
+      [9000, ["name_given", "name_family", "phone_mobile"]], # TODO: standardize phone numbers (both format AND source field)
       [9000, ["name_given", "name_family", "addr1", "postcode"]],
 
       # TODO: these don't really make sense...
 
       [50, ["name_family", "date_of_birth"]],
       [30, ["addr1", "postcode"]],
-      [30, ["phone_cell"]],
+      [30, ["phone_mobile"]],
     ]
 
     # TODO: allow flip-flopping of given/family names
