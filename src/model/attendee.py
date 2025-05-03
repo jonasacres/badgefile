@@ -514,7 +514,19 @@ class Attendee:
   
   # boolean: is this the primary registrant?
   def is_primary(self):
-    return self.info()["is_primary"].lower() == "true"
+    override = self.info().get("override_primary", None)
+    if override == "false":
+      return False
+    return override == "true" or self.info()["is_primary"].lower() == "true"
+
+  def override_primary(self, value=True):
+    if value is None:
+      log.info(f"Clearing primary override for member {self.full_name()} {self.id()}")
+      self._info["override_primary"] = None
+    else:
+      log.info(f"Marking member {self.full_name()} {self.id()} as {'primary' if value else 'non-primary'} by override.")
+      self._info["override_primary"] = "true" if value else "false"
+    self.sync_to_db()
   
   # return self if is_primary, otherwise returns reference to primary registrant
   def primary(self):

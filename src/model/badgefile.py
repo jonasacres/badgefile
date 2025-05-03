@@ -245,11 +245,13 @@ class Badgefile:
       # we found exactly one match, which is the best outcome.
       return candidates[0]
     elif len(candidates) == 0:
-      # no matches; this is bad!! we have to manually solve this.
-      log.warn(f"Unable to locate primary registrant for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'")
-      return None
+      # no matches; this is bad!! we'll do the best we can by treating the attendee as their own primary.
+      # CE does actually produce this case; see 2025's May 2nd transaction 7717 in the registrant data for an example.
+      log.notice(f"Unable to locate primary registrant for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}' and/or transrefnum '{transrefnum}'. Treating as own primary registrant.")
+      attendee.override_primary()
+      return attendee
     else:
-      # multiple matches; also very bad!! needs manual solution.
+      # multiple matches; very bad!! needs manual solution.
       log.warn(f"Found multiple possible primary registrants for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
       return None
 
