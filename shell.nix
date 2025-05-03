@@ -28,6 +28,7 @@ pkgs.mkShell {
     python.pkgs.python-dateutil
     python.pkgs.pyyaml
     python.pkgs.boto3
+    python.pkgs.pylibdmtx
   ];
 
   shellHook = ''

@@ -8,6 +8,9 @@ from PIL import Image
 from random import randrange
 from copy import copy
 import os
+import io
+from pylibdmtx.pylibdmtx import encode
+from PIL import Image as PILImage
 
 class Badge:
   def __init__(self, attendee):
@@ -117,6 +120,7 @@ class BadgeRenderer:
     info_enclosure.add_leaf_text_centered(city_state, style(20, colors.black), y=1.65*inch)
     info_enclosure.add_leaf_text_centered(self.attendee.badge_rating(), style(48, colors.black, bold=True), y=0.25*inch)
 
+    self.layout_scannable(info_enclosure)
     self.layout_country_flag(info_enclosure)
     self.layout_language_flags(info_enclosure)
 
@@ -130,6 +134,41 @@ class BadgeRenderer:
 
     return title_enclosure
 
+  def layout_scannable(self, box):
+    scan_height = 0.5*inch
+    scan_enclosure = box.inset(0, 0.90*inch, box.width, scan_height)
+    
+    # Generate Data Matrix with attendee ID
+    data = str(self.attendee.id()).encode('utf8')
+    encoded = encode(data, size='10x10')
+    
+    # Convert to PIL Image
+    dm_img = PILImage.frombytes('RGB', (encoded.width, encoded.height), encoded.pixels)
+    
+    # Create a BytesIO buffer to hold the image data
+    buffer = io.BytesIO()
+    dm_img.save(buffer, format="PNG")
+    buffer.seek(0)
+    
+    # Create an ImageReader from the buffer
+    img_reader = ImageReader(buffer)
+    
+    # Calculate dimensions and position for centered placement
+    dm_size = min(scan_height * 0.9, scan_enclosure.width * 0.3)
+    dm_x = (scan_enclosure.width - dm_size) / 2
+    dm_y = (scan_height - dm_size) / 2
+    
+    # Draw the Data Matrix
+    dm_box = scan_enclosure.inset(dm_x, dm_y, dm_size, dm_size)
+    
+    def draw_datamatrix(canvas):
+      img_left, img_bottom = dm_box.absolute_coords()
+      canvas.drawImage(img_reader, img_left, img_bottom, width=dm_size, height=dm_size)
+    
+    dm_box.draw_func = lambda canvas: draw_datamatrix(canvas)
+    
+    return scan_enclosure
+  
   def layout_country_flag(self, box):
     country = self.attendee.info()["country"].lower()
     flag_img = f"src/static/flags/{country}.png"
@@ -141,7 +180,7 @@ class BadgeRenderer:
 
     flag_width = 0.8*inch
     flag_height = flag_width * aspect_ratio
-    flag_box = box.inset(0.15 * inch, 0.25 *inch, flag_width, flag_height)
+    flag_box = box.inset(0.15*inch, 0.25*inch, flag_width, flag_height)
     flag_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
     flag_box.add_leaf_image_centered(flag_img)
 
