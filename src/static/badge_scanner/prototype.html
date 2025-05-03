@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Access Prototype</title>
+    <!-- Add Tesseract.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #videoContainer {
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+        }
+        #video {
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #cameraControls {
+            margin-top: 20px;
+        }
+        #cameraSelect {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        #flipCameraBtn {
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none; /* Hidden by default, shown on mobile */
+        }
+        #status {
+            margin-top: 10px;
+            color: #666;
+        }
+        #scanResult {
+            font-size: 24px;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        #canvas {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #debugCanvas {
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            max-width: 100%;
+            display: none;
+        }
+        #scanningIndicator {
+            margin-top: 10px;
+            color: #4285f4;
+        }
+        #debugText {
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        /* Overlay styles */
+        .overlay-top, .overlay-right, .overlay-bottom, .overlay-left {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        .scan-window {
+            position: absolute;
+            border: 2px solid #4285f4;
+            box-sizing: border-box;
+            z-index: 10;
+            background-color: transparent;
+        }
+        
+        #debugControls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Camera Access Prototype</h1>
+    
+    <div id="cameraControls">
+        <select id="cameraSelect"></select>
+        <button id="flipCameraBtn">Flip Camera</button>
+    </div>
+    
+    <div id="videoContainer">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        
+        <!-- Overlay elements -->
+        <div class="overlay-top"></div>
+        <div class="overlay-right"></div>
+        <div class="overlay-bottom"></div>
+        <div class="overlay-left"></div>
+        <div class="scan-window"></div>
+    </div>
+    
+    <div id="scanResult">Pending</div>
+    <div id="scanningIndicator"></div>
+    <div id="status">Initializing camera...</div>
+    
+    <div id="debugControls">
+        <button id="toggleDebug">Show Debug Info</button>
+        <button id="manualScan">Scan Now</button>
+    </div>
+    
+    <canvas id="debugCanvas"></canvas>
+    <div id="debugText"></div>
+
+    <script>
+        const videoElement = document.getElementById('video');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const flipCameraBtn = document.getElementById('flipCameraBtn');
+        const statusElement = document.getElementById('status');
+        const scanResultElement = document.getElementById('scanResult');
+        const scanningIndicatorElement = document.getElementById('scanningIndicator');
+        const canvasElement = document.getElementById('canvas');
+        const canvasContext = canvasElement.getContext('2d', { willReadFrequently: true });
+        const debugCanvasElement = document.getElementById('debugCanvas');
+        const debugCanvasContext = debugCanvasElement.getContext('2d');
+        const debugTextElement = document.getElementById('debugText');
+        const toggleDebugBtn = document.getElementById('toggleDebug');
+        const manualScanBtn = document.getElementById('manualScan');
+        
+        // Get overlay elements
+        const overlayTop = document.querySelector('.overlay-top');
+        const overlayRight = document.querySelector('.overlay-right');
+        const overlayBottom = document.querySelector('.overlay-bottom');
+        const overlayLeft = document.querySelector('.overlay-left');
+        const scanWindow = document.querySelector('.scan-window');
+        
+        let currentStream = null;
+        let cameras = [];
+        let currentCameraIndex = 0;
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let isScanning = false;
+        let scanInterval = null;
+        let debugMode = false;
+        let worker = null;
+        
+        // Scan region configuration (percentage of video dimensions)
+        const scanRegion = {
+            x: 0.2,      // 20% from left
+            y: 0.3,      // 30% from top
+            width: 0.6,  // 60% of video width
+            height: 0.4  // 40% of video height
+        };
+        
+        // Initialize the camera access
+        async function init() {
+            try {
+                // Check if mediaDevices is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Your browser does not support camera access');
+                }
+                
+                // Get list of available cameras
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                cameras = devices.filter(device => device.kind === 'videoinput');
+                
+                if (cameras.length === 0) {
+                    throw new Error('No cameras found on this device');
+                }
+                
+                // Set up UI based on device type
+                if (isMobile) {
+                    // On mobile, hide the dropdown and show the flip button
+                    cameraSelect.style.display = 'none';
+                    flipCameraBtn.style.display = 'inline-block';
+                    
+                    // Try to start with the rear camera on mobile
+                    const rearCameraIndex = cameras.findIndex(camera => 
+                        camera.label.toLowerCase().includes('back') || 
+                        camera.label.toLowerCase().includes('rear'));
+                    
+                    currentCameraIndex = rearCameraIndex >= 0 ? rearCameraIndex : 0;
+                } else {
+                    // On desktop, populate the dropdown with available cameras
+                    flipCameraBtn.style.display = 'none';
+                    
+                    cameras.forEach((camera, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.text = camera.label || `Camera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+                    
+                    currentCameraIndex = 0;
+                }
+                
+                // Start the camera
+                await startCamera();
+                
+                // Set up event listeners
+                cameraSelect.addEventListener('change', async () => {
+                    currentCameraIndex = parseInt(cameraSelect.value);
+                    await startCamera();
+                });
+                
+                flipCameraBtn.addEventListener('click', async () => {
+                    currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+                    await startCamera();
+                });
+                
+                toggleDebugBtn.addEventListener('click', () => {
+                    debugMode = !debugMode;
+                    debugCanvasElement.style.display = debugMode ? 'block' : 'none';
+                    debugTextElement.style.display = debugMode ? 'block' : 'none';
+                    toggleDebugBtn.textContent = debugMode ? 'Hide Debug Info' : 'Show Debug Info';
+                });
+                
+                manualScanBtn.addEventListener('click', () => {
+                    scanFrame();
+                });
+                
+                // Initialize Tesseract worker
+                await initTesseract();
+                
+                // Handle resize events to update scan window position
+                window.addEventListener('resize', updateScanWindowPosition);
+                
+            } catch (error) {
+                statusElement.textContent = `Error: ${error.message}`;
+                statusElement.style.color = 'red';
+                console.error('Camera initialization error:', error);
+            }
+        }
+        
+        // Start the camera with the currently selected device
+        async function startCamera() {
+            try {
+                // Stop any existing stream
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Clear any existing scan interval
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                }
+                
+                statusElement.textContent = 'Starting camera...';
+                
+                // Get the selected camera ID
+                const cameraId = cameras[currentCameraIndex].deviceId;
+                
+                // Set up constraints
+                const constraints = {
+                    video: {
+                        deviceId: cameraId ? { exact: cameraId } : undefined,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: isMobile ? "environment" : null
+                    }
+                };
+                
+                // Get the stream
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = currentStream;
+                
+                // Update status
+                statusElement.textContent = `Active camera: ${cameras[currentCameraIndex].label || `Camera ${currentCameraIndex + 1}`}`;
+                
+                // Update dropdown selection (for desktop)
+                if (!isMobile) {
+                    cameraSelect.value = currentCameraIndex;
+                }
+                
+                // Wait for video to be ready
+                videoElement.onloadedmetadata = () => {
+                    // Set canvas dimensions to match video
+                    canvasElement.width = videoElement.videoWidth;
+                    canvasElement.height = videoElement.videoHeight;
+                    
+                    // Set debug canvas dimensions
+                    debugCanvasElement.width = videoElement.videoWidth * scanRegion.width;
+                    debugCanvasElement.height = videoElement.videoHeight * scanRegion.height;
+                    
+                    // Update scan window position
+                    updateScanWindowPosition();
+                    
+                    // Start OCR scanning
+                    startScanning();
+                };
+                
+            } catch (error) {
+                statusElement.textContent = `Error starting camera: ${error.message}`;
+                statusElement.style.color = 'red';
+                console.error('Camera start error:', error);
+            }
+        }
+        
+        // Update the scan window position based on video dimensions
+        function updateScanWindowPosition() {
+            const videoRect = videoElement.getBoundingClientRect();
+            const containerRect = videoElement.parentElement.getBoundingClientRect();
+            
+            // Calculate scan window position and size
+            const left = videoRect.left - containerRect.left + (videoRect.width * scanRegion.x);
+            const top = videoRect.top - containerRect.top + (videoRect.height * scanRegion.y);
+            const width = videoRect.width * scanRegion.width;
+            const height = videoRect.height * scanRegion.height;
+            
+            // Update scan window style
+            scanWindow.style.left = `${left}px`;
+            scanWindow.style.top = `${top}px`;
+            scanWindow.style.width = `${width}px`;
+            scanWindow.style.height = `${height}px`;
+            
+            // Position the four overlay sections to create a "window" effect
+            
+            // Top overlay (covers from top of video to top of scan window)
+            overlayTop.style.left = `${videoRect.left - containerRect.left}px`;
+            overlayTop.style.top = `${videoRect.top - containerRect.top}px`;
+            overlayTop.style.width = `${videoRect.width}px`;
+            overlayTop.style.height = `${top - (videoRect.top - containerRect.top)}px`;
+            
+            // Right overlay (covers from right of scan window to right of video)
+            overlayRight.style.left = `${left + width}px`;
+            overlayRight.style.top = `${top}px`;
+            overlayRight.style.width = `${(videoRect.right - containerRect.left) - (left + width)}px`;
+            overlayRight.style.height = `${height}px`;
+            
+            // Bottom overlay (covers from bottom of scan window to bottom of video)
+            overlayBottom.style.left = `${videoRect.left - containerRect.left}px`;
+            overlayBottom.style.top = `${top + height}px`;
+            overlayBottom.style.width = `${videoRect.width}px`;
+            overlayBottom.style.height = `${(videoRect.bottom - containerRect.top) - (top + height)}px`;
+            
+            // Left overlay (covers from left of video to left of scan window)
+            overlayLeft.style.left = `${videoRect.left - containerRect.left}px`;
+            overlayLeft.style.top = `${top}px`;
+            overlayLeft.style.width = `${left - (videoRect.left - containerRect.left)}px`;
+            overlayLeft.style.height = `${height}px`;
+        }
+        
+        // Initialize Tesseract.js
+        async function initTesseract() {
+            try {
+                scanningIndicatorElement.textContent = 'Initializing OCR engine...';
+                worker = await Tesseract.createWorker();
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                // Set Tesseract to look for digits and symbols
+                await worker.setParameters({
+                    tessedit_char_whitelist: 'AG #0123456789',
+                    tessedit_pageseg_mode: '6' // Assume a single uniform block of text
+                });
+                scanningIndicatorElement.textContent = 'OCR engine ready';
+            } catch (error) {
+                scanningIndicatorElement.textContent = `Error initializing OCR: ${error.message}`;
+                console.error('Tesseract initialization error:', error);
+            }
+        }
+        
+        // Start periodic scanning
+        function startScanning() {
+            if (scanInterval) {
+                clearInterval(scanInterval);
+            }
+            
+            // Use requestAnimationFrame for more frequent scanning
+            scanFrame();
+            scanningIndicatorElement.textContent = 'Scanning for badge numbers...';
+        }
+        
+        // Scan a single frame from the video
+        async function scanFrame() {
+            if (isScanning || !videoElement.videoWidth || !worker) {
+                // If we're already scanning or not ready, schedule next scan
+                requestAnimationFrame(scanFrame);
+                return;
+            }
+            
+            try {
+                isScanning = true;
+                scanningIndicatorElement.textContent = 'Processing image...';
+                
+                // Calculate the region to scan in the original video dimensions
+                const scanX = Math.floor(videoElement.videoWidth * scanRegion.x);
+                const scanY = Math.floor(videoElement.videoHeight * scanRegion.y);
+                const scanWidth = Math.floor(videoElement.videoWidth * scanRegion.width);
+                const scanHeight = Math.floor(videoElement.videoHeight * scanRegion.height);
+                
+                // Clear the canvas and set its dimensions to match the scan region
+                canvasElement.width = scanWidth;
+                canvasElement.height = scanHeight;
+                
+                // Draw only the scan region to the canvas
+                canvasContext.drawImage(
+                    videoElement,
+                    scanX, scanY, scanWidth, scanHeight,  // Source rectangle
+                    0, 0, scanWidth, scanHeight           // Destination rectangle
+                );
+                
+                // If in debug mode, show the captured image
+                if (debugMode) {
+                    debugCanvasContext.drawImage(canvasElement, 0, 0);
+                }
+                
+                // Get image data from canvas
+                const imageData = canvasElement.toDataURL('image/png');
+                
+                // Recognize text in the image
+                const { data } = await worker.recognize(imageData);
+                
+                // Update debug text if in debug mode
+                if (debugMode) {
+                    debugTextElement.textContent = `Raw OCR Text:\n${data.text}\n\nConfidence: ${data.confidence.toFixed(2)}%`;
+                }
+                
+                // Look for numbers prefixed with #
+                const text = data.text;
+                const matches = text.match(/AGA \#\d+/g);
+                
+                if (matches && matches.length > 0) {
+                    // Get the last match
+                    const lastMatch = matches[matches.length - 1];
+                    scanResultElement.textContent = lastMatch;
+                    scanningIndicatorElement.textContent = `Found: ${lastMatch}`;
+                    console.log('Found badge number:', lastMatch);
+                } else {
+                    scanningIndicatorElement.textContent = 'No badge numbers found. Scanning...';
+                }
+                
+            } catch (error) {
+                console.error('Scanning error:', error);
+                scanningIndicatorElement.textContent = 'Error during scanning';
+            } finally {
+                isScanning = false;
+                // Schedule next scan immediately after this one completes
+                requestAnimationFrame(scanFrame);
+            }
+        }
+        
+        // Initialize when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
