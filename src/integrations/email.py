@@ -55,11 +55,11 @@ class Email:
   def send(self, server=None, force=False):
     server = server or Email.default_server()
     sent_emails = EmailHistory.shared().latest_emails_for_user(self.attendee.id())
-    sent_time = sent_emails.get(self.template)
+    prior_email = sent_emails.get(self.template)
     email_to = self.attendee.info()['email']
 
-    if sent_time != None and not force:
-      log.info(f"Email {self.template} already sent to {email_to} at {sent_time}; not sending again without force flag")
+    if prior_email != None and not force:
+      log.debug(f"Email {self.template} already sent to {email_to} at {prior_email['timestamp']}; not sending again without force flag")
       return False
     
     msg, html_body, plaintext_body = self.create_html_email()

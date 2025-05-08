@@ -539,6 +539,9 @@ class Attendee:
       self._info["override_rating"] = value
       self.sync_to_db()
 
+  def has_override_rating(self):
+    return self._info.get("override_rating", None) is not None
+
   def set_ignore_tournament_issues(self, value):
     if self.has_ignore_tournament_issues() != value:
       log.debug(f"Setting ignore_tournament_issues for {self.full_name()}: {value}")
