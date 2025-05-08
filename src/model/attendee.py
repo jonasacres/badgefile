@@ -47,7 +47,8 @@ class Attendee:
     return self
   
   def effective_rank(self):
-    # TODO: allow rank override
+    if self._info.get('override_rating', None):
+      return self._info['override_rating']
     return self._info.get('aga_rating', None)
   
   def aga_rating(self):
@@ -189,7 +190,7 @@ class Attendee:
     return datetime.strptime(self._info['aga_expiration_date'], "%m/%d/%Y")
 
   def badge_rating(self):
-    rating = self._info.get("aga_rating", None)
+    rating = self.effective_rank()
     if rating is None:
       return ""
     rating = float(rating)
@@ -466,7 +467,9 @@ class Attendee:
             if total_time_ms > 5.0:
               log.debug(f"Issue check {issue_type} execution completed in {check_time_ms:.2f} ms (total: {total_time_ms:.2f} ms)")
             if issue_data is not None:  # Only collect non-None results
-              current_issues[issue_type] = issue_data
+              # also, skip if it's a tournament issue and the player has ignore_tournament_issues
+              if issue_data['category'] != 'tournament' or not self.has_ignore_tournament_issues():
+                current_issues[issue_type] = issue_data
           elif total_time_ms > 5.0:
             log.debug(f"Issue check {issue_type} has no run_check function (import only: {import_time_ms:.2f} ms)")
 
@@ -519,6 +522,7 @@ class Attendee:
       return False
     return override == "true" or self.info()["is_primary"].lower() == "true"
 
+  # force the attendee to have a given badgefile_id as their primary registrant
   def override_primary(self, value=True):
     if value is None:
       log.info(f"Clearing primary override for member {self.full_name()} {self.id()}")
@@ -527,6 +531,22 @@ class Attendee:
       log.info(f"Marking member {self.full_name()} {self.id()} as {'primary' if value else 'non-primary'} by override.")
       self._info["override_primary"] = "true" if value else "false"
     self.sync_to_db()
+
+  # set an override rating for an attendee; this is what will go on their badge and anywhere else we care about ratings
+  def override_rating(self, value):
+    if self._info.get("override_rating", None) != value:
+      log.debug(f"Setting override rating for {self.full_name()}: {value if value else 'None'}")
+      self._info["override_rating"] = value
+      self.sync_to_db()
+
+  def set_ignore_tournament_issues(self, value):
+    if self.has_ignore_tournament_issues() != value:
+      log.debug(f"Setting ignore_tournament_issues for {self.full_name()}: {value}")
+      self._info['ignore_tournament_issues'] = value
+      self.sync_to_db()
+
+  def has_ignore_tournament_issues(self):
+    return self._info.get('ignore_tournament_issues', False)
   
   # return self if is_primary, otherwise returns reference to primary registrant
   def primary(self):

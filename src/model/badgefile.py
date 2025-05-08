@@ -5,6 +5,7 @@ from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from datasources.clubexpress.housing_activity_list import HousingActivityList
+from datasources.sheets.attendee_status import AttendeeStatusSource
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
@@ -48,6 +49,7 @@ class Badgefile:
     EmailReport(self).update()
 
   def update(self):
+    AttendeeStatusSource(self).read_tournament_overrides()
     self.update_attendees()
     self.update_raw_reports()
     self.update_attendee_status_sheet()
