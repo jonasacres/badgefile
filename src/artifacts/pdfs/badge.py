@@ -135,8 +135,8 @@ class BadgeRenderer:
     return title_enclosure
 
   def layout_scannable(self, box):
-    scan_height = 0.5*inch
-    scan_enclosure = box.inset(0, 0.90*inch, box.width, scan_height)
+    scan_height = 0.65*inch
+    scan_enclosure = box.inset(0, 0.85*inch, box.width, scan_height)
     
     # Generate Data Matrix with attendee ID
     data = str(self.attendee.id()).encode('utf8')
