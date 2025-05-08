@@ -467,9 +467,7 @@ class Attendee:
             if total_time_ms > 5.0:
               log.debug(f"Issue check {issue_type} execution completed in {check_time_ms:.2f} ms (total: {total_time_ms:.2f} ms)")
             if issue_data is not None:  # Only collect non-None results
-              # also, skip if it's a tournament issue and the player has ignore_tournament_issues
-              if issue_data['category'] != 'tournament' or not self.has_ignore_tournament_issues():
-                current_issues[issue_type] = issue_data
+              current_issues[issue_type] = issue_data
           elif total_time_ms > 5.0:
             log.debug(f"Issue check {issue_type} has no run_check function (import only: {import_time_ms:.2f} ms)")
 
