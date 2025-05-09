@@ -140,6 +140,13 @@ class Badgefile:
         return attendee
     
     return None
+
+  def lookup_attendee_by_hash_id(self, hash_id):
+    for attendee in self.attendees():
+      if attendee.hash_id() == hash_id:
+        return attendee
+    
+    return None
   
   # return list of all attendees
   def attendees(self):

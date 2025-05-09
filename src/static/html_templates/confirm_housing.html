@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Housing - 2025 US Go Congress</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .radio-option {
+            margin-bottom: 10px;
+        }
+        .radio-option label {
+            display: inline;
+            font-weight: normal;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Housing Confirmation - 2025 US Go Congress</h1>
+    
+    <p>Hello {{ attendee.name_given }} {{ attendee.name_family }},</p>
+    
+    <p>Please confirm your housing preference for your party at the 2025 US Go Congress:</p>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Housing Preference:</label>
+            
+            <div class="radio-option">
+                <input type="radio" id="congress_housing" name="will_arrange_own_housing" value="false" {% if not will_arrange_own_housing %}checked{% endif %}>
+                <label for="congress_housing">I plan to reserve a dormitory on campus</label>
+            </div>
+            
+            <div class="radio-option">
+                <input type="radio" id="own_housing" name="will_arrange_own_housing" value="true" {% if will_arrange_own_housing %}checked{% endif %}>
+                <label for="own_housing">I will arrange my own off-campus housing</label>
+            </div>
+        </div>
+        
+        <button type="submit">Confirm Housing Preference</button>
+    </form>
+    
+    <p><small>Note: This confirmation is for your entire party. For questions, e-mail the registrar at <a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a>.</small></p>
+</body>
+</html>

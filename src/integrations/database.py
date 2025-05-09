@@ -11,9 +11,16 @@ class Database:
 
   @classmethod
   def shared(cls):
-    if cls._shared == None:
-      cls._shared = Database("badgefile.sqlite3")
-    return cls._shared
+    import threading
+    thread_id = threading.get_ident()
+    
+    if not hasattr(cls, '_thread_instances'):
+      cls._thread_instances = {}
+    
+    if thread_id not in cls._thread_instances:
+      cls._thread_instances[thread_id] = Database("badgefile.sqlite3")
+    
+    return cls._thread_instances[thread_id]
   
   def __init__(self, path: str):
     """

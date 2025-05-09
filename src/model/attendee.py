@@ -3,6 +3,7 @@ import os
 import importlib.util
 import json
 import sys
+import hmac
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from datasources.clubexpress.reglist import Reglist
 from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
+from util.secrets import secret
 
 from log.logger import log
 
@@ -21,7 +23,6 @@ class Attendee:
   """Describes a single attendee at the Congress. Combines data from multiple datasources to present a cohesive view of each attendee."""
 
   def __init__(self, badgefile):
-    self.db = Database.shared()
     self._info = {}
     self._badgefile = badgefile
     self._activities = None
@@ -86,6 +87,21 @@ class Attendee:
   
   def id(self):
     return self._info["badgefile_id"]
+  
+  def hash_id(self):
+    if "hash_id" in self._info and self._info["hash_id"] is not None:
+      return self._info["hash_id"]
+    
+    # Create a SHA256 HMAC of the attendee ID using the salt from secrets
+    key = secret('hash_id_salt').encode('utf-8')
+    message = str(self.id()).encode('utf-8')
+    h = hmac.new(key, message, hashlib.sha256)
+    
+    # Store the hexdigest as the hash_id
+    self._info["hash_id"] = h.hexdigest()[0:12]
+    self.sync_to_db()
+    
+    return self._info["hash_id"]
   
   def invalidate_activities(self):
     if "donation_amount" in self._info:
@@ -310,11 +326,11 @@ class Attendee:
     update_args = base_args + [existing_id]
 
     update_sql = f"UPDATE Attendees SET {set_clause} WHERE badgefile_id=?"
-    affected_rows = self.db.execute(update_sql, update_args)
+    affected_rows = Database.shared().execute(update_sql, update_args)
 
     if affected_rows == 0:
       insert_sql = f"INSERT INTO Attendees (badgefile_id, json, {','.join(keys)}) VALUES (?, ?, {', '.join(['?' for _ in keys])})"
-      self.db.execute(insert_sql, base_args)
+      Database.shared().execute(insert_sql, base_args)
 
     if existing_id != self.id():
       # TODO: placeholder. we're going to want a column for the primary registrant's badgefile id.
@@ -322,9 +338,9 @@ class Attendee:
       pass
   
   def ensure_attendee_table(self):
-    self.db.execute("CREATE TABLE IF NOT EXISTS Attendees(badgefile_id INTEGER NOT NULL PRIMARY KEY, json TEXT NOT NULL)")
+    Database.shared().execute("CREATE TABLE IF NOT EXISTS Attendees(badgefile_id INTEGER NOT NULL PRIMARY KEY, json TEXT NOT NULL)")
     defns_dict = { col[0]: col[1] for col in self.column_definitions() } 
-    existing_cols = self.db.columns_of_table("Attendees")
+    existing_cols = Database.shared().columns_of_table("Attendees")
     expected_cols = defns_dict.keys()
     missing_columns = list(set(expected_cols) - set(existing_cols))
     missing_defns = [[col, defns_dict[col]] for col in missing_columns if col in defns_dict]
@@ -332,7 +348,7 @@ class Attendee:
     for defn in missing_defns:
       name, type = defn
       query = f"ALTER TABLE Attendees ADD COLUMN {name} {type} DEFAULT NULL;"
-      self.db.execute(query)
+      Database.shared().execute(query)
 
   def column_definitions(self):
     return self.implicit_column_definitions() + self.explicit_column_definitions()
@@ -548,6 +564,16 @@ class Attendee:
 
   def has_ignore_tournament_issues(self):
     return self._info.get('ignore_tournament_issues', False)
+  
+  def set_will_arrange_own_housing(self, value):
+    if self.will_arrange_own_housing() != value:
+      log.debug(f"Setting will_arrange_own_housing for {self.full_name()}: {value}")
+      self._info['will_arrange_own_housing'] = value
+      self._info['will_arrange_own_housing_modified_at'] = datetime.now().isoformat()
+      self.sync_to_db()
+
+  def will_arrange_own_housing(self):
+    return self._info.get('will_arrange_own_housing', False)
   
   # return self if is_primary, otherwise returns reference to primary registrant
   def primary(self):
