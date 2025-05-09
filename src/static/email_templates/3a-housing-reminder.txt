@@ -1,0 +1,24 @@
+Subject: Go Congress Housing Reminder
+
+<p>Dear {name_given},</p>
+
+<p>Hello, and thank you for registering for the US Go Congress!</p>
+
+<p>Next, please make sure to sign up for Housing on the Congress website so that the Registrar team can help assign & verify your room(s). This year we have dorm & apartment style room(s) options available, and you’ll also be able to write in a roommate request if you have one. You can find our housing options here:</p>
+
+<p><a href="https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479">https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479</a>
+
+If you plan to make your own arrangements for housing, please let us know by going to this link:
+
+<p><a href="https://registration.gocongress.org/attendees/{hash_id}/confirm_housing">https://registration.gocongress.org/attendees/{hash_id}/confirm_housing</a>
+
+<p>Checking "I will arrange my own off-campus housing" on this form will stop further housing reminder e-mails.</p>
+
+<p>If you have any questions, feel reach to reach out to the Registrar at registrar@gocongress.org.</p>
+
+<p>Thank you, and we look forward to seeing you in July!</p>
+
+<p>Best,</p>
+
+<p>Registrar Team<br />
+<a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a></p>

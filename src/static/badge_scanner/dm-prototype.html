@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Matrix Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        #status {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d9534f;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #cameraControls {
+            margin: 20px 0;
+        }
+        select, button {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #mobileControls {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            #desktopControls {
+                display: none;
+            }
+            #mobileControls {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Matrix Scanner</h1>
+    
+    <div id="cameraControls">
+        <div id="desktopControls">
+            <label for="cameraSelect">Select Camera: </label>
+            <select id="cameraSelect"></select>
+        </div>
+        <div id="mobileControls">
+            <button id="switchCamera">Switch Camera</button>
+        </div>
+    </div>
+    
+    <div id="status">No Data Matrix Detected</div>
+    
+    <div id="videoContainer">
+        <video id="video" autoplay playsinline></video>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const video = document.getElementById('video');
+            const cameraSelect = document.getElementById('cameraSelect');
+            const switchCameraBtn = document.getElementById('switchCamera');
+            const statusElement = document.getElementById('status');
+            
+            let currentStream = null;
+            let facingMode = 'environment'; // Default to rear camera on mobile
+            let cameras = [];
+            let currentCameraIndex = 0;
+            
+            // Check if this is a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Function to get available cameras
+            async function getCameras() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    cameras = devices.filter(device => device.kind === 'videoinput');
+                    
+                    if (cameras.length === 0) {
+                        console.error('No cameras found');
+                        return;
+                    }
+                    
+                    // Populate dropdown for desktop
+                    if (!isMobile) {
+                        cameraSelect.innerHTML = '';
+                        cameras.forEach((camera, index) => {
+                            const option = document.createElement('option');
+                            option.value = index;
+                            option.text = camera.label || `Camera ${index + 1}`;
+                            cameraSelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Start with the first camera or rear camera on mobile
+                    startCamera();
+                } catch (error) {
+                    console.error('Error getting cameras:', error);
+                }
+            }
+            
+            // Function to start the camera
+            async function startCamera() {
+                try {
+                    // Stop any existing stream
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => track.stop());
+                    }
+                    
+                    let constraints;
+                    
+                    if (isMobile) {
+                        // For mobile, use facingMode
+                        constraints = {
+                            video: { facingMode: facingMode },
+                            audio: false
+                        };
+                    } else {
+                        // For desktop, use deviceId
+                        const selectedCamera = cameras[currentCameraIndex];
+                        if (!selectedCamera) {
+                            console.error('Selected camera not found');
+                            return;
+                        }
+                        
+                        constraints = {
+                            video: { deviceId: { exact: selectedCamera.deviceId } },
+                            audio: false
+                        };
+                    }
+                    
+                    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = currentStream;
+                    
+                    // Request camera permissions if labels are empty
+                    if (cameras.some(camera => !camera.label)) {
+                        await getCameras(); // Refresh camera list with labels
+                    }
+                } catch (error) {
+                    console.error('Error starting camera:', error);
+                    statusElement.textContent = 'Camera access error. Please check permissions.';
+                    statusElement.style.color = 'red';
+                }
+            }
+            
+            // Switch camera on mobile
+            switchCameraBtn.addEventListener('click', () => {
+                facingMode = facingMode === 'environment' ? 'user' : 'environment';
+                startCamera();
+            });
+            
+            // Handle camera selection on desktop
+            cameraSelect.addEventListener('change', (event) => {
+                currentCameraIndex = parseInt(event.target.value);
+                startCamera();
+            });
+            
+            // Initialize
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                await getCameras();
+            } catch (error) {
+                console.error('Error initializing camera:', error);
+                statusElement.textContent = 'Camera access denied. Please check permissions.';
+                statusElement.style.color = 'red';
+            }
+            
+            // Here you would add code to detect Data Matrix codes from the video stream
+            // This would typically involve a library like ZXing or a similar barcode/QR code scanner
+            
+            // For demonstration, we're just showing the camera feed
+            // In a real implementation, you would process frames and update the status when a Data Matrix is detected
+        });
+    </script>
+</body>
+</html>

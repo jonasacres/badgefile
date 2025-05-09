@@ -20,7 +20,7 @@ def main():
                             listen_interface=args.interface, 
                             port=args.port)
         
-        testuser = badgefile.lookup_attendee(24723)
+        testuser = badgefile.lookup_attendee(5946)
         print(f"Starting WebService on {args.interface}:{args.port}")
         print(f"test url: http://{args.interface}:{args.port}/attendees/{testuser.hash_id()}/confirm_housing")
         service.run()
