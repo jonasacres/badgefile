@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMatrix Scanner Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+        #scanner-video {
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 500px;
+            min-height: 100px;
+            background-color: #f9f9f9;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>DataMatrix Scanner</h1>
+    
+    <div id="video-container">
+        <video id="scanner-video"></video>
+    </div>
+    
+    <div>
+        <button id="start-button">Start Scanner</button>
+        <button id="stop-button" disabled>Stop Scanner</button>
+    </div>
+    
+    <div id="result">
+        <p>Scan result will appear here...</p>
+    </div>
+
+    <!-- Import ZXing library -->
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeReader = new ZXing.BrowserDatamatrixCodeReader();
+            let selectedDeviceId = null;
+            
+            const startButton = document.getElementById('start-button');
+            const stopButton = document.getElementById('stop-button');
+            const videoElement = document.getElementById('scanner-video');
+            const resultElement = document.getElementById('result');
+            
+            // Get list of video input devices
+            codeReader.getVideoInputDevices()
+                .then((videoInputDevices) => {
+                    if (videoInputDevices.length > 0) {
+                        // Select the first device by default
+                        selectedDeviceId = videoInputDevices[0].deviceId;
+                        
+                        if (videoInputDevices.length > 1) {
+                            console.log('Multiple cameras found. Using the first one.');
+                            // You could implement a camera selection UI here if needed
+                        }
+                    } else {
+                        console.error('No video input devices found');
+                        resultElement.innerHTML = '<p style="color: red;">No camera detected. Please ensure your device has a camera and you have granted permission to use it.</p>';
+                        startButton.disabled = true;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    resultElement.innerHTML = `<p style="color: red;">Error accessing camera: ${err}</p>`;
+                    startButton.disabled = true;
+                });
+            
+            // Start scanning
+            startButton.addEventListener('click', () => {
+                codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+                    if (result) {
+                        console.log('DataMatrix code found!');
+                        console.log(result);
+                        
+                        // Display the result
+                        resultElement.innerHTML = `
+                            <h3>DataMatrix Detected!</h3>
+                            <p><strong>Text:</strong> ${result.getText()}</p>
+                            <p><strong>Format:</strong> ${result.getBarcodeFormat()}</p>
+                            <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                        `;
+                    }
+                    
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error(err);
+                        resultElement.innerHTML = `<p style="color: red;">Error: ${err}</p>`;
+                    }
+                });
+                
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            });
+            
+            // Stop scanning
+            stopButton.addEventListener('click', () => {
+                codeReader.reset();
+                resultElement.innerHTML = '<p>Scanner stopped. Click "Start Scanner" to begin scanning again.</p>';
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            });
+        });
+    </script>
+</body>
+</html>

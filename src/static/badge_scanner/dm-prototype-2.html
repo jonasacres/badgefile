@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMatrix Scanner Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+        #scanner-video {
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 500px;
+            min-height: 100px;
+            background-color: #f9f9f9;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 500px;
+            background-color: #f5f5f5;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>DataMatrix Scanner</h1>
+    
+    <div id="video-container">
+        <video id="scanner-video"></video>
+    </div>
+    
+    <div>
+        <button id="start-button">Start Scanner</button>
+        <button id="stop-button" disabled>Stop Scanner</button>
+        <button id="toggle-debug">Show Debug Info</button>
+    </div>
+    
+    <div id="result">
+        <p>Scan result will appear here...</p>
+    </div>
+    
+    <div id="debug-info"></div>
+
+    <!-- Import ZXing library (using a specific version) -->
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debug helpers
+            const debugInfo = document.getElementById('debug-info');
+            const toggleDebugBtn = document.getElementById('toggle-debug');
+            let debugMessages = [];
+            
+            function logDebug(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+                console.log(logMessage);
+                debugMessages.push(logMessage);
+                if (debugMessages.length > 50) {
+                    debugMessages.shift(); // Keep only the last 50 messages
+                }
+                debugInfo.textContent = debugMessages.join('\n');
+            }
+            
+            toggleDebugBtn.addEventListener('click', function() {
+                if (debugInfo.style.display === 'none' || !debugInfo.style.display) {
+                    debugInfo.style.display = 'block';
+                    toggleDebugBtn.textContent = 'Hide Debug Info';
+                } else {
+                    debugInfo.style.display = 'none';
+                    toggleDebugBtn.textContent = 'Show Debug Info';
+                }
+            });
+            
+            // Check if ZXing is available
+            if (typeof ZXing === 'undefined') {
+                const errorMsg = 'ZXing library failed to load. Please check your internet connection and try again.';
+                document.getElementById('result').innerHTML = `<p style="color: red;">${errorMsg}</p>`;
+                logDebug('Error: ' + errorMsg);
+                document.getElementById('start-button').disabled = true;
+                return;
+            }
+            
+            logDebug('ZXing library loaded successfully');
+            
+            let codeReader;
+            try {
+                codeReader = new ZXing.BrowserDatamatrixCodeReader();
+                logDebug('BrowserDatamatrixCodeReader initialized');
+            } catch (e) {
+                const errorMsg = `Failed to initialize DataMatrix reader: ${e.message}`;
+                document.getElementById('result').innerHTML = `<p style="color: red;">${errorMsg}</p>`;
+                logDebug('Error: ' + errorMsg);
+                document.getElementById('start-button').disabled = true;
+                return;
+            }
+            
+            let selectedDeviceId = null;
+            let scanning = false;
+            
+            const startButton = document.getElementById('start-button');
+            const stopButton = document.getElementById('stop-button');
+            const videoElement = document.getElementById('scanner-video');
+            const resultElement = document.getElementById('result');
+            
+            // Get list of video input devices
+            logDebug('Requesting video input devices...');
+            codeReader.getVideoInputDevices()
+                .then((videoInputDevices) => {
+                    if (videoInputDevices && videoInputDevices.length > 0) {
+                        // Select the first device by default
+                        selectedDeviceId = videoInputDevices[0].deviceId;
+                        logDebug(`Found ${videoInputDevices.length} camera(s). Using: ${videoInputDevices[0].label || 'Default camera'}`);
+                        
+                        if (videoInputDevices.length > 1) {
+                            logDebug('Multiple cameras available:');
+                            videoInputDevices.forEach((device, index) => {
+                                logDebug(`  ${index + 1}. ${device.label || `Camera ${index + 1}`}`);
+                            });
+                        }
+                    } else {
+                        const errorMsg = 'No video input devices found';
+                        logDebug('Error: ' + errorMsg);
+                        resultElement.innerHTML = `<p style="color: red;">${errorMsg}. Please ensure your device has a camera and you have granted permission to use it.</p>`;
+                        startButton.disabled = true;
+                    }
+                })
+                .catch(err => {
+                    const errorMsg = `Error accessing camera: ${err}`;
+                    logDebug('Error: ' + errorMsg);
+                    resultElement.innerHTML = `<p style="color: red;">${errorMsg}</p>`;
+                    startButton.disabled = true;
+                });
+            
+            // Start scanning with improved error handling
+            startButton.addEventListener('click', () => {
+                if (scanning) {
+                    logDebug('Scanner already running');
+                    return;
+                }
+                
+                resultElement.innerHTML = '<p>Scanner started. Looking for DataMatrix codes...</p>';
+                logDebug('Starting scanner...');
+                
+                try {
+                    codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+                        if (result) {
+                            const text = result.getText();
+                            const format = result.getBarcodeFormat ? result.getBarcodeFormat() : 'Unknown';
+                            
+                            logDebug(`DataMatrix code found! Text: ${text}`);
+                            
+                            // Display the result
+                            resultElement.innerHTML = `
+                                <h3>DataMatrix Detected!</h3>
+                                <p><strong>Text:</strong> ${text}</p>
+                                <p><strong>Format:</strong> ${format}</p>
+                                <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                            `;
+                            
+                            // Automatically stop scanning after finding a code
+                            logDebug('Stopping scanner after successful scan');
+                            try {
+                                codeReader.reset();
+                                scanning = false;
+                                startButton.disabled = false;
+                                stopButton.disabled = true;
+                            } catch (resetErr) {
+                                logDebug(`Error resetting scanner: ${resetErr.message}`);
+                            }
+                        }
+                        
+                        if (err) {
+                            // Only log errors that aren't NotFoundException
+                            if (err.name !== 'NotFoundException') {
+                                logDebug(`Scanning error: ${err.name} - ${err.message}`);
+                                
+                                // Only update UI for non-NotFoundException errors
+                                resultElement.innerHTML = `<p style="color: red;">Error: ${err.name} - ${err.message}</p>`;
+                            }
+                        }
+                    });
+                    
+                    scanning = true;
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                    logDebug('Scanner started successfully');
+                } catch (e) {
+                    logDebug(`Failed to start scanner: ${e.message}`);
+                    resultElement.innerHTML = `<p style="color: red;">Failed to start scanner: ${e.message}</p>`;
+                    scanning = false;
+                    startButton.disabled = false;
+                    stopButton.disabled = true;
+                }
+            });
+            
+            // Stop scanning
+            stopButton.addEventListener('click', () => {
+                logDebug('Stopping scanner...');
+                try {
+                    codeReader.reset();
+                    resultElement.innerHTML = '<p>Scanner stopped. Click "Start Scanner" to begin scanning again.</p>';
+                    logDebug('Scanner stopped successfully');
+                } catch (e) {
+                    logDebug(`Error stopping scanner: ${e.message}`);
+                    resultElement.innerHTML = `<p style="color: red;">Error stopping scanner: ${e.message}</p>`;
+                }
+                
+                scanning = false;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            });
+            
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => {
+                if (scanning) {
+                    logDebug('Page unloading, cleaning up scanner');
+                    try {
+                        codeReader.reset();
+                    } catch (e) {
+                        logDebug(`Error cleaning up scanner: ${e.message}`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

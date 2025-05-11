@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMatrix Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #result {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #timestamp {
+            font-size: 14px;
+            color: #666;
+        }
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        #video {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #canvas {
+            display: none;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .scanning-line {
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background-color: red;
+            animation: scan 2s infinite;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DataMatrix Scanner</h1>
+        <div id="result">No code detected</div>
+        <div id="timestamp"></div>
+    </header>
+
+    <div id="videoContainer">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div id="overlay">
+            <div class="scanning-line"></div>
+        </div>
+    </div>
+
+    <script>
+        // DataMatrix detection implementation
+        class DataMatrixScanner {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+                this.resultElement = document.getElementById('result');
+                this.timestampElement = document.getElementById('timestamp');
+                this.lastResult = null;
+                this.lastTimestamp = null;
+                this.processing = false;
+                
+                // Initialize camera
+                this.initCamera();
+                
+                // Start scanning with requestAnimationFrame for better performance
+                this.startScanning();
+            }
+            
+            async initCamera() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        } 
+                    });
+                    this.video.srcObject = stream;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.canvas.width = this.video.videoWidth;
+                        this.canvas.height = this.video.videoHeight;
+                    };
+                } catch (err) {
+                    console.error('Error accessing camera:', err);
+                    this.resultElement.textContent = 'Camera access error: ' + err.message;
+                }
+            }
+            
+            startScanning() {
+                // Use requestAnimationFrame instead of setInterval for better performance
+                const scan = () => {
+                    if (!this.processing) {
+                        this.processing = true;
+                        this.scanFrame();
+                        this.processing = false;
+                    }
+                    
+                    // Throttle scanning to reduce CPU usage
+                    setTimeout(() => {
+                        requestAnimationFrame(scan);
+                    }, 200); // Scan every 200ms
+                };
+                
+                requestAnimationFrame(scan);
+            }
+            
+            scanFrame() {
+                if (this.video.readyState !== this.video.HAVE_ENOUGH_DATA) return;
+                
+                // Draw current video frame to canvas
+                this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                
+                // Get image data for processing - only process a smaller region in the center for performance
+                const centerWidth = Math.floor(this.canvas.width * 0.6);
+                const centerHeight = Math.floor(this.canvas.height * 0.6);
+                const startX = Math.floor((this.canvas.width - centerWidth) / 2);
+                const startY = Math.floor((this.canvas.height - centerHeight) / 2);
+                
+                const imageData = this.ctx.getImageData(startX, startY, centerWidth, centerHeight);
+                
+                // Process the image to find DataMatrix codes
+                try {
+                    const result = this.detectDataMatrix(imageData);
+                    
+                    if (result) {
+                        // Update UI with the result
+                        this.lastResult = result;
+                        this.lastTimestamp = new Date();
+                        this.resultElement.textContent = 'Code: ' + result;
+                        this.timestampElement.textContent = 'Last scan: ' + this.lastTimestamp.toLocaleTimeString();
+                    }
+                } catch (error) {
+                    console.error('Error in DataMatrix detection:', error);
+                }
+            }
+            
+            detectDataMatrix(imageData) {
+                // Actual DataMatrix detection implementation
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // Convert to grayscale and apply simple thresholding in one pass
+                const binary = new Uint8Array(width * height);
+                let sum = 0;
+                
+                // Sample only a subset of pixels for threshold calculation
+                const sampleStep = 5;
+                let sampleCount = 0;
+                
+                for (let i = 0; i < height; i += sampleStep) {
+                    for (let j = 0; j < width; j += sampleStep) {
+                        const idx = (i * width + j) * 4;
+                        const gray = Math.round(
+                            0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]
+                        );
+                        sum += gray;
+                        sampleCount++;
+                    }
+                }
+                
+                // Simple threshold based on average
+                const threshold = sum / sampleCount;
+                
+                // Apply threshold to create binary image
+                for (let i = 0; i < height; i++) {
+                    for (let j = 0; j < width; j++) {
+                        const idx = (i * width + j) * 4;
+                        const gray = Math.round(
+                            0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]
+                        );
+                        binary[i * width + j] = gray < threshold ? 1 : 0;
+                    }
+                }
+                
+                // Find potential DataMatrix finder patterns (L-patterns) with sampling
+                const candidates = this.findDataMatrixCandidates(binary, width, height);
+                
+                // Limit the number of candidates to process
+                const maxCandidates = 5;
+                const limitedCandidates = candidates.slice(0, maxCandidates);
+                
+                // For each candidate, attempt to decode
+                for (const candidate of limitedCandidates) {
+                    const decoded = this.decodeDataMatrix(binary, width, candidate);
+                    if (decoded) {
+                        return decoded;
+                    }
+                }
+                
+                return null;
+            }
+            
+            findDataMatrixCandidates(binary, width, height) {
+                const candidates = [];
+                
+                // Sample the image at regular intervals for better performance
+                const sampleStep = 8;
+                
+                // Look for L-patterns (finder patterns)
+                for (let y = 10; y < height - 10; y += sampleStep) {
+                    for (let x = 10; x < width - 10; x += sampleStep) {
+                        // Skip if current pixel is white
+                        if (binary[y * width + x] !== 1) continue;
+                        
+                        // Check for L-pattern with more strict validation
+                        if (this.isStrongLPattern(binary, x, y, width, height)) {
+                            // Find the opposite corner to determine size
+                            const size = this.findDataMatrixSize(binary, x, y, width, height);
+                            if (size) {
+                                candidates.push({
+                                    topLeft: { x, y },
+                                    size: size
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                return candidates;
+            }
+            
+            isStrongLPattern(binary, x, y, width, height) {
+                // Check for a strong L-pattern characteristic of DataMatrix
+                // This is a more strict check than the previous isLPattern
+                
+                // Ensure we have enough space to check
+                if (x + 5 >= width || y + 5 >= height) return false;
+                
+                // Check for solid L-pattern (at least 5x5)
+                const isBlack = (x, y) => binary[y * width + x] === 1;
+                
+                // Check horizontal arm (at least 5 black pixels)
+                let horizontalCount = 0;
+                for (let i = 0; i < 5; i++) {
+                    if (isBlack(x + i, y)) horizontalCount++;
+                }
+                
+                // Check vertical arm (at least 5 black pixels)
+                let verticalCount = 0;
+                for (let i = 0; i < 5; i++) {
+                    if (isBlack(x, y + i)) verticalCount++;
+                }
+                
+                // Require strong L-pattern
+                if (horizontalCount < 4 || verticalCount < 4) return false;
+                
+                // Check for white space around the L-pattern (to ensure it's not just a large black area)
+                // Check above the horizontal arm
+                if (y > 0) {
+                    let whiteCount = 0;
+                    for (let i = 0; i < 5; i++) {
+                        if (x + i < width && !isBlack(x + i, y - 1)) whiteCount++;
+                    }
+                    if (whiteCount < 3) return false;
+                }
+                
+                // Check to the right of the vertical arm
+                if (x > 0) {
+                    let whiteCount = 0;
+                    for (let i = 0; i < 5; i++) {
+                        if (y + i < height && !isBlack(x - 1, y + i)) whiteCount++;
+                    }
+                    if (whiteCount < 3) return false;
+                }
+                
+                return true;
+            }
+            
+            findDataMatrixSize(binary, startX, startY, width, height) {
+                // Find the size of the potential DataMatrix by looking for the opposite corner
+                // DataMatrix has a solid border on two sides (L-pattern) and alternating modules on the other sides
+                
+                // First, trace right to find the width (with a reasonable limit)
+                let matrixWidth = 0;
+                const maxWidth = Math.min(100, width - startX);
+                for (let x = startX; x < startX + maxWidth; x++) {
+                    if (binary[startY * width + x] === 1) {
+                        matrixWidth++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Then, trace down to find the height (with a reasonable limit)
+                let matrixHeight = 0;
+                const maxHeight = Math.min(100, height - startY);
+                for (let y = startY; y < startY + maxHeight; y++) {
+                    if (y * width + startX < binary.length && binary[y * width + startX] === 1) {
+                        matrixHeight++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Verify we have a reasonable size (at least 10x10 for a DataMatrix)
+                if (matrixWidth >= 10 && matrixHeight >= 10 && matrixWidth <= 50 && matrixHeight <= 50) {
+                    return { width: matrixWidth, height: matrixHeight };
+                }
+                
+                return null;
+            }
+            
+            decodeDataMatrix(binary, width, candidate) {
+                const { topLeft, size } = candidate;
+                
+                // Sanity check to prevent out-of-bounds access
+                if (topLeft.x + size.width > width || 
+                    topLeft.y + size.height > binary.length / width) {
+                    return null;
+                }
+                
+                // Extract the matrix region
+                const matrix = new Uint8Array(size.width * size.height);
+                for (let y = 0; y < size.height; y++) {
+                    for (let x = 0; x < size.width; x++) {
+                        const sourceIdx = (topLeft.y + y) * width + (topLeft.x + x);
+                        if (sourceIdx >= binary.length) continue;
+                        
+                        const targetIdx = y * size.width + x;
+                        matrix[targetIdx] = binary[sourceIdx];
+                    }
+                }
+                
+                // Verify DataMatrix characteristics
+                if (!this.verifyDataMatrixCharacteristics(matrix, size.width, size.height)) {
+                    return null;
+                }
+                
+                // Read the data modules - simplified approach
+                const dataCodewords = this.readDataCodewords(matrix, size.width, size.height);
+                
+                // Decode the data
+                const decoded = this.decodeASCII(dataCodewords);
+                
+                // Additional validation for the decoded content
+                if (decoded && this.validateDecodedContent(decoded)) {
+                    return decoded;
+                }
+                
+                return null;
+            }
+            
+            verifyDataMatrixCharacteristics(matrix, width, height) {
+                // 1. Check for solid border on left and bottom (L-pattern)
+                for (let x = 0; x < width; x++) {
+                    if (matrix[(height-1) * width + x] !== 1) {
+                        return false;
+                    }
+                }
+                
+                for (let y = 0; y < height; y++) {
+                    if (matrix[y * width] !== 1) {
+                        return false;
+                    }
+                }
+                
+                // 2. Check for alternating pattern on top and right borders
+                let expectedValue = 0; // Start with white (alternating)
+                for (let x = 0; x < width; x += 2) {
+                    if (x < width && matrix[x] !== expectedValue) {
+                        return false;
+                    }
+                }
+                
+                expectedValue = 0; // Start with white (alternating)
+                for (let y = 0; y < height; y += 2) {
+                    if (y < height && matrix[y * width + (width-1)] !== expectedValue) {
+                        return false;
+                    }
+                }
+                
+                // 3. Check for standard DataMatrix sizes
+                const standardSizes = [
+                    {rows: 10, cols: 10}, {rows: 12, cols: 12}, 
+                    {rows: 14, cols: 14}, {rows: 16, cols: 16},
+                    {rows: 18, cols: 18}, {rows: 20, cols: 20},
+                    {rows: 22, cols: 22}, {rows: 24, cols: 24},
+                    {rows: 26, cols: 26}, {rows: 32, cols: 32},
+                    {rows: 8, cols: 18}, {rows: 8, cols: 32},
+                    {rows: 12, cols: 26}, {rows: 12, cols: 36},
+                    {rows: 16, cols: 36}, {rows: 16, cols: 48}
+                ];
+                
+                let sizeMatch = false;
+                for (const size of standardSizes) {
+                    // Allow some tolerance in size detection
+                    if (Math.abs(height - size.rows) <= 2 && Math.abs(width - size.cols) <= 2) {
+                        sizeMatch = true;
+                        break;
+                    }
+                }
+                
+                if (!sizeMatch) {
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            validateDecodedContent(content) {
+                // 1. Check for minimum length
+                if (content.length < 4) return false;
+                
+                // 2. Check for alphanumeric content
+                if (!/[a-zA-Z0-9]/.test(content)) return false;
+                
+                // 3. Check for reasonable character distribution
+                let alphanumericCount = 0;
+                let specialCharCount = 0;
+                
+                for (let i = 0; i < content.length; i++) {
+                    const char = content.charAt(i);
+                    if (/[a-zA-Z0-9]/.test(char)) {
+                        alphanumericCount++;
+                    } else {
+                        specialCharCount++;
+                    }
+                }
+                
+                // Require at least 70% alphanumeric characters
+                if (alphanumericCount / content.length < 0.7) return false;
+                
+                // 4. Check for common DataMatrix patterns
+                // Many DataMatrix codes start with specific characters or follow patterns
+                // This is application-specific, but we can add some common patterns
+                
+                // Example: Check if it looks like a product code (alphanumeric with some structure)
+                if (/^[A-Z0-9]{2,6}-[A-Z0-9]{2,10}$/.test(content)) return true;
+                
+                // Example: Check if it looks like a URL
+                if (/^https?:\/\//.test(content)) return true;
+                
+                // Example: Check if it looks like an email
+                if (/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(content)) return true;
+                
+                // Example: Check if it's a numeric code with reasonable length
+                if (/^\d{5,15}$/.test(content)) return true;
+                
+                // Example: Check if it's an alphanumeric code with reasonable structure
+                if (/^[A-Z0-9]{5,20}$/.test(content)) return true;
+                
+                // If none of the specific patterns match, use a more general validation
+                // At least 80% alphanumeric for general content
+                return (alphanumericCount / content.length >= 0.8);
+            }
+            
+            readDataCodewords(matrix, width, height) {
+                // Simplified implementation - just read the data region
+                const dataCodewords = [];
+                let codeword = 0;
+                let bitPosition = 0;
+                
+                // Skip the finder pattern and timing patterns
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const bit = matrix[y * width + x];
+                        
+                        // Add bit to current codeword
+                        codeword |= (bit << bitPosition);
+                        bitPosition++;
+                        
+                        // Complete codeword (8 bits)
+                        if (bitPosition === 8) {
+                            dataCodewords.push(codeword);
+                            codeword = 0;
+                            bitPosition = 0;
+                        }
+                    }
+                }
+                
+                // Add final partial codeword if any
+                if (bitPosition > 0) {
+                    dataCodewords.push(codeword);
+                }
+                
+                return dataCodewords;
+            }
+            
+            decodeASCII(dataCodewords) {
+                // Convert codewords to ASCII text
+                let result = '';
+                for (const codeword of dataCodewords) {
+                    // Only include printable ASCII characters
+                    if (codeword >= 32 && codeword <= 126) {
+                        result += String.fromCharCode(codeword);
+                    }
+                }
+                
+                // Validate the result - must be at least 4 characters and contain some alphanumeric
+                if (result.length >= 4 && /[a-zA-Z0-9]/.test(result)) {
+                    return result;
+                }
+                
+                return null;
+            }
+        }
+
+        // Initialize the scanner when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const scanner = new DataMatrixScanner();
+        });
+    </script>
+</body>
+</html>
