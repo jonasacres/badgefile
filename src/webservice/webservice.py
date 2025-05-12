@@ -3,6 +3,7 @@ import os
 import re
 import base64
 from flask import Flask, request, redirect, render_template, jsonify, abort
+from flask_sock import Sock
 
 from log.logger import log
 from util.version import Version
@@ -24,6 +25,8 @@ class WebService:
     self.port = port
     template_dir = os.path.abspath('src/static/html_templates')
     self.app = Flask(__name__, template_folder=template_dir)
+    self.sock = Sock(self.app)
+    self.websocket_clients = set()
     self._setup_routes()
 
   def ip():    
@@ -141,6 +144,18 @@ class WebService:
     response.status_code = 500
     return response
 
+  def broadcast_to_websockets(self, message):
+    closed_sockets = set()
+    for ws in self.websocket_clients:
+      try:
+        ws.send(json.dumps(message))
+      except Exception as exc:
+        log.warn(f"Failed to send to websocket", exception=exc)
+        closed_sockets.add(ws)
+    
+    # Remove closed websockets
+    self.websocket_clients -= closed_sockets
+
   def _setup_routes(self):
     @self.app.errorhandler(Exception)
     def handle_exception(exc):
@@ -203,6 +218,23 @@ class WebService:
                             attendee=attendee.info(),
                             message="Thank you for responding to our housing survey.")
     
+    @self.sock.route('/ws')
+    def monitor(ws):
+      self.require_authentication()
+      self.websocket_clients.add(ws)
+      log.info(self.logmsg(f"WebSocket client connected, total clients: {len(self.websocket_clients)}"))
+      try:
+        # Keep the connection alive until client disconnects
+        while True:
+          # This will block until a message is received or the connection is closed
+          message = ws.receive()
+          # We're not expecting any messages from the client, but we could process them here
+      except Exception as exc:
+        log.info(self.logmsg(f"WebSocket disconnected"), exception=exc)
+      finally:
+        self.websocket_clients.discard(ws)
+        log.info(self.logmsg(f"WebSocket client disconnected, remaining clients: {len(self.websocket_clients)}"))
+
     @self.app.route('/events/<event_name>/scans', methods=['POST'])
     def attendee_scans_post(event_name):
       self.require_authentication()
@@ -244,7 +276,12 @@ class WebService:
         }
       }
 
-      # TODO: broadcast response_data to all connected websocket clients
+      # Broadcast scan event to all connected websocket clients
+      websocket_message = {
+        "type": "scan", 
+        "data": response_data,
+      }
+      self.broadcast_to_websockets(websocket_message)
 
       self.respond(response_data)
 

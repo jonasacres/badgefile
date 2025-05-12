@@ -20,6 +20,7 @@ pkgs.mkShell {
     python.pkgs.requests
     python.pkgs.beautifulsoup4
     python.pkgs.flask
+    python.pkgs.flask-sock
     python.pkgs.pytz
     python.pkgs.google-auth-oauthlib
     python.pkgs.google-auth

@@ -10,6 +10,7 @@ PyPDF2
 requests
 beautifulsoup4
 flask
+flask-sock
 pytz
 google-auth-oauthlib
 google-auth
