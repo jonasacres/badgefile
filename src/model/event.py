@@ -89,6 +89,21 @@ class Event:
     if result:
       return result[0]['scan_count']
     return 0
+  
+  def scan_counts(self):
+    db = Database.shared()
+    status_table = f"event_{self.name}_status"
+    
+    result = db.query(f"SELECT badgefile_id, scan_count, is_eligible FROM {status_table}")
+    
+    status_dict = {}
+    for row in result:
+      status_dict[row['badgefile_id']] = {
+        'scan_count': row['scan_count'],
+        'is_eligible': row['is_eligible']
+      }
+    
+    return status_dict
 
   def num_scanned_attendees(self, include_ineligible=True):
     db = Database.shared()

@@ -203,8 +203,8 @@ class WebService:
                             attendee=attendee.info(),
                             message="Thank you for responding to our housing survey.")
     
-    @self.app.route('/events/<event_name>/scanin', methods=['POST'])
-    def attendee_scanin_post(event_name):
+    @self.app.route('/events/<event_name>/scans', methods=['POST'])
+    def attendee_scans_post(event_name):
       self.require_authentication()
 
       if not Event.exists(event_name):
@@ -233,15 +233,55 @@ class WebService:
       total_scans_for_event = event.num_scanned_attendees()
       total_eligible = event.num_eligible_attendees()
 
-      self.respond({
+      response_data = {
         "attendee": attendee.web_info(),
         "event": {
           "name": event_name,
+          "is_reset": is_reset,
           "num_scans_for_attendee": num_scans,
           "total_attendees_scanned": total_scans_for_event,
           "total_scannable": total_eligible,
-          }
-      })
+        }
+      }
+
+      # TODO: broadcast response_data to all connected websocket clients
+
+      self.respond(response_data)
+
+    @self.app.route('/events/<event_name>/scans', methods=['GET'])
+    def attendee_scans_get(event_name):
+      self.require_authentication()
+
+      if not Event.exists(event_name):
+        self.fail_request(404, "Event not found")
       
+      event = Event(event_name)
+
+      self.respond({
+        "event": {
+          "name": event_name,
+          "scans": event.scan_counts(),
+        }
+      })
+    
+    @self.app.route('/events/<event_name>/status', methods=['GET'])
+    def attendee_status_get(event_name):
+      self.require_authentication()
+
+      if not Event.exists(event_name):
+        self.fail_request(404, "Event not found")
+      
+      event = Event(event_name)
+      total_scans_for_event = event.num_scanned_attendees()
+      total_eligible = event.num_eligible_attendees()
+
+      self.respond({
+        "event": {
+          "name": event_name,
+          "total_attendees_scanned": total_scans_for_event,
+          "total_scannable": total_eligible,
+        }
+      })
+
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)
