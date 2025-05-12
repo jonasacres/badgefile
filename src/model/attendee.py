@@ -373,6 +373,12 @@ class Attendee:
   # return the attendee's current info, based on latest regdata with overrides applied
   def info(self):
     return self._info
+  
+  def web_info(self):
+    web_info = self._info.copy()
+    if "json" in web_info:
+      del web_info["json"]
+    return web_info
 
   def refresh(self, row=None):
     if row == None:
