@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
+import sys
+import time
+import pathlib
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
+
 from integrations.email import Email, connect_smtp
 from log.logger import log
 from model.badgefile import Badgefile
-import sys
-import time
 
 def send_emails(template, recipients):
   server = connect_smtp()

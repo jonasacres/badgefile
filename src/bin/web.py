@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 
-import argparse
+# Add the src directory to the Python path
+import os
+import pathlib
 import sys
+import argparse
+
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
+
 from webservice.webservice import WebService
 from model.badgefile import Badgefile
 from model.event import Event

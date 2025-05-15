@@ -2,7 +2,10 @@
 
 import sys
 import os
-import time
+import pathlib
+
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
 
 from model.badgefile import Badgefile
 from util.util import *

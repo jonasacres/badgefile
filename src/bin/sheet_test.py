@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
-from log.logger import log
 import time
+import pathlib
+import sys
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
+
+from log.logger import log
 from integrations.google_api import sync_sheet_table, authenticate_service_account
 from util.secrets import secret
 

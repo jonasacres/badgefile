@@ -8,15 +8,14 @@ class EmailHistory:
   @classmethod
   def shared(cls):
     if not hasattr(cls, '_shared'):
-      cls._shared = EmailHistory(Database.shared())
+      cls._shared = EmailHistory()
     return cls._shared
 
-  def __init__(self, database):
-    self.database = database
+  def __init__(self):
     self.create_table_if_not_exists()
 
   def create_table_if_not_exists(self):
-    self.database.execute("""
+    Database.shared().execute("""
       CREATE TABLE IF NOT EXISTS email_history (
         email_id INTEGER PRIMARY KEY AUTOINCREMENT,
         badgefile_id TEXT,
@@ -31,7 +30,7 @@ class EmailHistory:
     """)
 
   def email_types(self):
-    results = self.database.query("""
+    results = Database.shared().query("""
       SELECT DISTINCT email_type 
       FROM email_history
       GROUP BY email_type
@@ -40,7 +39,7 @@ class EmailHistory:
     return [row['email_type'] for row in results]
 
   def latest_emails_for_user(self, badgefile_id):
-    results = self.database.query("""
+    results = Database.shared().query("""
       SELECT e1.* 
       FROM email_history e1
       LEFT OUTER JOIN email_history e2 
@@ -55,12 +54,28 @@ class EmailHistory:
     for row in results:
       email_dict[row['email_type']] = row
     return email_dict
+  
+  def most_recent_email_for_user(self, badgefile_id, email_type):
+    result = Database.shared().query("""
+      SELECT timestamp
+      FROM email_history
+      WHERE badgefile_id = ? AND email_type = ?
+      ORDER BY timestamp DESC
+      LIMIT 1
+    """, [badgefile_id, email_type])
+    
+    if result and len(result) > 0:
+      from datetime import datetime
+      timestamp_str = result[0]['timestamp']
+      return datetime.strptime(timestamp_str.split('.')[0], '%Y-%m-%d %H:%M:%S')
+    
+    return None
 
   def sent_email_for_user(self, badgefile_id, email_type, email_from, email_to, email_subject, email_body, time_sent=None):
     if time_sent is None:
       time_sent = datetime.now()
       
-    self.database.execute("""
+    Database.shared().execute("""
       INSERT INTO email_history 
       (badgefile_id, email_type, timestamp, email_from, email_to, email_subject, email_body)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -68,7 +83,7 @@ class EmailHistory:
   
   def recipients_for_email(self, email_type):
     # return a list of badgefile_ids that received a given email_type
-    results = self.database.query("""
+    results = Database.shared().query("""
       SELECT DISTINCT badgefile_id
       FROM email_history
       WHERE email_type = ?
@@ -86,7 +101,7 @@ class EmailHistory:
     os.makedirs(email_dir, exist_ok=True)
 
     # Get all emails from database
-    results = self.database.query("SELECT * FROM email_history")
+    results = Database.shared().query("SELECT * FROM email_history")
     url_base = secret("email_url_base")
     
     for email_data in results:
@@ -115,7 +130,7 @@ class EmailHistory:
           f.write(fmt_email)
 
         # Update the URL in the DB to point to local file
-        self.database.execute(
+        Database.shared().execute(
           "UPDATE email_history SET email_copy_url = ? WHERE email_id = ?",
           [
             f"{url_base}/{filename}",

@@ -64,7 +64,7 @@ class Email:
     
     msg, html_body, plaintext_body = self.create_html_email()
     if secret("email_enable") is True:
-      log.debug(f"Sending email {self.template} to {email_to}")
+      log.info(f"Sending email {self.template} to {email_to}")
       server.send_message(msg)
     else:
       log.debug(f"Not sending email {self.template} to {email_to} -- email disabled in configuration")

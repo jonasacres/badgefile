@@ -2,6 +2,11 @@
 
 import sys
 import os
+import time
+import pathlib
+
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
 
 from model.badgefile import Badgefile
 from datasources.clubexpress.reglist import Reglist
@@ -12,7 +17,6 @@ from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
 from util.util import *
 from log.logger import log
-import time
 
 
 def download():

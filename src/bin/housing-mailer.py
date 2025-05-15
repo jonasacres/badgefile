@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
 import os
-import smtplib
+import pathlib
+import sys
+src_path = pathlib.Path(__file__).parent.parent
+sys.path.append(str(src_path))
+
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from model.badgefile import Badgefile
