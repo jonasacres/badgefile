@@ -135,20 +135,20 @@ class Email:
       log.debug(f"from: {msg['From']}, to: {msg['To']}, subject: {msg['Subject']}\n\n{html_body}")
       
       if self.email_address_allowed(email_to):
-        log.info(f"Sending email {self.template} to {email_to}")
-        # server.send_message(msg)
+        log.info(f"ACTUAL EMAIL: Sending email {self.template} to {email_to}")
+        server.send_message(msg)
       else:
         log.debug(f"Skipping email {self.template} to {email_to}; address not in whitelist")
     else:
       log.debug(f"Not sending email {self.template} to {email_to} -- email disabled in configuration")
     
     log.debug(f"Marking email sent.")
-    # EmailHistory.shared().sent_email_for_user(self.attendee.id(),
-    #                                           self.template,
-    #                                           msg['From'],
-    #                                           msg['To'],
-    #                                           msg['Subject'],
-    #                                           plaintext_body)
+    EmailHistory.shared().sent_email_for_user(self.attendee.id(),
+                                              self.template,
+                                              msg['From'],
+                                              msg['To'],
+                                              msg['Subject'],
+                                              plaintext_body)
 
   def create_html_email(self):
     subject, body = self.apply_template()

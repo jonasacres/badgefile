@@ -6,3 +6,4 @@ badgefile.log
 secrets.yaml
 google_service_account.json
 email-whitelist.txt
+corrected_reminder_email_users.txt
