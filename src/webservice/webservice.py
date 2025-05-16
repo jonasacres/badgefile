@@ -179,11 +179,8 @@ class WebService:
       request_size = request.content_length or 0
       response_size = response.calculate_content_length() or 0
       
-      # Format timestamp
-      timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-      
       # Log the request metrics
-      log.debug(f"webreq {WebService.ip()} - {timestamp} \"{request.method} {request.path}\" {response.status_code} {process_time:.1f}ms {request_size} {response_size}")
+      log.debug(f"webreq {WebService.ip()} \"{request.method} {request.path}\" {response.status_code} {process_time:.1f}ms {request_size} {response_size}")
       
       return response
       
