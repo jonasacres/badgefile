@@ -2,6 +2,8 @@ import json
 import os
 import re
 import base64
+import logging
+
 from flask import Flask, request, redirect, render_template, jsonify, abort
 from flask_sock import Sock
 from werkzeug.exceptions import NotFound
@@ -26,6 +28,9 @@ class WebService:
     self.port = port
     template_dir = os.path.abspath('src/static/html_templates')
     self.app = Flask(__name__, template_folder=template_dir)
+    # Disable Flask's default logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
     self.sock = Sock(self.app)
     self.websocket_clients = set()
     self._setup_routes()
