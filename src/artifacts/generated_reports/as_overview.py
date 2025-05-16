@@ -29,7 +29,10 @@ class OverviewReport:
     pri_info = attendee.primary().info()
 
     if attendee.party_housing() is None or len(attendee.party_housing()) == 0:
-      housing_status = "NONE"
+      if attendee.will_arrange_own_housing():
+        housing_status = "SELF"
+      else:
+        housing_status = "NONE"
     else:
       housing_status = "OK" if attendee.is_housing_approved() else "PENDING"
 
