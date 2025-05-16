@@ -7,6 +7,7 @@ class ScheduledEmails:
   def run_campaigns(cls, badgefile):
     scheduler = cls(badgefile)
     scheduler.run_housing_reminders()
+    EmailHistory.shared().sync_emails()
 
   def __init__(self, badgefile):
     self.badgefile = badgefile
@@ -24,7 +25,6 @@ class ScheduledEmails:
       # they signed up, but don't have housing, and haven't said they're arranging their own, so remind them to buy housing
       return True
     self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
-    EmailHistory.shared().sync_emails()
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
