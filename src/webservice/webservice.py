@@ -183,7 +183,7 @@ class WebService:
       timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
       
       # Log the request metrics
-      log.debug(f"{WebService.ip()} - {timestamp} \"{request.method} {request.path}\" {response.status_code} {process_time:.1f}ms {request_size} {response_size}")
+      log.debug(f"webreq {WebService.ip()} - {timestamp} \"{request.method} {request.path}\" {response.status_code} {process_time:.1f}ms {request_size} {response_size}")
       
       return response
       
