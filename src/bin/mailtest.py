@@ -14,26 +14,14 @@ from util.util import *
 from log.logger import log
 from artifacts.emails.email_test import EmailTest
 from util.secrets import secret, override_secret
+from integrations.email import Email
 
 if len(sys.argv) <= 1:
     print("usage: mailtest.py template_name [override_email]")
     print("sends the designated template to a hard-coded test account (namely, jonas)")
     print("if the override_email is set, the test e-mail is sent to that address instead, but using jonas's account info")
 
-if not secret("email_enable"):
-    delay = 3
-    print("WARNING: This environment has email_enable configured to be false, which means emails do not get sent.")
-    print("This is obviously counterproductive for this script.")
-    print("Therefore, this script will OVERRIDE this safety setting and send e-mails anyway.")
-    print("Hit CTRL+C to abort.")
-    print(f"Waiting {delay} seconds...")
-    for i in range(delay, 0, -1):
-        print(f"{i}...")
-        time.sleep(1)
-
-    # Override the email_enable setting to force sending emails
-    override_secret("email_enable", True)
-    print("Override in place. This session WILL send live e-mails.")
+Email.override_enable()
 
 template = sys.argv[1]
 

@@ -6,9 +6,9 @@ Subject: Go Congress Housing Reminder
 
 <p>Next, please make sure to sign up for Housing on the Congress website so that the Registrar team can help assign & verify your room(s). This year we have dorm & apartment style room(s) options available, and you’ll also be able to write in a roommate request if you have one. You can find our housing options here:</p>
 
-<p><a href="https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479">https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479</a>
+<p><a href="https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479">https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479</a></p>
 
-If you plan to make your own arrangements for housing, please let us know by going to this link:
+<p>If you plan to make your own arrangements for housing, please let us know by going to this link:</p>
 
 <p><a href="https://registration.gocongress.org/attendees/{hash_id}/confirm_housing">https://registration.gocongress.org/attendees/{hash_id}/confirm_housing</a>
 

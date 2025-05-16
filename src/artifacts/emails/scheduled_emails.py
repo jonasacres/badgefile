@@ -13,12 +13,21 @@ class ScheduledEmails:
   
   def run_housing_reminders(self):
     def eligible_for_housing_reminder(attendee):
-      return attendee.party_housing() or attendee.will_arrange_own_housing()
-    self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*7, allow_nonprimary=False)
+      # they have housing; don't bug them about housing
+      if attendee.party_housing():
+        return False
+      
+      # they said they'd arrange their own housing; don't bug them about housing
+      if attendee.will_arrange_own_housing():
+        return False
+      
+      # they signed up, but don't have housing, and haven't said they're arranging their own, so remind them to buy housing
+      return True
+    self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
-      return attendee.id() == 24723
+      return attendee.id() == 24723 and not attendee.will_arrange_own_housing()
     self.run_campaign("3a-housing-reminder", eligible_for_test_campaign, 60, allow_nonprimary=False)
 
   def run_campaign(self, email_template, eligibility_lambda, min_time_between_emails_sec, allow_nonprimary=False):
@@ -26,6 +35,9 @@ class ScheduledEmails:
     for attendee in self.badgefile.attendees():
       # most e-mails never target non-primaries, so handle that separately from the lambda to avoid duplication+accidental omission of check
       if not allow_nonprimary and not attendee.is_primary():
+        continue
+
+      if attendee.is_cancelled():
         continue
 
       # Skip if attendee is not eligible

@@ -1,13 +1,68 @@
 import os
+import sys
 import smtplib
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from util.secrets import secret
+from util.secrets import secret, override_secret
 from log.logger import log
 from model.email_history import EmailHistory
 
 class Email:
   _default_server = None
+
+  @classmethod
+  def email_whitelist_path(cls):
+    os.path.join(os.path.dirname(__file__), "../../email-whitelist.txt")
+
+  @classmethod
+  def email_whitelist(cls):
+    whitelist_path = os.path.join(os.path.dirname(__file__), "../../email-whitelist.txt")
+    if not os.path.exists(whitelist_path):
+      return None
+    
+    try:
+      with open(whitelist_path, 'r') as f:
+        # Read all lines, strip whitespace, and filter out empty lines
+        emails = [line.strip() for line in f.readlines() if line.strip()]
+        return emails
+    except Exception as e:
+      log.error(f"Failed to read email whitelist: {e}")
+      return None
+
+  @classmethod
+  def override_enable(cls):
+    if not secret("email_enable"):
+      delay = 3
+      print("WARNING: This environment has email_enable configured to be false, which means emails do not get sent.")
+      print("This is obviously counterproductive for this script.")
+      print("Therefore, this script will OVERRIDE this safety setting and send e-mails anyway, but only to those designated in email-whitelist.txt.")
+
+      # if email-whitelist.txt does not exist, warn the user and exit with status 1.
+      whitelist = cls.email_whitelist()
+      if whitelist is None:
+        print("ERROR: email-whitelist.txt does not exist. This file is required for safety when overriding email settings.")
+        print("Please create this file with a list of email addresses that are allowed to receive test emails.")
+        sys.exit(1)
+      
+      print(f"\n{len(whitelist)} whitelisted email addresses:")
+      for email in whitelist:
+        print(email)
+      print()
+      
+      print("Hit CTRL+C to abort.")
+      print(f"Waiting {delay} seconds...")
+      for i in range(delay, 0, -1):
+        print(f"{i}...")
+        time.sleep(1)
+
+      # Override the email_enable setting to force sending emails
+      override_secret("email_enable", True)
+      override_secret("email_safety", True)
+      print("Override in place. This session WILL send live e-mails.")
+      return True
+    return False
+
 
   @classmethod
   def default_server(cls):
@@ -51,12 +106,29 @@ class Email:
       subject = lines[0].replace("Subject: ", "").strip()
       body = "".join(lines[2:]).format(**{key: info[key] for key in info.keys()})
       return subject, body
+    
+  def email_address_allowed(self, email_address):
+    whitelist = self.__class__.email_whitelist()
+
+    if whitelist is None:
+      if secret("email_safety", False):
+        # we set this when we override e-mail to be deliverable from test scripts in environments that otherwise disable it.
+        log.error(f"Refusing to send e-mail to {email_address} without existence of email-whitelist.txt, due to email_safety flag")
+        sys.exit(1)
+      else:
+        return True
+    
+    return email_address.strip().lower() in [email.strip().lower() for email in whitelist if email.strip()]
 
   def send(self, server=None, force=False):
     server = server or Email.default_server()
     sent_emails = EmailHistory.shared().latest_emails_for_user(self.attendee.id())
     prior_email = sent_emails.get(self.template)
     email_to = self.attendee.info()['email']
+
+    if not self.email_address_allowed(email_to):
+      log.debug(f"Email address {email_to} is not in whitelist; refusing to send")
+      return False
 
     if prior_email != None and not force:
       log.debug(f"Email {self.template} already sent to {email_to} at {prior_email['timestamp']}; not sending again without force flag")
