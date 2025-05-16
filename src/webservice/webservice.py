@@ -48,9 +48,8 @@ class WebService:
     
     # Check if X-Real-Ip header exists and is valid-ish
     x_real_ip = request.headers.get('X-Real-Ip')
-    ip_pattern = re.compile(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$')
     
-    if is_private and x_real_ip and ip_pattern.match(x_real_ip):
+    if is_private and x_real_ip:
       return x_real_ip
     else:
       return client_ip
@@ -169,6 +168,17 @@ class WebService:
           }
         })
         response.status_code = exc.status
+        return response
+      elif isinstance(exc, NotFound):
+        # Handle 404 Not Found errors
+        response = jsonify({
+          "status": 404,
+          "error": {
+            "message": str(exc) or "Resource not found",
+            "data": None,
+          }
+        })
+        response.status_code = 404
         return response
       else:
         # This is an unexpected exception
