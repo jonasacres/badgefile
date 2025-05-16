@@ -137,17 +137,18 @@ class Email:
     msg, html_body, plaintext_body = self.create_html_email()
     if secret("email_enable") is True:
       log.info(f"Sending email {self.template} to {email_to}")
-      server.send_message(msg)
+      log.debug(msg)
+      # server.send_message(msg)
     else:
       log.debug(f"Not sending email {self.template} to {email_to} -- email disabled in configuration")
     
     log.debug(f"Marking email sent.")
-    EmailHistory.shared().sent_email_for_user(self.attendee.id(),
-                                              self.template,
-                                              msg['From'],
-                                              msg['To'],
-                                              msg['Subject'],
-                                              plaintext_body)
+    # EmailHistory.shared().sent_email_for_user(self.attendee.id(),
+    #                                           self.template,
+    #                                           msg['From'],
+    #                                           msg['To'],
+    #                                           msg['Subject'],
+    #                                           plaintext_body)
 
   def create_html_email(self):
     subject, body = self.apply_template()
