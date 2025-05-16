@@ -4,6 +4,7 @@ import re
 import base64
 from flask import Flask, request, redirect, render_template, jsonify, abort
 from flask_sock import Sock
+from werkzeug.exceptions import NotFound
 
 from log.logger import log
 from util.version import Version
