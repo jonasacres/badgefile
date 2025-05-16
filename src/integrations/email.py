@@ -126,19 +126,19 @@ class Email:
     prior_email = sent_emails.get(self.template)
     email_to = self.attendee.info()['email']
 
-    if not self.email_address_allowed(email_to):
-      log.debug(f"Email address {email_to} is not in whitelist; refusing to send")
-      return False
-
     if prior_email != None and not force:
       log.debug(f"Email {self.template} already sent to {email_to} at {prior_email['timestamp']}; not sending again without force flag")
       return False
     
     msg, html_body, plaintext_body = self.create_html_email()
     if secret("email_enable") is True:
-      log.info(f"Sending email {self.template} to {email_to}")
-      log.debug(msg)
-      # server.send_message(msg)
+      log.debug(f"from: {msg['From']}, to: {msg['To']}, subject: {msg['Subject']}\n\n{html_body}")
+      
+      if self.email_address_allowed(email_to):
+        log.info(f"Sending email {self.template} to {email_to}")
+        # server.send_message(msg)
+      else:
+        log.debug(f"Skipping email {self.template} to {email_to}; address not in whitelist")
     else:
       log.debug(f"Not sending email {self.template} to {email_to} -- email disabled in configuration")
     

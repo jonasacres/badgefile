@@ -63,6 +63,7 @@ class Badgefile:
       self.update_or_create_attendee_from_reglist_row(row)
     
     for attendee in self.attendees():
+      attendee.hash_id() # force calculation of hash_id. TODO: this is hideous, but it fixes a bug I need fixed ASAP
       attendee.invalidate_activities()
     
     # by doing the ActivityList/HousingActivityList.latest().rows(), we ensure all the current rows are in the DB
