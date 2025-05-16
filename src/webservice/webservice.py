@@ -158,6 +158,38 @@ class WebService:
     self.websocket_clients -= closed_sockets
 
   def _setup_routes(self):
+    # Add a decorator to measure request processing time and log metrics
+    @self.app.after_request
+    def log_request_info(response):
+      # Calculate request processing time (need to store start time in g)
+      from flask import g
+      import time
+      from datetime import datetime
+      
+      # Get request processing time if available
+      if hasattr(g, 'start_time'):
+        process_time = (time.time() - g.start_time) * 1000  # Convert to ms
+      else:
+        process_time = 0
+        
+      # Get request and response sizes
+      request_size = request.content_length or 0
+      response_size = response.calculate_content_length() or 0
+      
+      # Format timestamp
+      timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+      
+      # Log the request metrics
+      log.debug(f"{WebService.ip()} - {timestamp} \"{request.method} {request.path}\" {response.status_code} {process_time:.0f}ms {request_size} {response_size}")
+      
+      return response
+      
+    @self.app.before_request
+    def record_request_start_time():
+      from flask import g
+      import time
+      g.start_time = time.time()
+    
     @self.app.errorhandler(Exception)
     def handle_exception(exc):
       if isinstance(exc, HTTPError):
