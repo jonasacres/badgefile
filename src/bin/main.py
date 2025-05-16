@@ -79,8 +79,8 @@ def update():
   bf.update_attendees()
   bf.run_approvals()
 
-  log.notice("Running scheduled e-mails.")
-  ScheduledEmails.run_campaigns(bf)
+  # log.notice("Running scheduled e-mails.")
+  # ScheduledEmails.run_campaigns(bf)
 
 start_time = time.time()
 log.notice(f"=======================================")
