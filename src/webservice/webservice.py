@@ -49,8 +49,6 @@ class WebService:
     
     # Check if X-Real-Ip header exists and is valid-ish
     x_real_ip = request.headers.get('X-Real-Ip')
-    log.debug(f"client_ip: {client_ip}, is_private: {is_private}, x_real_ip: {x_real_ip}, headers: {request.headers}")
-    
     if is_private and x_real_ip:
       return x_real_ip
     else:
