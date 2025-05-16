@@ -13,11 +13,11 @@ from model.event import Event, AttendeeNotEligible
 
 
 class HTTPError(Exception):
-    def __init__(self, status, message=None, data=None):
-        self.status = status
-        self.message = message
-        self.data = data
-        super().__init__(self.message)
+  def __init__(self, status, message=None, data=None):
+    self.status = status
+    self.message = message
+    self.data = data
+    super().__init__(self.message)
 
 class WebService:
   def __init__(self, badgefile, listen_interface='127.0.0.1', port=8080):
@@ -49,6 +49,7 @@ class WebService:
     
     # Check if X-Real-Ip header exists and is valid-ish
     x_real_ip = request.headers.get('X-Real-Ip')
+    log.debug(f"client_ip: {client_ip}, is_private: {is_private}, x_real_ip: {x_real_ip}, headers: {request.headers}")
     
     if is_private and x_real_ip:
       return x_real_ip
