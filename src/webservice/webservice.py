@@ -235,10 +235,10 @@ class WebService:
       if not attendee.is_primary():
         self.fail_request(400, "Only primary registrants can confirm housing")
       
-      if attendee.party_housing():
-        return render_template('confirm_housing_already_have.html', 
-                              attendee=attendee.info(),
-                              message="You have already reserved housing. Thank you for registering for the 2025 US Go Congress.")
+      # if attendee.party_housing():
+      #   return render_template('confirm_housing_already_have.html', 
+      #                         attendee=attendee.info(),
+      #                         message="You have already reserved housing. Thank you for registering for the 2025 US Go Congress.")
       
       return render_template('confirm_housing.html', 
                             attendee=attendee.info(),
