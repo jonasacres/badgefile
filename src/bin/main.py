@@ -15,6 +15,7 @@ from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
+from artifacts.emails.scheduled_emails import ScheduledEmails
 from util.util import *
 from log.logger import log
 
@@ -78,6 +79,9 @@ def update():
   bf.update_attendees()
   bf.run_approvals()
 
+  log.notice("Running scheduled e-mails.")
+  ScheduledEmails.run_campaigns(bf)
+
 start_time = time.time()
 log.notice(f"=======================================")
 log.notice(f"Invoked as '{' '.join(sys.argv)}', pwd '{os.getcwd()}'")
@@ -87,6 +91,7 @@ try:
   if "download" in sys.argv:
     download()
   update()
+
   log.notice(f"Complete. Runtime: {time.time() - start_time:.03f}s")
 except Exception as exc:
   log.fatal("Uncaught exception", exception=exc)
