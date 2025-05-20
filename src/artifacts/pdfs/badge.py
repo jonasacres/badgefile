@@ -139,8 +139,8 @@ class BadgeRenderer:
     scan_enclosure = box.inset(0, 0.85*inch, box.width, scan_height)
     
     # Generate Data Matrix with attendee ID
-    data = str(self.attendee.id()).encode('utf8')
-    encoded = encode(data, size='10x10')
+    data = self.attendee.datamatrix_content()
+    encoded = encode(data, size='14x14')
     
     # Convert to PIL Image
     dm_img = PILImage.frombytes('RGB', (encoded.width, encoded.height), encoded.pixels)

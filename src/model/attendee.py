@@ -88,6 +88,9 @@ class Attendee:
   def id(self):
     return self._info["badgefile_id"]
   
+  def datamatrix_content(self):
+    return ("25GC" + str(self.id())).encode('utf8')
+  
   def hash_id(self):
     if "hash_id" in self._info and self._info["hash_id"] is not None:
       return self._info["hash_id"]

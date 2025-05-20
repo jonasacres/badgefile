@@ -1,6 +1,7 @@
 import sqlite3
 from typing import List, Dict, Any, Optional
 import os
+import time
 
 from log.logger import log
 
@@ -44,8 +45,21 @@ class Database:
       params = []
     self.conn.row_factory = sqlite3.Row  # Allows rows to be accessed as dictionaries
     cursor = self.conn.cursor()
-    cursor.execute(sql, params)
-    return [dict(row) for row in cursor.fetchall()]
+    retry = 0
+
+    while True:
+      retry += 1
+      try:
+        cursor.execute(sql, params)
+        return [dict(row) for row in cursor.fetchall()]
+      except sqlite3.OperationalError as exc:
+        if retry < 3:
+          log.debug("Caught exception on attempt #{retry}/3 of query '#{sql}'; retrying", exception=exc)
+          time.sleep(0.001)
+        else:
+          log.error("Unable to execute query '#{sql}'", exception=exc)
+          raise exc
+    
 
   def execute(self, sql: str, params: Optional[List[Any]] = None) -> int:
     """
@@ -59,14 +73,23 @@ class Database:
     if params is None:
       params = []
     cursor = self.conn.cursor()
-    try:
-      cursor.execute(sql, params)
-      self._last_id = cursor.lastrowid
-      self.conn.commit()
-      return cursor.rowcount
-    except sqlite3.OperationalError as exc:
-      log.warn(f"Encountered exception executing statement SQL", data=sql, exception=exc)
-      os._exit(1)
+
+    retry = 0
+
+    while True:
+      retry += 1
+      try:
+        cursor.execute(sql, params)
+        self._last_id = cursor.lastrowid
+        self.conn.commit()
+        return cursor.rowcount
+      except sqlite3.OperationalError as exc:
+        if retry < 3:
+          log.debug("Caught exception on attempt #{retry}/3 of query '#{sql}'; retrying", exception=exc)
+          time.sleep(0.001)
+        else:
+          log.error(f"Encountered exception executing statement #{sql}", data=sql, exception=exc)
+          raise exc
   
   def columns_of_table(self, table_name):
     """

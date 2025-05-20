@@ -1,8 +1,10 @@
+import hashlib
 import json
 import os
 import re
 import base64
 import logging
+import time
 
 from flask import Flask, request, redirect, render_template, jsonify, abort
 from flask_sock import Sock
@@ -12,7 +14,7 @@ from log.logger import log
 from util.version import Version
 from util.secrets import secret
 from model.event import Event, AttendeeNotEligible
-
+from server.socketserver import SocketServer
 
 class HTTPError(Exception):
   def __init__(self, status, message=None, data=None):
@@ -226,6 +228,10 @@ class WebService:
     def version():
       return jsonify({'version': Version().hash()})
     
+    @self.app.route('/scanner', methods=['GET'])
+    def scanner_get():
+      return render_template('event-scanner.html')
+    
     @self.app.route('/attendees/<hashid>/confirm_housing', methods=['GET'])
     def confirm_housing_get(hashid):
       if hashid == "None":
@@ -285,7 +291,7 @@ class WebService:
         log.info(self.logmsg(f"WebSocket client disconnected, remaining clients: {len(self.websocket_clients)}"))
 
     @self.app.route('/events/<event_name>/scans', methods=['POST'])
-    def attendee_scans_post(event_name):
+    def event_scans_post(event_name):
       self.require_authentication()
 
       if not Event.exists(event_name):
@@ -331,11 +337,12 @@ class WebService:
         "data": response_data,
       }
       self.broadcast_to_websockets(websocket_message)
+      SocketServer.shared().broadcast(websocket_message)
 
       self.respond(response_data)
 
     @self.app.route('/events/<event_name>/scans', methods=['GET'])
-    def attendee_scans_get(event_name):
+    def event_scans_get(event_name):
       self.require_authentication()
 
       if not Event.exists(event_name):
@@ -351,7 +358,7 @@ class WebService:
       })
     
     @self.app.route('/events/<event_name>/status', methods=['GET'])
-    def attendee_status_get(event_name):
+    def event_status_get(event_name):
       self.require_authentication()
 
       if not Event.exists(event_name):
@@ -368,6 +375,45 @@ class WebService:
           "total_scannable": total_eligible,
         }
       })
+    
+    @self.app.route('/events/<event_name>/count', methods=['GET'])
+    def event_count_get(event_name):
+      # self.require_authentication()
+
+      if not Event.exists(event_name):
+        self.fail_request(404, "Event not found")
+
+      def make_response():
+        event = Event(event_name)
+        total_scans_for_event = event.num_scanned_attendees()
+        total_eligible = event.num_eligible_attendees()
+
+        event_data = {
+          "name": event_name,
+          "total_attendees_scanned": total_scans_for_event,
+          "total_scannable": total_eligible,
+        }
+
+        # Serialize event_data to JSON
+        event_data_json = json.dumps(event_data, sort_keys=True)
+        event_data_hash = hashlib.sha256(event_data_json.encode()).hexdigest()
+        return {
+          "event": event_data,
+          "hash": event_data_hash,
+        }
+
+      # Get the hash query parameter if provided, otherwise set to None
+      last_hash = request.args.get('hash', None)
+
+      while True:
+        # if 'hash' was provided, then don't return a response until we have an updated object
+        rr = make_response()
+        if rr["hash"] != last_hash:
+          self.respond(rr)
+          break # shouldn't be needed, but let's be safe
+        
+        # Sleep for 100ms before checking again
+        time.sleep(0.1)
 
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)

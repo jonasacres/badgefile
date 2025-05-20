@@ -198,6 +198,9 @@ class Activity:
   def is_apt2_2room(self):
     return "apartment style 2 with full kitchen (2 rooms)" in self._info["activity_title"].lower()
   
+  def is_apt3(self):
+    return "apartment style 3 with mini-kitchen (1 room only)" in self._info["activity_title"].lower()
+  
   def is_dorm_single(self):
     return "dorm - single occupancy" in self._info["activity_title"].lower()
   
@@ -205,7 +208,7 @@ class Activity:
     return "dorm - double occupancy" in self._info["activity_title"].lower()
   
   def is_housing(self):
-    return self.is_apt1_1room() or self.is_apt1_2room() or self.is_apt2_1room() or self.is_apt2_2room() or self.is_dorm_single() or self.is_dorm_double()
+    return self.is_apt1_1room() or self.is_apt1_2room() or self.is_apt2_1room() or self.is_apt2_2room() or self.is_apt3() or self.is_dorm_single() or self.is_dorm_double()
 
   def is_open(self):
     return self._info["status"].lower() in ["open", "paid"]

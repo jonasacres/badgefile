@@ -1,11 +1,15 @@
 from integrations.database import Database
 from datetime import datetime
+from log.logger import log
+from model.notification_manager import NotificationManager
 
 class AttendeeNotEligible(Exception):
     """Exception raised when an attendee tries to scan in but is not eligible."""
     pass
 
 class Event:
+  _instances = {}
+
   @classmethod
   def exists(cls, name):
     db = Database.shared()
@@ -45,6 +49,8 @@ class Event:
       # Update existing row with new eligibility status
       db.execute(f"UPDATE {status_table} SET is_eligible = ? WHERE badgefile_id = ?",
                 [is_eligible, attendee.id()])
+    
+    NotificationManager.shared().notify("event", {"event": self, "attendee": attendee, "action": "enrollment", "data": {"is_eligible": is_eligible}})
   
   def scan_in_attendee(self, attendee, is_reset=False):
     db = Database.shared()
@@ -70,7 +76,11 @@ class Event:
     
     # Get and return the new scan count
     updated_result = db.query(f"SELECT scan_count FROM {status_table} WHERE badgefile_id = ?", [attendee.id()])
-    return updated_result[0]['scan_count']
+    scan_count = updated_result[0]['scan_count']
+
+    log.debug(f"Scanned attendee {attendee.full_name()} into {self.name}, is_reset={is_reset}; new count {scan_count}")
+    NotificationManager.shared().notify("event", {"event": self, "attendee": attendee, "action": "scan", "data": {"is_reset": is_reset, "num_times_attendee_scanned": scan_count}})
+    return scan_count
 
   def is_attendee_eligible(self, attendee):
     db = Database.shared()
