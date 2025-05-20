@@ -175,6 +175,12 @@ class Activity:
     
     if self.is_apt2_2room():
       return self.fee() / 1840
+    
+    if self.is_apt3():
+      return self.fee() / 760
+    
+    log.error(f"Don't know how to calculate number of units in housing of type '{self._info['activity_title']}'; assuming 1 unit")
+    return 1
 
   def num_beds(self):
     if not self.is_housing():
