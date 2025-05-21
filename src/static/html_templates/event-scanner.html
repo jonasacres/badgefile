@@ -38,11 +38,13 @@
     </style>
 </head>
 <body>
-    <h1>DataMatrix Scanner</h1>
+    <h1>Scanner: {{ event_name }}</h1>
     
     <div id="result-header">
         <p>Scan a DataMatrix code to see results here</p>
     </div>
+    
+    <button id="testScanButton">Test Scan</button>
     
     <div id="reader"></div>
     
@@ -63,18 +65,38 @@
                     throw new Error(`Server responded with status: ${response.status}`);
                 }
                 
-                const data = await response.json();
-                console.log('Scan successfully sent to server:', data);
-                return data;
+                const scan_result = await response.json();
+                processScanResponse(scan_result);
             } catch (error) {
                 console.error('Error sending scan to server:', error);
                 throw error;
             }
         }
 
+        async function processScanResponse(scan_result) {
+            console.log('Scan response: ', scan_result);
+            
+            const attendee = scan_result['response']['attendee'];
+            const event = scan_result['response']['event'];
+
+            const resultHeader = document.getElementById('result-header');
+            
+            // Update the result header with attendee information and scan count
+            resultHeader.innerHTML = `
+                <p>Scanned: <span class="scan-value">${attendee['name_given']} ${attendee['name_family']} (#${attendee['badgefile_id']}), scan count ${event['num_scans_for_attendee']}</span></p>
+                <p>Total scanned: ${event['total_attendees_scanned']} / ${event['total_scannable']}</p>
+            `;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const html5QrCode = new Html5Qrcode("reader");
             const resultHeader = document.getElementById('result-header');
+            let lastScannedAgaid = null; // Track the last scanned AGAID
+            
+            // Add event listener for the test scan button
+            document.getElementById('testScanButton').addEventListener('click', function() {
+                sendScanToServer(6, "signtest");
+            });
             
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                 // Only process if the decoded text matches the expected format (25GC followed by digits)
@@ -85,15 +107,20 @@
                 const now = new Date();
                 const timestamp = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
                 
-                // Update the result header
-                resultHeader.innerHTML = `
-                    <p>Last scan: <span class="scan-value">${agaid}</span></p>
-                    <p class="timestamp">Timestamp: ${timestamp}</p>
-                `;
-                
-                // Optional: Log to console
-                console.log(`Code scanned: ${decodedText}`, decodedResult);
-                sendScanToServer(agaid, "signtest");
+                // Only send to server if this is a different AGAID than the last scan
+                if (agaid !== lastScannedAgaid) {
+                    // Update the result header
+                    resultHeader.innerHTML = `
+                        <p>Last scan: <span class="scan-value">${agaid}</span></p>
+                        <p>Sending to server...</p>
+                    `;
+
+                    console.log(`Code scanned: ${decodedText}`, decodedResult);
+                    sendScanToServer(agaid, "{{ event_name }}");
+                    lastScannedAgaid = agaid; // Update the last scanned AGAID
+                } else {
+                    console.log(`Duplicate scan detected for AGAID: ${agaid}. Not sending to server.`);
+                }
             };
             
             const config = {

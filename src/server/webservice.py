@@ -228,9 +228,10 @@ class WebService:
     def version():
       return jsonify({'version': Version().hash()})
     
-    @self.app.route('/scanner', methods=['GET'])
-    def scanner_get():
-      return render_template('event-scanner.html')
+    @self.app.route('/scanner/<event_name>', methods=['GET'])
+    def scanner_get(event_name):
+      return render_template('event-scanner.html',
+                             event_name=event_name)
     
     @self.app.route('/attendees/<hashid>/confirm_housing', methods=['GET'])
     def confirm_housing_get(hashid):
