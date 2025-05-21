@@ -37,7 +37,6 @@ class Badgefile:
   def __init__(self):
     self._attendees = None
     self._parties = None
-    self.db = Database.shared()
 
   def path(self):
     return "artifacts/badgefile.json"
@@ -154,7 +153,7 @@ class Badgefile:
     if self._attendees is None:
       log.debug("badgefile: Loading attendees list")
       Attendee(self).ensure_attendee_table() # shouldn't be instance method of Attendee
-      rows = self.db.query("SELECT * FROM Attendees")
+      rows = Database.shared().query("SELECT * FROM Attendees")
       self._attendees = [Attendee(self).load_db_row(row) for row in rows]
       self.ensure_consistency()
       log.debug(f"badgefile: Loaded {len(self._attendees)} attendees")

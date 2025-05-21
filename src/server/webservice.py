@@ -292,15 +292,16 @@ class WebService:
 
     @self.app.route('/events/<event_name>/scans', methods=['POST'])
     def event_scans_post(event_name):
-      self.require_authentication()
+      # self.require_authentication()
 
       if not Event.exists(event_name):
+        log.debug(f"request for non-existent event: {event_name}")
         self.fail_request(404, "Event not found")
       
       request = self.parse_request()
 
       if 'badgefile_id' in request:
-        attendee = self.badgefile.lookup_attendee(request['badgefile_id'])
+        attendee = self.badgefile.lookup_attendee(int(request['badgefile_id']))
       elif 'hash_id' in request:
         attendee = self.badgefile.lookup_attendee_by_hash_id(request['hash_id'])
       else:
@@ -309,6 +310,7 @@ class WebService:
       is_reset = request.get('reset', False) == True
       
       if attendee is None:
+        log.debug(f"scan request for non-existent user: request {request}")
         self.fail_request(404, "Attendee not found")
       
       event = Event(event_name)

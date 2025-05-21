@@ -51,8 +51,8 @@ def main():
           event.scan_in_attendee(attendee, is_reset=True)
     
     # Start the scanning thread
-    scan_thread = threading.Thread(target=scan_attendees_thread, daemon=True)
-    scan_thread.start()
+    # scan_thread = threading.Thread(target=scan_attendees_thread, daemon=True)
+    # scan_thread.start()
 
     SocketServer.shared().listen()
 

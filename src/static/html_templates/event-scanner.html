@@ -47,23 +47,53 @@
     <div id="reader"></div>
     
     <script>
+        async function sendScanToServer(agaid, event) {
+            try {
+                const response = await fetch('/events/'+event+'/scans', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        badgefile_id: agaid
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Scan successfully sent to server:', data);
+                return data;
+            } catch (error) {
+                console.error('Error sending scan to server:', error);
+                throw error;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const html5QrCode = new Html5Qrcode("reader");
             const resultHeader = document.getElementById('result-header');
             
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                // Only process if the decoded text matches the expected format (25GC followed by digits)
+                if(!decodedText || !/^25GC\d+$/.test(decodedText)) return;
+                const agaid = decodedText.substring(4);
+
                 // Get current timestamp
                 const now = new Date();
                 const timestamp = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
                 
                 // Update the result header
                 resultHeader.innerHTML = `
-                    <p>Last scan: <span class="scan-value">${decodedText}</span></p>
+                    <p>Last scan: <span class="scan-value">${agaid}</span></p>
                     <p class="timestamp">Timestamp: ${timestamp}</p>
                 `;
                 
                 // Optional: Log to console
                 console.log(`Code scanned: ${decodedText}`, decodedResult);
+                sendScanToServer(agaid, "signtest");
             };
             
             const config = {
