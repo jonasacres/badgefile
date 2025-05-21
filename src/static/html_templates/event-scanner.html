@@ -7,44 +7,232 @@
     <title>DataMatrix Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Rubik', sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #9ED9C3; /* Retro seafoam green */
+            color: #333;
+            background-image: 
+                radial-gradient(ellipse at 75% 20%, #FFCC5F 1%, transparent 4%),
+                radial-gradient(ellipse at 25% 40%, #FF6B65 1%, transparent 4%),
+                radial-gradient(ellipse at 50% 70%, #5DA4EA 1%, transparent 4%);
+            position: relative;
+            overflow-x: hidden;
         }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(45deg, #9ED9C3 25%, transparent 25%),
+                linear-gradient(-45deg, #9ED9C3 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #8CC8B2 75%),
+                linear-gradient(-45deg, transparent 75%, #8CC8B2 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
         #result-header {
-            background-color: #f0f0f0;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            background-color: #FF6B65; /* Retro coral */
+            padding: 20px;
+            border-radius: 10px 10px 40px 10px;
+            margin-bottom: 30px;
             min-height: 50px;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+            color: white;
+            border: 3px solid white;
+            position: relative;
+            overflow: hidden;
         }
+        
+        #result-header::before {
+            content: "✶";
+            position: absolute;
+            top: 5px;
+            right: 15px;
+            font-size: 24px;
+            color: #FFCC5F;
+        }
+        
         #reader {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            border: 4px solid white;
+            border-radius: 10px 50px 10px 10px;
+            overflow: hidden;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+            background-color: white;
         }
+        
         .timestamp {
-            color: #666;
-            font-size: 0.8em;
+            color: #FFCC5F; /* Retro yellow */
+            font-size: 0.9em;
+            font-weight: bold;
         }
+        
         .scan-value {
             font-weight: bold;
             word-break: break-all;
+            color: #333;
+            background: #FFCC5F;
+            padding: 3px 8px;
+            border-radius: 10px;
+            border: 2px solid white;
         }
+        
         h1 {
+            color: #333;
+            text-align: center;
+            font-size: 2.5em;
+            letter-spacing: 1px;
+            position: relative;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 5px;
+            background: linear-gradient(90deg, transparent, #FF6B65, transparent);
+        }
+        
+        h1 span {
+            display: inline-block;
+            background: #5DA4EA; /* Retro blue */
+            padding: 5px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.8em;
+            transform: rotate(-2deg);
+            margin-left: 10px;
+        }
+        
+        button {
+            background-color: #5DA4EA;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px 5px 30px 5px;
+            font-family: 'Rubik', sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 30px;
+            box-shadow: 4px 4px 0 #3D84CA;
+            transition: all 0.2s;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px) rotate(-1deg);
+            box-shadow: 6px 6px 0 #3D84CA;
+        }
+        
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 2px 2px 0 #3D84CA;
+        }
+        
+        /* Atomic age design elements */
+        .atomic-orbit {
+            position: absolute;
+            width: 150px;
+            height: 50px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            top: 20px;
+            right: -50px;
+            transform: rotate(-20deg);
+            z-index: -1;
+        }
+        
+        .atomic-orbit::before {
+            content: "•";
+            position: absolute;
+            font-size: 20px;
+            color: white;
+            top: -12px;
+            left: 20px;
+        }
+        
+        .starburst {
+            position: absolute;
+            color: #FF6B65;
+            left: 20px;
+            top: 100px;
+            font-size: 40px;
+            z-index: -1;
+            transform: rotate(20deg);
+        }
+        
+        #progress-container {
+            margin-bottom: 30px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+            border: 3px solid #5DA4EA;
+        }
+        
+        .progress-bar-wrapper {
+            background-color: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #9ED9C3, #1E6954);
+            border-radius: 15px;
+            transition: width 0.5s ease-in-out;
+            position: relative;
+        }
+        
+        #progress-text {
+            text-align: center;
+            font-weight: 500;
             color: #333;
         }
     </style>
 </head>
 <body>
-    <h1>Scanner: {{ event_name }}</h1>
+    <div class="atomic-orbit"></div>
+    <div class="starburst">✶</div>
+    
+    <h1><span>{{ event_name }}</span></h1>
     
     <div id="result-header">
-        <p>Scan a DataMatrix code to see results here</p>
+        <p>Scan a badge!</p>
     </div>
     
-    <button id="testScanButton">Test Scan</button>
+    <div id="progress-container">
+        <div class="progress-bar-wrapper">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="progress-text">Loading attendance data...</div>
+    </div>
     
     <div id="reader"></div>
     
@@ -73,6 +261,40 @@
             }
         }
 
+        async function fetchEventStatus(eventName) {
+            try {
+                const response = await fetch(`/events/${eventName}/status`);
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                updateProgressBar(
+                    data.response.event.total_attendees_scanned,
+                    data.response.event.total_scannable
+                );
+            } catch (error) {
+                console.error('Error fetching event status:', error);
+                document.getElementById('progress-text').textContent = 'Could not load attendance data';
+            }
+        }
+
+        function updateProgressBar(scanned, total) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            if (total === 0) {
+                progressBar.style.width = '0%';
+                progressText.textContent = 'No eligible attendees';
+                return;
+            }
+            
+            const percentage = Math.round((scanned / total) * 100);
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `${scanned} of ${total} attendees checked in (${percentage}%)`;
+        }
+
         async function processScanResponse(scan_result) {
             console.log('Scan response: ', scan_result);
             
@@ -84,19 +306,64 @@
             // Update the result header with attendee information and scan count
             resultHeader.innerHTML = `
                 <p>Scanned: <span class="scan-value">${attendee['name_given']} ${attendee['name_family']} (#${attendee['badgefile_id']}), scan count ${event['num_scans_for_attendee']}</span></p>
-                <p>Total scanned: ${event['total_attendees_scanned']} / ${event['total_scannable']}</p>
             `;
+            
+            // Update progress bar
+            updateProgressBar(event['total_attendees_scanned'], event['total_scannable']);
+        }
+
+        // Add WebSocket connection function
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connection established');
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'scan') {
+                        console.log('Received scan event via WebSocket:', message);
+                        
+                        // Update progress bar with the latest data
+                        const eventData = message.data.event;
+                        updateProgressBar(
+                            eventData.total_attendees_scanned,
+                            eventData.total_scannable
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error processing WebSocket message:', error);
+                }
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket connection closed. Reconnecting in 5 seconds...');
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+            
+            return ws;
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Fetch initial event status
+            fetchEventStatus("{{ event_name }}");
+            
+            // Connect to WebSocket for real-time updates
+            let ws = connectWebSocket();
+            
             const html5QrCode = new Html5Qrcode("reader");
             const resultHeader = document.getElementById('result-header');
             let lastScannedAgaid = null; // Track the last scanned AGAID
-            
-            // Add event listener for the test scan button
-            document.getElementById('testScanButton').addEventListener('click', function() {
-                sendScanToServer(6, "signtest");
-            });
+            window.lastScannedAgaid = null; // Make it available to the WebSocket handler
             
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                 // Only process if the decoded text matches the expected format (25GC followed by digits)
@@ -111,13 +378,13 @@
                 if (agaid !== lastScannedAgaid) {
                     // Update the result header
                     resultHeader.innerHTML = `
-                        <p>Last scan: <span class="scan-value">${agaid}</span></p>
-                        <p>Sending to server...</p>
+                        <p>Scanning badge: <span class="scan-value">${agaid}</span></p>
                     `;
 
                     console.log(`Code scanned: ${decodedText}`, decodedResult);
                     sendScanToServer(agaid, "{{ event_name }}");
                     lastScannedAgaid = agaid; // Update the last scanned AGAID
+                    window.lastScannedAgaid = agaid; // Make it available to the WebSocket handler
                 } else {
                     console.log(`Duplicate scan detected for AGAID: ${agaid}. Not sending to server.`);
                 }

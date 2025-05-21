@@ -276,7 +276,7 @@ class WebService:
     
     @self.sock.route('/ws')
     def monitor(ws):
-      self.require_authentication()
+      # self.require_authentication()
       self.websocket_clients.add(ws)
       log.info(self.logmsg(f"WebSocket client connected, total clients: {len(self.websocket_clients)}"))
       try:
@@ -362,7 +362,7 @@ class WebService:
     
     @self.app.route('/events/<event_name>/status', methods=['GET'])
     def event_status_get(event_name):
-      self.require_authentication()
+      # self.require_authentication()
 
       if not Event.exists(event_name):
         self.fail_request(404, "Event not found")
