@@ -34,7 +34,7 @@ class OverviewReport:
       else:
         housing_status = "NONE"
     else:
-      housing_status = "OK" if attendee.is_housing_approved() else "PENDING"
+      housing_status = "OK" if housing_ok else "PENDING"
 
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
