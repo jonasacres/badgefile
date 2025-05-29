@@ -21,7 +21,7 @@ class Activity:
           continue
         if str(row["name_given"]).lower() != str(att_info["name_given"]).lower():
           continue
-        if str(row["name_mi"]).lower() != str(att_info["name_mi"]).lower():
+        if 'name_mi' in row and str(row["name_mi"]).lower() != str(att_info["name_mi"]).lower():
           continue
         candidate = attendee
         break

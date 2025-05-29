@@ -1,6 +1,7 @@
 import os
 from log.logger import log
 from datasources.clubexpress.payments_report import PaymentsReport
+from datasources.clubexpress.donations_report import DonationsReport
 from util.secrets import secret
 import boto3
 import time
@@ -28,7 +29,11 @@ class DonorPage:
     else:
       return "platinum"
   
-  def donors_from_renewals(self):
+  def donors_from_payments_report(self):
+    # DON'T USE THIS ONE. This is no longer the right way to get this data now that we have the DonationsReport.
+    # I'm holding onto this snippet in case I turn out to be wrong in the next few weeks.
+    # Delete after 2025-06-15
+    
     report = PaymentsReport.latest()
     transactions = report.transactions()
     donor_rows = []
@@ -41,12 +46,83 @@ class DonorPage:
             "donation_tier": self.tier_for_amount(row['amount']),
             "donation_amount": row['amount'],
             "donation_is_anonymous": False,
+            "transrefnum": row['ref_num'],
           })
+    
+    return donor_rows
+  
+  def donors_from_donations_report(self):
+    report = DonationsReport.latest()
+    rows = report.rows(self.badgefile)
+    donor_rows = []
+
+    for row in rows:
+      # ignore donations that are unpaid
+      if row['payment_status'] != "Paid in Full":
+        continue
+
+      if row['donation_amount'] == 0:
+        continue
+
+      donor_rows.append({
+        "donation_name": f"{row['name_on_donation_record']}",
+        "donation_tier": self.tier_for_amount(row['donation_amount']),
+        "donation_is_anonymous": row['anonymous'].lower() == "yes" or row['name_on_donation_record'].lower() in ["anon", "anonymous"],
+        **row
+      })
+    
+    for row in donor_rows:
+      print(f"#{row['donation_amount']} ({row['donation_tier']}), {row['donation_name']} #{row['transrefnum']}")
     
     return donor_rows
   
   def merge_donors(self, donors):
     by_name = {}
+
+    # group donors into arrays by transrefnum
+    by_transrefnum = {}
+    for donor in donors:
+      transrefnum = donor['transrefnum']
+      if transrefnum not in by_transrefnum:
+        by_transrefnum[transrefnum] = []
+      by_transrefnum[transrefnum].append(donor)
+    
+    # make a new list called reduced_donors for each transrefnum
+    reduced_donors = []
+    for transrefnum, donor_list in by_transrefnum.items():
+      # if a transrefnum has only one element:
+      if len(donor_list) == 1:
+        # add the element to reduced_donors
+        reduced_donors.append(donor_list[0])
+      else:
+        # else (a transrefnum has multiple elements)
+        # compare each element to ensure donation_tier and donation_amount are identical
+        first_donor = donor_list[0]
+        for donor in donor_list[1:]:
+          if (donor['donation_tier'] != first_donor['donation_tier'] or 
+              donor['donation_amount'] != first_donor['donation_amount']):
+            # log an error with the donation_name, donation_tier, donation_amount, donation_is_anonymous and transrefnum of both
+            log.error(f"Mismatched donation data for transrefnum {transrefnum}: "
+                     f"First: {first_donor['donation_name']}, tier: {first_donor['donation_tier']}, "
+                     f"amount: {first_donor['donation_amount']}, anonymous: {first_donor['donation_is_anonymous']} | "
+                     f"Other: {donor['donation_name']}, tier: {donor['donation_tier']}, "
+                     f"amount: {donor['donation_amount']}, anonymous: {donor['donation_is_anonymous']}")
+        
+        # if one element is marked "donation_is_anonymous":
+        anonymous_donor = None
+        for donor in donor_list:
+          if donor['donation_is_anonymous']:
+            anonymous_donor = donor
+            break
+        
+        if anonymous_donor:
+          # add that element to reduced_donors and ignore all others for that transrefnum
+          reduced_donors.append(anonymous_donor)
+        else:
+          # otherwise add the first element in the transrefnum list to reduced_donors
+          reduced_donors.append(first_donor)
+    
+    donors = reduced_donors
     
     for donor in donors:
       lc_name = donor['donation_name'].lower()
@@ -75,7 +151,7 @@ class DonorPage:
           merged_list.append(merged_donor)
     
     return merged_list
-  
+
   def generate(self, path=None):
     if path is None:
       path = "artifacts/html/friends_of_congress/index.html"
@@ -86,7 +162,7 @@ class DonorPage:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     
     # Get donor data
-    donors = self.donors_from_registration() + self.donors_from_renewals()
+    donors = self.donors_from_registration() + self.donors_from_donations_report()
     donors = self.merge_donors(donors)
     
     # Sort donors by donation amount, highest first
