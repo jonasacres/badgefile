@@ -14,6 +14,7 @@ from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
+from datasources.clubexpress.donations_report import DonationsReport
 from datasources.tdlist import TDList
 from artifacts.generated_reports.as_email import EmailReport
 from artifacts.emails.scheduled_emails import ScheduledEmails
@@ -60,6 +61,12 @@ def download():
   except Exception as exc:
     log.critical("Failed to download payments report", exception=exc)
 
+  log.info(f"Downloading donations report.")
+  try:
+    DonationsReport.download()
+  except Exception as exc:
+    log.critical("Failed to download donations report", exception=exc)
+
 def update():
   if Reglist.latest() == None:
     Reglist.download()
@@ -69,6 +76,8 @@ def update():
     HousingReglist.download()
   if HousingActivityList.latest() == None:
     HousingActivityList.download()
+  if DonationsReport.latest() == None:
+    DonationsReport.download()
   if TDList.latest() == None:
     TDList.download()
   if PaymentsReport.latest() == None:
