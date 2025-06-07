@@ -28,7 +28,7 @@ class ScheduledEmails:
       # they signed up, but don't have housing, and haven't said they're arranging their own, so remind them to buy housing
       return True
     self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
-    self.run_campaign("3b-transportation-survey", always_eligible, None, allow_nonprimary=True)
+    self.run_campaign("3b-transportation-survey", always_eligible, None, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
