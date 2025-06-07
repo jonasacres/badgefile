@@ -1,5 +1,8 @@
 def run_check(attendee):
   rrbid = attendee.reglist_cacher().reglist_rows_by_id(attendee.latest_reglist(), attendee.badgefile())
+  if not attendee.id() in rrbid:
+    return None
+  
   matches_user = rrbid[attendee.id()]
   active = [row for row in matches_user if row['status'].lower() == "open"]
 
