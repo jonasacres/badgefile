@@ -18,3 +18,4 @@ bf = Badgefile()
 Email.override_enable()
 
 ScheduledEmails.run_campaigns(bf)
+# ScheduledEmails(bf).run_test_campaign()

@@ -149,8 +149,8 @@ class Badgefile:
     return None
   
   # return list of all attendees
-  def attendees(self):
-    if self._attendees is None:
+  def attendees(self, force_refresh=False):
+    if self._attendees is None or force_refresh:
       log.debug("badgefile: Loading attendees list")
       Attendee(self).ensure_attendee_table() # shouldn't be instance method of Attendee
       rows = Database.shared().query("SELECT * FROM Attendees")

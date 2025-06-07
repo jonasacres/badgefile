@@ -85,8 +85,8 @@ class BadgeRenderer:
 
     # the badge area is the region of the page that is perforated to be torn off and stuffed in the badge holder
     self.badge_box = self.main_box.inset(0, 3.0*inch, 4.25*inch, 6.0*inch)
-    self.badge_box.add_leaf_rounded_rect(colors.white, colors.black, 1.0/16.0 * inch, 4.0)
-    self.layout_background()
+    self.badge_box.add_leaf_rounded_rect(colors.white, colors.lightgrey, 1.0/64.0 * inch, 0.0)
+    # self.layout_background()
 
     next_y = self.badge_box.height - self.margin_size
     next_y -= self.layout_logo(next_y).height + self.margin_size

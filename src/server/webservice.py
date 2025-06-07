@@ -235,6 +235,7 @@ class WebService:
     
     @self.app.route('/attendees/<hashid>/confirm_housing', methods=['GET'])
     def confirm_housing_get(hashid):
+      self.badgefile.attendees(force_refresh=True)
       if hashid == "None":
         return render_template('confirm_housing_bug_apology.html', 
                             attendee=None,
@@ -258,6 +259,7 @@ class WebService:
     
     @self.app.route('/attendees/<hashid>/confirm_housing', methods=['POST'])
     def confirm_housing_post(hashid):
+      self.badgefile.attendees(force_refresh=True)
       attendee = self.badgefile.lookup_attendee_by_hash_id(hashid)
       if attendee is None:
         self.fail_request(404, "Attendee not found")
