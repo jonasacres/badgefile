@@ -612,6 +612,10 @@ class Attendee:
     # right now, we don't do anything to check for problems in the youth form -- if we can associate a youth to a form, then we have a youth form on file
     return False
   
+  def mark_cancelled(self):
+    self._info["status"] = "Cancelled"
+    self.sync_to_db()
+  
   def set_youth_info(self, response):
     self._youth_response = response
 
@@ -661,12 +665,12 @@ class Attendee:
     btrn = rfcc.by_transrefnum()
     trn = self._info.get('transrefnum', None)
     if trn is None:
-      log.warn(f'Non-cancelled participant {self.full_name()} has no Congress transrefnum')
+      log.warn(f'Non-cancelled attendee {self.full_name()} {self.id()} {self._info["status"]} has no Congress transrefnum')
       return []
     
     trn = int(trn)
     if not trn in btrn or len(btrn[trn]) == 0:
-      log.warn(f'Non-cancelled participant {self.full_name()} has Congress transrefnum {trn}, but this is not in Registrant Fees and Charges')
+      log.warn(f'Non-cancelled attendee {self.full_name()} {self.id()} {self._info["status"]} has Congress transrefnum {trn}, but this is not in Registrant Fees and Charges')
       return []
 
     return btrn[trn]

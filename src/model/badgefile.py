@@ -59,8 +59,10 @@ class Badgefile:
 
   def update_attendees(self):
     log.debug("Updating badgefile")
-    for row in Reglist.latest().rows():
+    reglist_rows = self.active_reglist_rows()
+    for row in reglist_rows:
       self.update_or_create_attendee_from_reglist_row(row)
+    self.prune_silent_cancellations(reglist_rows)
     
     for attendee in self.attendees():
       attendee.hash_id() # force calculation of hash_id. TODO: this is hideous, but it fixes a bug I need fixed ASAP
@@ -207,12 +209,46 @@ class Badgefile:
     log.debug(f"Existing member matches '{row['name_given']} {row['name_family']}', born {row['date_of_birth']}, mobile {row['phone_mobile']}: ID {scored[0][0].id()}, score {scored[0][1]}")
     return scored[0][0]
   
+  def active_reglist_rows(self):
+    by_attendee = {}
+    rows = Reglist.latest().rows()
+    for i, row in enumerate(rows):
+      row_num = i + 2 # convert to excel-style row number, understanding that it is one-based and has a header row
+      attendee = self.find_attendee_from_report_row(row.info())
+      if not attendee.id() in by_attendee:
+        by_attendee[attendee.id()] = [row_num, row]
+      elif by_attendee[attendee.id()][1].info()['status'] == "Cancelled" and row.info()['status'] != "Cancelled":
+        log.debug(f"Replacing cancelled row {by_attendee[attendee.id()][0]} with active row {row_num} for attendee {attendee.id()} {attendee.full_name()}")
+        by_attendee[attendee.id()] = [row_num, row]
+      else:
+        log.debug(f"Keeping existing row {by_attendee[attendee.id()][0]} in favor of cancelled row {row_num} for attendee {attendee.id()} {attendee.full_name()}")
+    
+    filtered = list([x[1] for x in by_attendee.values()])
+    log.info(f"Filtered list of {len(rows)} down to {len(filtered)} unique attendees")
+    return filtered
+  
+  def prune_silent_cancellations(self, rows):
+    # In certain cases, registrations can be cancelled in ClubExpress and the entire registration will be deleted from the reglist,
+    # instead of being marked as cancelled. We want to make sure we mark any leftover 'ghost' records as cancelled. We can spot them because
+    # they have transrefnums that don't appear in the current reglist.
+
+    trns = set()
+    for row in rows:
+      trn = row.info().get('transrefnum', None)
+      if trn:
+        trns.add(int(trn))
+    
+    prunable = [att for att in self.attendees() if not att.is_cancelled() and int(att.info()['transrefnum']) not in trns]
+    for attendee in prunable:
+      log.info(f"Marking attendee {attendee.id()} {attendee.full_name()} as cancelled, as transrefnum {attendee.info()['transrefnum']} is not in current reglist")
+      attendee.mark_cancelled()
+  
   # returns an Attendee corresponding to the user in the reglist. uses an existing Attendee
   # if one exists; otherwise, creates one.
   def update_or_create_attendee_from_reglist_row(self, row):
     attendee = self.find_attendee_from_report_row(row.info())
     if attendee != None:
-      attendee.load_reglist_row(row)
+      attendee.load_reglist_row(row, True)
       return attendee
     
     # no good matches; create a new attendee
