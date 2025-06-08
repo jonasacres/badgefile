@@ -23,6 +23,8 @@ class PaymentReport:
       attendee.congress_balance_due(),
       attendee.housing_total_fees(),
       attendee.housing_balance_due(),
+      attendee.congress_total_fees() + attendee.housing_total_fees(),
+      attendee.congress_balance_due() + attendee.housing_balance_due(),
     ]
 
   def update(self):
@@ -38,6 +40,8 @@ class PaymentReport:
       "Congress Balance Due",
       "Housing Fees",
       "Housing Balance Due",
+      "Total Fees",
+      "Total Balance Due",
       "Comments (Editable)",
     ]
     
