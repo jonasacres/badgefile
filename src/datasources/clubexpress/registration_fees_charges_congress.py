@@ -3,7 +3,6 @@ from datetime import datetime
 from io import StringIO
 
 from .ce_report_base import CEReportBase
-from .reglist_row import ReglistRow
 from util.secrets import secret
 
 class RegistrationFeesChargesCongress(CEReportBase):
@@ -83,12 +82,16 @@ class RegistrationFeesChargesCongress(CEReportBase):
     # However, this is tedious, and we do almost no arithmetic on these values, which mitigates our exposure... and we're not
     # really accounting software.
 
+    # Remove $ and , from the value
+    clean_value = value.lstrip('$').replace(',', '')
+    
+    # Try parsing as float first (handles both decimal and non-decimal numbers)
     try:
-      return int(value.lstrip('$'))
+        num = float(clean_value)
+        # If it's a whole number, return as int
+        return int(num) if num.is_integer() else num
     except ValueError:
-      try:
-        return float(value.lstrip('$'))
-      except ValueError:
+        # If not numeric, return original value
         return value
 
   def rows(self):
@@ -101,6 +104,8 @@ class RegistrationFeesChargesCongress(CEReportBase):
     by_transrefnum = {}
 
     for row in self.rows():
+      # if "housing" in self.__class__.google_drive_name():
+      #   print(row)
       trn = row['transrefnum']
       if not trn in by_transrefnum:
         by_transrefnum[trn] = []

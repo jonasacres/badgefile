@@ -18,6 +18,7 @@ from artifacts.generated_reports.as_housing_assignments import HousingAssignment
 from artifacts.generated_reports.as_email import EmailReport
 from artifacts.generated_reports.as_tournaments_report import TournamentsReport
 from artifacts.generated_reports.as_membership_report import MembershipReport
+from artifacts.generated_reports.as_payment_report import PaymentReport
 from artifacts.generated_reports.as_other_issues import OtherIssuesReport
 from artifacts.generated_reports.as_aggregate import AggregateReport
 from artifacts.emails.housing_approval import HousingApprovalEmail
@@ -108,6 +109,7 @@ class Badgefile:
     EmailReport(self).update()
     TournamentsReport(self).update()
     MembershipReport(self).update()
+    PaymentReport(self).update()
     OtherIssuesReport(self).update()
     
   def generate_json(self):

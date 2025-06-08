@@ -64,8 +64,11 @@ class CEReportBase:
     If no existing copy or it's missing on disk, returns None.
     """
 
-    if hasattr(cls, '_latest_copy') and not force:
-      return cls._latest_copy
+    if not hasattr(cls, '_latest_copies'):
+      cls._latest_copies = {}
+    
+    if cls in cls._latest_copies and not force:
+      return cls._latest_copies[cls]
     
     latest_info = DataSourceManager.shared().last_datasource_info(cls.report_key())
     if latest_info is None:
@@ -77,8 +80,8 @@ class CEReportBase:
     try:
       with open(path, "rb") as file:
         recorded_csv = file.read()
-        cls._latest_copy = cls(recorded_csv, timestamp)
-        return cls._latest_copy
+        cls._latest_copies[cls] = cls(recorded_csv, timestamp)
+        return cls._latest_copies[cls]
     except FileNotFoundError:
       return None
 

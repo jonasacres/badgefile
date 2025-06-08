@@ -55,7 +55,7 @@ class OverviewReport:
       "OK" if youth_ok        else "PENDING",
       "OK" if tournament_ok   else "PENDING",
       "OK" if membership_ok   else "PENDING",
-      "NOT IMPLEMENTED", # "OK" if payment_ok      else "PENDING",
+      "OK" if payment_ok      else "PENDING",
       "OK" if other_issues_ok else "PENDING",
     ]
 

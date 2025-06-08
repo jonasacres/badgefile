@@ -15,6 +15,8 @@ from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.clubexpress.donations_report import DonationsReport
+from datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
+from datasources.clubexpress.registration_fees_charges_housing import RegistrationFeesChargesHousing
 from datasources.tdlist import TDList
 from artifacts.generated_reports.as_email import EmailReport
 from artifacts.emails.scheduled_emails import ScheduledEmails
@@ -49,6 +51,18 @@ def download():
   except Exception as exc:
     log.critical("Failed to download housing activity list", exception=exc)
 
+  log.info(f"Downloading Congress registrations fees and charges")
+  try:
+    RegistrationFeesChargesCongress.download()
+  except Exception as exc:
+    log.critical("Failed to download Congress registration fees and charges", exception=exc)
+
+  log.info(f"Downloading housing registrations fees and charges")
+  try:
+    RegistrationFeesChargesHousing.download()
+  except Exception as exc:
+    log.critical("Failed to download housing registration fees and charges", exception=exc)
+
   log.info(f"Downloading TD list.")
   try:
     TDList.download()
@@ -76,6 +90,10 @@ def update():
     HousingReglist.download()
   if HousingActivityList.latest() == None:
     HousingActivityList.download()
+  if RegistrationFeesChargesCongress == None:
+    RegistrationFeesChargesCongress.download()
+  if RegistrationFeesChargesHousing == None:
+    RegistrationFeesChargesHousing.download()
   if DonationsReport.latest() == None:
     DonationsReport.download()
   if TDList.latest() == None:

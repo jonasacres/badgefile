@@ -652,25 +652,95 @@ class Attendee:
   def is_housing_approved(self):
     return self.primary().info().get("housing_approved", False) == True
   
-  def congress_balance_due(self):
+  def congress_payment_lines(self):
     if self.is_cancelled():
-      return 0
+      return []
     
-    from src.datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
+    from datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
     rfcc = RegistrationFeesChargesCongress.latest()
     btrn = rfcc.by_transrefnum()
     trn = self._info.get('transrefnum', None)
     if trn is None:
       log.warn(f'Non-cancelled participant {self.full_name()} has no Congress transrefnum')
-      return 0
+      return []
     
+    trn = int(trn)
     if not trn in btrn or len(btrn[trn]) == 0:
-      log.warn(f'Non-cancelled participant {self.full_name()} has Congress transrefnum {trn}, but this is not in Registrant Fees and Charges; assuming zero balance')
+      log.warn(f'Non-cancelled participant {self.full_name()} has Congress transrefnum {trn}, but this is not in Registrant Fees and Charges')
+      return []
+
+    return btrn[trn]
+  
+  def congress_balance_due(self):
+    payment_lines = self.congress_payment_lines()
+    if len(payment_lines) > 0:
+      return payment_lines[0]['balance_due']
+    else:
       return 0
     
-    lineitem = rfcc[trn][0]
-    return lineitem['balance_due']
+  def congress_total_fees(self):
+    payment_lines = self.congress_payment_lines()
+    if len(payment_lines) > 0:
+      return payment_lines[0]['total_fees']
+    else:
+      return 0
+
+  def housing_payment_lines(self):
+    if self.is_cancelled():
+      return []
+    
+    from datasources.clubexpress.registration_fees_charges_housing import RegistrationFeesChargesHousing
+    rfch = RegistrationFeesChargesHousing.latest()
+    housing_activities = self.party_housing()
+    if not housing_activities:
+      return []
+    
+    housing_trns = set()
+    for activity in housing_activities:
+      trn = activity.info().get('transrefnum')
+      if trn is not None:
+        housing_trns.add(int(trn))
+    
+    btrn = rfch.by_transrefnum()
+    all_payment_lines = []
+    for trn in housing_trns:
+      if not trn in btrn:
+        log.warn(f"Non-cancelled participant has housing transrefnum {trn}, but this is not in Registrant Fees and Charges")
+      else:
+        all_payment_lines += btrn[trn]
+
+    return all_payment_lines
   
+  def housing_total_fees(self):
+    payment_lines = self.housing_payment_lines()
+    seen_trns = set()
+    total_fees = 0
+    for line in payment_lines:
+      if not line['transrefnum'] in seen_trns:
+        seen_trns.add(line['transrefnum'])
+        total_fees += line['total_fees']
+    
+    return total_fees
+
+  def housing_balance_due(self):
+    if self.is_cancelled():
+      return 0
+
+    payment_lines = self.housing_payment_lines()
+    seen_trns = set()
+    balance_due = 0
+    for line in payment_lines:
+      if not line['transrefnum'] in seen_trns:
+        seen_trns.add(line['transrefnum'])
+        balance_due += line['balance_due']
+    
+    return balance_due    
+
+  
+  def balance_due(self):
+    return self.congress_balance_due() + self.housing_balance_due()
+
+
   def reglist_cacher(self):
     # this is a werid hack to make 2g_registration_duplicate work
     # (might not need this now that ce_report_base has latest implemented as a singleton)
