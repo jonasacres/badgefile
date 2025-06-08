@@ -652,8 +652,28 @@ class Attendee:
   def is_housing_approved(self):
     return self.primary().info().get("housing_approved", False) == True
   
+  def congress_balance_due(self):
+    if self.is_cancelled():
+      return 0
+    
+    from src.datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
+    rfcc = RegistrationFeesChargesCongress.latest()
+    btrn = rfcc.by_transrefnum()
+    trn = self._info.get('transrefnum', None)
+    if trn is None:
+      log.warn(f'Non-cancelled participant {self.full_name()} has no Congress transrefnum')
+      return 0
+    
+    if not trn in btrn or len(btrn[trn]) == 0:
+      log.warn(f'Non-cancelled participant {self.full_name()} has Congress transrefnum {trn}, but this is not in Registrant Fees and Charges; assuming zero balance')
+      return 0
+    
+    lineitem = rfcc[trn][0]
+    return lineitem['balance_due']
+  
   def reglist_cacher(self):
     # this is a werid hack to make 2g_registration_duplicate work
+    # (might not need this now that ce_report_base has latest implemented as a singleton)
     return ReglistCacher.shared()
   
 class ReglistCacher:

@@ -1,0 +1,20 @@
+Subject: URGENT: Please Make Housing Reservations Soon
+
+<p>Dear {name_given},</p>
+
+<p>Thank you for registering for the 2025 US Go Congress! We're reaching out because Southwestern University has informed us that they will need to reduce the number of dorm rooms they are making available to us if attendees do not register for housing soon. Although there are some options available to stay off-campus, by far the most convenient and affordable way to enjoy the Go Congress for most attendees is to stay in one of the apartments or dorm rooms on campus.</p>
+
+<p><b>If you do not register for on-campus housing by Friday, June 13, the university may reduce the number of units we have available, and we may not be able to accommodate you.</b> Therefore, we ask that you make your housing arrangements (either on-campus or off-campus) as quickly as possible.</p>
+
+<p>There are still some apartments available, and a limited number of single dormitories available! Click here to sign up:<br />
+<a href="https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479">https://www.usgo.org/content.aspx?page_id=22&club_id=454497&module_id=690479</a></p>
+
+<p>If you do NOT plan to sign up for on-campus housing, please let us know using the following form. This assists us in making arrangements with the University. Thank you!<br //>
+<a href="https://registration.gocongress.org/attendees/{hash_id}/confirm_housing">https://registration.gocongress.org/attendees/{hash_id}/confirm_housing</a></p>
+
+<p>If you have any issues or concerns, please do not hesitate to contact us at:<br />
+<a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a></p>
+
+<p>Thank you very much, and we look forward to seeing you in July!</p>
+
+<p>The 2025 US Go Congress Team</p>

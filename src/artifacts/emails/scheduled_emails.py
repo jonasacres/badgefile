@@ -1,6 +1,7 @@
 from integrations.email import Email
 from model.email_history import EmailHistory
 from log.logger import log
+from datetime import datetime
 
 class ScheduledEmails:
   @classmethod
@@ -27,8 +28,15 @@ class ScheduledEmails:
       
       # they signed up, but don't have housing, and haven't said they're arranging their own, so remind them to buy housing
       return True
+    
+    def eligible_for_housing_reduction_warning(attendee):
+      if datetime.now().month >= 6 and datetime.now().day >= 14:
+        return False
+      return eligible_for_housing_reminder(attendee)
+    
     self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
     self.run_campaign("3b-transportation-survey", always_eligible, None, allow_nonprimary=False)
+    self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, None, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):

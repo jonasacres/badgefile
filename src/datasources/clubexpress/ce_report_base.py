@@ -58,11 +58,15 @@ class CEReportBase:
     self._hash = None
 
   @classmethod
-  def latest(cls):
+  def latest(cls, force=False):
     """
     Return the latest copy of this report from disk, according to the database.
     If no existing copy or it's missing on disk, returns None.
     """
+
+    if hasattr(cls, '_latest_copy') and not force:
+      return cls._latest_copy
+    
     latest_info = DataSourceManager.shared().last_datasource_info(cls.report_key())
     if latest_info is None:
       return None
@@ -73,7 +77,8 @@ class CEReportBase:
     try:
       with open(path, "rb") as file:
         recorded_csv = file.read()
-        return cls(recorded_csv, timestamp)
+        cls._latest_copy = cls(recorded_csv, timestamp)
+        return cls._latest_copy
     except FileNotFoundError:
       return None
 
