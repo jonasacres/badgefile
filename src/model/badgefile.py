@@ -215,6 +215,9 @@ class Badgefile:
     for i, row in enumerate(rows):
       row_num = i + 2 # convert to excel-style row number, understanding that it is one-based and has a header row
       attendee = self.find_attendee_from_report_row(row.info())
+      if attendee is None:
+        attendee = Attendee(self)
+        attendee.load_reglist_row(row, sync=False)
       if not attendee.id() in by_attendee:
         by_attendee[attendee.id()] = [row_num, row]
       elif by_attendee[attendee.id()][1].info()['status'] == "Cancelled" and row.info()['status'] != "Cancelled":
