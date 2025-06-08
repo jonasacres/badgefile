@@ -30,7 +30,7 @@ class ScheduledEmails:
       return True
     
     def eligible_for_housing_reduction_warning(attendee):
-      if datetime.now().month >= 6 and datetime.now().day >= 14:
+      if datetime.now() >= datetime(2025, 6, 14):
         return False
       return eligible_for_housing_reminder(attendee)
     
