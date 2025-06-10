@@ -11,6 +11,7 @@ from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
 from artifacts.generated_reports.issue_sheet import IssueSheet
 from artifacts.generated_reports.donor_report import DonorReport
+from artifacts.generated_reports.attendee_info import AttendeeInfo
 from artifacts.generated_reports.reg_history_report import RegHistoryReport
 from artifacts.generated_reports.as_overview import OverviewReport
 from artifacts.generated_reports.as_housing_registrations import HousingRegistrationsReport
@@ -100,6 +101,7 @@ class Badgefile:
   def update_raw_reports(self):
     IssueSheet(self).generate("artifacts/issue_sheet.csv")
     DonorReport(self).generate("artifacts/donor_report.csv")
+    AttendeeInfo(self).generate("artifacts/attendee_info.csv")
     RegHistoryReport(self).generate("artifacts/reg_history_report.csv")
     DonorPage(self).generate().upload()
  
