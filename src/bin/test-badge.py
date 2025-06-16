@@ -12,12 +12,18 @@ from util.util import *
 from log.logger import log
 
 badgefile = Badgefile()
-jonas = badgefile.lookup_attendee(24723)
+lyra = badgefile.lookup_attendee(24793)
 
-if jonas is None:
+if lyra is None:
     print("Couldn't find test account")
     os._exit(1)
 
-jonas.badge().generate()
-print(f"Generated badge: {jonas.badge().path()}")
+for i in range(1, 7):
+    lyra.badge().generate(f"src/static/badge_art/{i}.png")
+    badge_path = lyra.badge().path()
+    badge_path = badge_path[:-4]  # Remove .pdf suffix
+    badge_path = f"{badge_path}-{i}.pdf"
+    os.rename(lyra.badge().path(), badge_path)
+    print(f"Generated badge: {badge_path}")
+
 

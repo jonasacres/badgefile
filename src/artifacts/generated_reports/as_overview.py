@@ -36,6 +36,17 @@ class OverviewReport:
     else:
       housing_status = "OK" if housing_ok else "PENDING"
 
+    raw_meal_status = attendee.meal_status()
+    if raw_meal_status == "yes":
+      meal_status = "YES"
+    elif raw_meal_status == "no":
+      meal_status = "NO"
+    elif raw_meal_status == "ambiguous":
+      meal_status = "?"
+    else:
+      log.warn(f"Unknown meal status for {attendee.full_name()}: {raw_meal_status}")
+      meal_status = raw_meal_status
+
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
@@ -52,6 +63,7 @@ class OverviewReport:
 
       "OK" if all_good        else "PENDING",
       housing_status,
+      meal_status,
       "OK" if youth_ok        else "PENDING",
       "OK" if tournament_ok   else "PENDING",
       "OK" if membership_ok   else "PENDING",
@@ -74,6 +86,7 @@ class OverviewReport:
       "Reg. Date",
       "All good?",
       "Housing?",
+      "Meal Plan?",
       "Youth form?",
       "Tournaments?",
       "Membership?",

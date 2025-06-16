@@ -13,14 +13,15 @@ from pylibdmtx.pylibdmtx import encode
 from PIL import Image as PILImage
 
 class Badge:
-  def __init__(self, attendee):
+  def __init__(self, attendee, bgart=None):
     self.attendee = attendee
 
   def path(self):
     info = self.attendee.info()
     return f"artifacts/badges/{info['name_family']}-{info['name_given']}-{self.attendee.id()}.pdf"
   
-  def generate(self):
+  def generate(self, bgart):
+    self.bgart = bgart
     BadgeRenderer(self).draw()
     return self
 
@@ -86,7 +87,7 @@ class BadgeRenderer:
     # the badge area is the region of the page that is perforated to be torn off and stuffed in the badge holder
     self.badge_box = self.main_box.inset(0, 3.0*inch, 4.25*inch, 6.0*inch)
     self.badge_box.add_leaf_rounded_rect(colors.white, colors.lightgrey, 1.0/64.0 * inch, 0.0)
-    # self.layout_background()
+    self.layout_background()
 
     next_y = self.badge_box.height - self.margin_size
     next_y -= self.layout_logo(next_y).height + self.margin_size
@@ -97,7 +98,7 @@ class BadgeRenderer:
   
   def layout_background(self):
     self.badge_box \
-        .add_leaf_image_centered("src/static/badge_art/2024-player.png")
+        .add_leaf_image_centered(self.badge.bgart)
 
   def layout_logo(self, y):
     logo_height = 1.0 * inch

@@ -207,6 +207,18 @@ class Attendee:
     if not 'aga_expiration_date' in self._info or self._info['aga_expiration_date'] is None:
       return None
     return datetime.strptime(self._info['aga_expiration_date'], "%m/%d/%Y")
+  
+  def meal_status(self):
+    party_size = len(self.party())
+    pmp = self.party_meal_plan()
+    meal_plans = pmp.num_meal_plans() if pmp else 0
+
+    if meal_plans >= party_size:
+      return "yes"
+    elif meal_plans == 0:
+      return "no"
+    else:
+      return "ambiguous"
 
   def badge_rating(self):
     rating = self.effective_rank()
