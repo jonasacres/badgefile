@@ -32,6 +32,7 @@ from model.registrar_sheet import RegistrarSheet
 import json
 import os
 import time
+import yaml
 
 class Badgefile:
   """Encapsulates the master view of the Badgefile, which lists all Attendees at the Go Congress."""
@@ -39,6 +40,7 @@ class Badgefile:
   def __init__(self):
     self._attendees = None
     self._parties = None
+    self._override_map = None
 
   def path(self):
     return "artifacts/badgefile.json"
@@ -141,11 +143,31 @@ class Badgefile:
     upload_json_to_drive(service, self.path(), "badgefile.json", secret("folder_id"))
 
   def lookup_attendee(self, badgefile_id):
+    if badgefile_id is None:
+      return None
+    
+    badgefile_id = int(badgefile_id)
+    for attendee in self.attendees():
+      if attendee.id() == badgefile_id:
+        return attendee
+
+    override_map = self.override_map()   
+    if badgefile_id in override_map:
+      badgefile_id = override_map[badgefile_id]
     for attendee in self.attendees():
       if attendee.id() == badgefile_id:
         return attendee
     
     return None
+
+  def override_map(self, force=False):
+    if self._override_map is None or force:
+      if os.path.exists("override_map.yaml"):
+        with open("override_map.yaml", "r") as f:
+          self._override_map = yaml.safe_load(f)
+      else:
+        self._override_map = {}
+    return self._override_map
 
   def lookup_attendee_by_hash_id(self, hash_id):
     for attendee in self.attendees():

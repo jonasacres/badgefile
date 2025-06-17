@@ -13,7 +13,7 @@ class Activity:
     if "badgefile_id" in row:
       candidate = badgefile.lookup_attendee(row["badgefile_id"])
     if candidate is None and "aga_id" in row:
-      badgefile.lookup_attendee(row["aga_id"])
+      candidate = badgefile.lookup_attendee(row["aga_id"])
     if candidate is None:
       for attendee in badgefile.attendees():
         att_info = attendee.info()
@@ -36,7 +36,7 @@ class Activity:
       if report_row['status'].lower() == 'cancelled':
         log.debug(f"Can't find attendee for cancelled row f{report_row}")
       else:
-        log.info(f"Can't find attendee for row f{report_row}")
+        log.info(f"Can't find attendee for row {report_row.get('name_given', None)} {report_row.get('name_family', None)} #{report_row.get('aga_id', None)} (raw: {report_row})")
       return None
     return cls(attendee, report_row)
 
