@@ -19,10 +19,21 @@ class OverviewReport:
     membership_ok = 'membership' not in issue_categories
     payment_ok    = 'payment'    not in issue_categories
     
+    raw_meal_status = attendee.meal_status()
+    if raw_meal_status == "yes":
+      meal_status = "YES"
+    elif raw_meal_status == "no":
+      meal_status = "NO"
+    elif raw_meal_status == "ambiguous":
+      meal_status = "?"
+    else:
+      log.warn(f"Unknown meal status for {attendee.full_name()}: {raw_meal_status}")
+      meal_status = raw_meal_status
+    
     # Check for any issues in categories not already checked
     known_categories = {'housing', 'youthform', 'tournament', 'membership', 'payment'}
     other_issues_ok = not any(cat not in known_categories for cat in issue_categories)
-    all_good = housing_ok and youth_ok and tournament_ok and membership_ok and payment_ok
+    all_good = housing_ok and youth_ok and tournament_ok and membership_ok and payment_ok and meal_status != "?"
 
     info = attendee.info()
     primary = attendee.primary()
@@ -36,16 +47,6 @@ class OverviewReport:
     else:
       housing_status = "OK" if housing_ok else "PENDING"
 
-    raw_meal_status = attendee.meal_status()
-    if raw_meal_status == "yes":
-      meal_status = "YES"
-    elif raw_meal_status == "no":
-      meal_status = "NO"
-    elif raw_meal_status == "ambiguous":
-      meal_status = "?"
-    else:
-      log.warn(f"Unknown meal status for {attendee.full_name()}: {raw_meal_status}")
-      meal_status = raw_meal_status
 
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
