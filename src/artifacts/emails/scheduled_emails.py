@@ -34,6 +34,7 @@ class ScheduledEmails:
         return False
       return eligible_for_housing_reminder(attendee)
     
+    self.run_campaign("1d-excursion-survey", always_eligible, None, allow_nonprimary=True)
     self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
     self.run_campaign("3b-transportation-survey", always_eligible, None, allow_nonprimary=False)
     self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, None, allow_nonprimary=False)

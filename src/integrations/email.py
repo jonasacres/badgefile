@@ -23,8 +23,8 @@ class Email:
     
     try:
       with open(whitelist_path, 'r') as f:
-        # Read all lines, strip whitespace, and filter out empty lines
-        emails = [line.strip() for line in f.readlines() if line.strip()]
+        # Read all lines, strip comments and whitespace, and filter out empty lines
+        emails = [line.split('#')[0].strip() for line in f.readlines() if line.split('#')[0].strip()]
         return emails
     except Exception as e:
       log.error(f"Failed to read email whitelist: {e}")
