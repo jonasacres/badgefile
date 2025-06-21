@@ -70,7 +70,8 @@ class AttendeeStatusSource:
             # Try to convert to float
             override_rating = float(override_rating)
           except (ValueError, TypeError):
-            log.warn(f"Invalid override rating '{override_rating}' for attendee {agaid} in row {row_idx+1}")
+            if override_rating.strip().lower() != "aga":
+              log.warn(f"Invalid override rating '{override_rating}' for attendee {agaid} in row {row_idx+1}")
             override_rating = None
         
         # setting override_rating None will clear the override

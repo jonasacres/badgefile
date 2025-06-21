@@ -1,0 +1,19 @@
+Subject: ACTION REQUIRED: Youth forms needed for members of your party
+
+<p>Hello, {name_given}!</p>
+
+<p>We're getting close to time for the 2025 US Go Congress in Austin! Thank you so much for registering. You're receiving this e-mail because you have one or more youths in your party that we do not yet have youth forms on file for. It is possible to complete these during Congress check-in, but this will cause significant delays. We would greatly appreciate it if you could complete the required forms online at your earliest convenience.</p>
+
+<p>You can find the youth form online: <b><a href="https://forms.gle/Ux6zyCLnYA1S7Uaw9">https://forms.gle/Ux6zyCLnYA1S7Uaw9</a></b></p>
+
+<p>We still need youth forms for the following attendees in your party:</p>
+<ol>
+{youth_form_li}
+</ol></p>
+
+<p>We need a completed form for each individual minor participant.</p>
+
+<p>We greatly appreciate your prompt attention to this. If you have any questions, please don't hesitate to reach out at <a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a>.</p>
+
+<p>Thank you for coming to the Go Congress, and we are very excited to see you!<br />
+2025 US Go Congress Registrar Team</p>

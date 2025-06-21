@@ -34,10 +34,26 @@ class ScheduledEmails:
         return False
       return eligible_for_housing_reminder(attendee)
     
-    self.run_campaign("1d-excursion-survey", always_eligible, None, allow_nonprimary=True)
-    self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, 60*60*24*3, allow_nonprimary=False)
-    self.run_campaign("3b-transportation-survey", always_eligible, None, allow_nonprimary=False)
-    self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, None, allow_nonprimary=False)
+    def eligible_for_youth_form_reminder(attendee):
+      # we don't actually send this e-mail to non-primaries, so this branch is unused.
+      # but it's here in case we decide we want it later, and as a safeguard against accidentally blasting every member of a party
+      if not attendee.is_primary():
+        return attendee.still_needs_youth_form()
+      
+      for party_member in attendee.party():
+        if party_member.still_needs_youth_form():
+          return True
+      return False
+    
+    # convenience variables to make clear how often each email goes out
+    only_send_once = None
+    send_every_three_days = 60*60*24*3
+
+    self.run_campaign("1d-excursion-survey", always_eligible, only_send_once, allow_nonprimary=True)
+    self.run_campaign("3a-housing-reminder", eligible_for_housing_reminder, send_every_three_days, allow_nonprimary=False)
+    self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, only_send_once, allow_nonprimary=False)
+    self.run_campaign("3b-transportation-survey", always_eligible, only_send_once, allow_nonprimary=False)
+    self.run_campaign("3c-youth-form-reminder", eligible_for_youth_form_reminder, send_every_three_days, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
@@ -75,5 +91,16 @@ class ScheduledEmails:
       if should_send:
         # Create and send the email
         log.debug(f"Sending scheduled e-mail {email_template} to attendee {attendee.full_name()} (#{attendee.id()})")
-        email = Email(email_template, attendee)
+        email = Email(email_template, attendee, extra = self.extra_for_template(email_template, attendee))
         email.send(force=True)
+  
+  def extra_for_template(self, template, attendee):
+    if template == "3c-youth-form-reminder":
+      youth_form_li = ""
+      for party_member in attendee.party():
+        if party_member.still_needs_youth_form():
+          kid_info = party_member.info()
+          youth_form_li += f"<li>{kid_info['name_given']} {kid_info['name_family']} (age {party_member.age_at_congress()})</li>\n"
+      return {'youth_form_li': youth_form_li}
+    return {}
+  
