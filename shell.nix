@@ -7,6 +7,7 @@ pkgs.mkShell {
   name = "python-env";
 
   buildInputs = [
+    pkgs.sqlite
     python
     python.pkgs.pip
     python.pkgs.setuptools
