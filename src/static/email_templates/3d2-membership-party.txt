@@ -1,0 +1,17 @@
+Subject: ACTION REQUIRED: AGA membership renewal required for party member
+
+<p>Hello, {name_given}! Thanks for signing up for the 2025 US Go Congress. We notice that one or more members of your party are in need of membership renewal. In order to participate in the Congress, memberships need to be current through August 1, 2025. This is so your tournament results can be recorded into our system.</p>
+
+<p><table>
+<thead><tr><th scope="col">Member name</th><th scope="col">AGA number</th><th scope="col">Expiration date</th></tr></thead>
+<tbody>
+{renewal_table}
+</tbody>
+</table></p>
+
+<p>You (or your party member) can renew your AGA membership online by going to <a href="https://usgo.org/">https://usgo.org/</a> and logging into the AGA member account in need of renewal. You will see a pop up on the screen offering to allow you to renew your membership.</p>
+
+<p>If you have any questions, please don't hesitate to reach out to us at <a href="mailto:registrar@gocongress.org">registrar@gocongress.org</a>.<p>
+
+<p>Thank you for coming to the Go Congress, and we are very excited to see you!<br />
+2025 US Go Congress Registrar Team</p>

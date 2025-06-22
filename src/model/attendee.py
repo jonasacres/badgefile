@@ -119,7 +119,7 @@ class Attendee:
     if "title" in info and info["title"] != "":
       return info["title"]
     
-    if self.is_participant:
+    if self.is_participant():
       return "Player"
     else:
       return "Non-participant"
@@ -609,6 +609,12 @@ class Attendee:
 
   def is_subject_to_youth_form(self):
     return self.age_at_congress() < 18
+  
+  def needs_renewal(self):
+    if not self.is_participant():
+      return False
+    congress_end_cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
+    return self.membership_expiration() < congress_end_cutoff
   
   def still_needs_youth_form(self):
     if not self.is_subject_to_youth_form():

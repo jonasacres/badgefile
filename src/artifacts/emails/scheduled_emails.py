@@ -45,6 +45,22 @@ class ScheduledEmails:
           return True
       return False
     
+    def eligible_for_membership_self(attendee):
+      if not attendee.needs_renewal():
+        return False # membership does not expire before cutoff date
+      if eligible_for_membership_party(attendee):
+        return False # we're alread giving them a list of party members with expiring memberships, including them; no need for another email
+    
+      return True
+    
+    def eligible_for_membership_party(attendee):
+      if not attendee.is_primary():
+        return False # stop eligible_for_membership_self from thinking non-primaries are getting this e-mail
+      expiring_members = [guest for guest in attendee.party() if guest.needs_renewal()]
+      if len(expiring_members) == 1 and expiring_members[0] == attendee:
+        return False # there's only one expiring member in the party, and it's the primary; just send the primary an e-mail a membership_self version
+      return len(expiring_members) > 0
+    
     # convenience variables to make clear how often each email goes out
     only_send_once = None
     send_every_three_days = 60*60*24*3
@@ -54,6 +70,8 @@ class ScheduledEmails:
     self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, only_send_once,        allow_nonprimary=False)
     self.run_campaign("3b-transportation-survey",      always_eligible,                        only_send_once,        allow_nonprimary=False)
     self.run_campaign("3c-youth-form-reminder",        eligible_for_youth_form_reminder,       send_every_three_days, allow_nonprimary=False)
+    self.run_campaign("3d1-membership-self",           eligible_for_membership_self,           send_every_three_days, allow_nonprimary=True)
+    self.run_campaign("3d2-membership-party",          eligible_for_membership_party,          send_every_three_days, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
@@ -102,5 +120,12 @@ class ScheduledEmails:
           kid_info = party_member.info()
           youth_form_li += f"<li>{kid_info['name_given']} {kid_info['name_family']} (age {party_member.age_at_congress()})</li>\n"
       return {'youth_form_li': youth_form_li}
+    if template == "3d2-membership-party":
+      expiring_members = [guest for guest in attendee.party() if guest.needs_renewal()]
+      renewal_table = ""
+      for member in expiring_members:
+        info = member.info()
+        renewal_table += f"<tr><th scope=\"row\">{info['name_given']} {info['name_family']}</th><td>{info['aga_id']}</td><td>{info['aga_expiration_date']}</td></tr>\n"
+      return {'renewal_table': renewal_table}
     return {}
   
