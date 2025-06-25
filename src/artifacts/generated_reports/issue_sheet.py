@@ -63,8 +63,8 @@ class IssueSheet:
         parsed = json.loads(issue_data)
         issues.append(preamble + [issue_type, parsed['code'], parsed['msg']])
     
-    # Sort issues by [primary last name, primary first name, name_family, name_given, date_of_birth, issue_type]
-    issues.sort(key=lambda x: (x[10], x[11], x[4], x[5]))
+    # Sort issues by [(primary last name, primary first name), name_family, name_given, date_of_birth, issue_type]
+    issues.sort(key=lambda x: (str(x[12]), str(x[4]), str(x[8]), str(x[16])))
 
     # Write issues to CSV at the specified path
     with open(path, mode='w', newline='', encoding='utf-8') as file:
