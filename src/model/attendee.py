@@ -614,7 +614,11 @@ class Attendee:
     if not self.is_participant():
       return False
     congress_end_cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
-    return self.membership_expiration() < congress_end_cutoff
+    try:
+      return self.membership_expiration() < congress_end_cutoff
+    except Exception as exc:
+      log.warn(f"Member {self.full_name()} {self.id()} does not have a membership expiration date; assuming non-expired")
+      return False
   
   def still_needs_youth_form(self):
     if not self.is_subject_to_youth_form():
