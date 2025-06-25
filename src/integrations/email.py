@@ -133,7 +133,7 @@ class Email:
     
     msg, html_body, plaintext_body = self.create_html_email()
     if email_to is None:
-      log.notice(f"Member {self.attendee.full_name} (#{self.attendee.id()}) does not have an e-mail address; not sending e-mail")
+      log.notice(f"Member {self.attendee.full_name()} (#{self.attendee.id()}) does not have an e-mail address; not sending e-mail")
       return False
     if secret("email_enable") is True:
       log.debug(f"from: {msg['From']}, to: {msg['To']}, subject: {msg['Subject']}\n\n{html_body}")
@@ -143,7 +143,7 @@ class Email:
         try:
           server.send_message(msg)
         except SMTPRecipientsRefused:
-          log.notice(f"Member {self.attendee.full_name} (#{self.attendee.id()}) has invalid e-mail address {email_to}; not sending e-mail")
+          log.notice(f"Member {self.attendee.full_name()} (#{self.attendee.id()}) has invalid e-mail address {email_to}; not sending e-mail")
           return False
       else:
         log.debug(f"Skipping email {self.template} to {email_to}; address not in whitelist")
