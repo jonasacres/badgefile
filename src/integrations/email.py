@@ -131,6 +131,9 @@ class Email:
       return False
     
     msg, html_body, plaintext_body = self.create_html_email()
+    if email_to is None:
+      log.notice(f"Member {self.attendee.full_name} (#{self.attendee.id()}) does not have an e-mail address; not sending e-mail")
+      return
     if secret("email_enable") is True:
       log.debug(f"from: {msg['From']}, to: {msg['To']}, subject: {msg['Subject']}\n\n{html_body}")
       
