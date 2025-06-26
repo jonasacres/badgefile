@@ -8,3 +8,5 @@ google_service_account.json
 email-whitelist.txt
 corrected_reminder_email_users.txt
 override_map.yaml
+leago_token.json
+

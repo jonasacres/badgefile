@@ -60,6 +60,10 @@ class Attendee:
       rowinfo = rowinfo.info()
     else:
       rowinfo = rowinfo
+    
+    for key, value in rowinfo.items():
+      if isinstance(value, str):
+        rowinfo[key] = value.encode('latin-1').decode('utf-8')
     self._info.update(rowinfo)
 
     agaid = self._info.get("aga_id")
@@ -617,7 +621,8 @@ class Attendee:
     try:
       return self.membership_expiration() < congress_end_cutoff
     except Exception as exc:
-      log.warn(f"Member {self.full_name()} {self.id()} does not have a membership expiration date; assuming non-expired")
+      # I saw an example of this where a member with a super-recent AGA number didn't appear in the TD list.
+      log.info(f"Member {self.full_name()} {self.id()} does not have a membership expiration date; assuming non-expired")
       return False
   
   def still_needs_youth_form(self):

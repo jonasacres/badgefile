@@ -8,6 +8,7 @@ inotify-simple
 pycups
 PyPDF2
 requests
+requests-oauthlib
 beautifulsoup4
 flask
 flask-sock
