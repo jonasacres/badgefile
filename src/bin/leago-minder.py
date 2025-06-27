@@ -18,12 +18,18 @@ leago = Leago("https://api.leago.gg", "https://id.leago.gg", secret("leago_event
 
 token = leago.get_access_token()
 if not token:
-  log.info("We don't have a valid leago token right now. Run leago-authenticate to get one.")
-  sys.exit(1)
+  leago.login()
 
+last_value = None
 while True:
   time.sleep(1)
   token = leago.get_access_token()
+
+  value = len(leago.get_registrations(force=True))
+  if value != last_value:
+    last_value = value
+    log.info(f"new value: {value}")
+
   if not token:
     log.warn("Oh no! The leago token expired. Run leago-authenticate on this host to get one.")
     sys.exit(1)

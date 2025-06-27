@@ -41,6 +41,7 @@ class Leago:
     self.token_file = "leago_token.json"
     self._token_data = None
     self.state = secrets.token_hex(32)
+    self._session = None  # Store authenticated session
     
     # OAuth2 configuration
     self.client_id = secret('leago_client_id', "Leago.WebClient")
@@ -52,10 +53,8 @@ class Leago:
     self.auth_url = f"{self.leago_id_url}/connect/authorize"
     self.token_url = f"{self.leago_id_url}/connect/token"
   
-  def login(self):
-    """Perform OAuth2 login flow with cookie-based authentication"""
-    session = requests.Session()
-    
+  def _authenticate_session(self, session):
+    """Authenticate a session with cookies for OAuth2 flow"""
     # Step 1: Get the signin page to obtain __RequestVerificationToken and cookies
     signin_url = f"{self.leago_id_url}/signin?returnUrl=https%3A%2F%2Fleago.gg%2F"
     log.debug(f"Getting signin page: {signin_url}")
@@ -87,7 +86,14 @@ class Leago:
     if response.status_code != 200 or "error" in response.text.lower():
       raise Exception("Login failed - check credentials")
     
-    log.debug("Login successful, cookies obtained")
+    log.debug("Session authenticated successfully")
+  
+  def login(self):
+    """Perform OAuth2 login flow with cookie-based authentication"""
+    session = requests.Session()
+    
+    # Authenticate the session with cookies
+    self._authenticate_session(session)
     
     # Step 3: Start OAuth2 authorization flow using authenticated session
     auth_url = self._get_authorization_url()
@@ -122,6 +128,9 @@ class Leago:
     
     # Step 5: Exchange authorization code for access token
     token_data = self._exchange_code_for_token(authorization_code)
+    
+    # Save the authenticated session for reuse in token refresh
+    self._session = session
     
     log.info("Leago login completed successfully")
     return token_data['token']['access_token']
@@ -242,6 +251,7 @@ class Leago:
     # Generate new PKCE pair for the refresh request
     code_verifier, code_challenge = self._generate_pkce_pair()
     self._code_verifier = code_verifier
+    self.state = secrets.token_hex(32)
     
     # Build the authorization URL with id_token_hint
     params = {
@@ -261,8 +271,15 @@ class Leago:
     log.debug(f"Refresh auth URL: {auth_url}")
     
     try:
-      # Make the authorization request
-      response = requests.get(auth_url, allow_redirects=False)
+      # Use saved session if available, otherwise create a new one
+      if self._session is None:
+        log.debug("No saved session available, creating new session for refresh")
+        self._session = requests.Session()
+        # Re-authenticate the session
+        self._authenticate_session(self._session)
+      
+      # Make the authorization request using the authenticated session
+      response = self._session.get(auth_url, allow_redirects=False)
       log.debug(f"Refresh response status: {response.status_code}")
       
       if response.status_code == 302 and 'Location' in response.headers:
@@ -318,7 +335,8 @@ class Leago:
         if refreshed_data:
           token_data = refreshed_data
         else:
-          log.warn("Failed to refresh token, returning expired token")
+          log.notice("Failed to refresh token, logging in again")
+          self.login()
     
     return token_data['token']['access_token'] if token_data and 'token' in token_data else None
   
@@ -352,7 +370,8 @@ class Leago:
     if os.path.exists(self.token_file):
       os.remove(self.token_file)
     self._token_data = None
-    log.info("Leago tokens removed")
+    self._session = None  # Clear saved session
+    log.info("Leago tokens and session removed")
   
   def debug_token(self):
     """Debug method to inspect the current token and its JWT payload"""
@@ -447,7 +466,6 @@ class Leago:
 
     self.registrations = {}
     for registration in response.json()['items']:
-      print(registration)
       self.registrations[registration.get('organizationMemberKey', 'none').lower()] = registration
     
     return self.registrations
