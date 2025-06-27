@@ -4,6 +4,7 @@ import time
 import hashlib
 import base64
 import secrets
+import re
 import requests
 from urllib.parse import urlencode, parse_qs, urlparse
 
@@ -39,57 +40,95 @@ class Leago:
     self.registrations = None
     self.token_file = "leago_token.json"
     self._token_data = None
-    self.state = "c3def162d62f4ef2b21d8b3450c5b937"
+    self.state = secrets.token_hex(32)
     
     # OAuth2 configuration
     self.client_id = secret('leago_client_id', "Leago.WebClient")
     self.client_secret = secret('leago_client_secret', 'foobar')
+    self.user_email = secret('leago_user_email')
+    self.user_password = secret('leago_user_password')
+
     self.redirect_uri = secret('leago_redirect_uri', 'https://leago.gg/auth/signin-callback')
     self.auth_url = f"{self.leago_id_url}/connect/authorize"
     self.token_url = f"{self.leago_id_url}/connect/token"
   
   def login(self):
-    """Perform OAuth2 login flow with PKCE"""
-    try:
-      # Generate authorization URL with PKCE
-      auth_url = self._get_authorization_url()
-      
-      # Make the authorization request
-      response = requests.get(auth_url, allow_redirects=False)
-      
-      if response.status_code == 302 and 'Location' in response.headers:
-        redirect_url = response.headers['Location']
-        log.debug(f"Authorization redirect URL: {redirect_url}")
-        
-        # Parse the redirect URL to extract the authorization code
-        parsed_url = urlparse(redirect_url)
-        query_params = parse_qs(parsed_url.query)
-        
-        if 'error' in query_params:
-          error = query_params['error'][0]
-          error_description = query_params.get('error_description', [''])[0]
-          raise Exception(f"OAuth2 authorization failed: {error} - {error_description}")
-        
-        auth_code = query_params.get('code', [None])[0]
-        if not auth_code:
-          raise Exception("No authorization code received in redirect")
-        
-        # Exchange the authorization code for tokens
-        token_data = self._exchange_code_for_token(auth_code)
-        log.info("Leago login completed successfully")
-        return token_data['token']['access_token']
-        
-      else:
-        # If we didn't get a redirect, we might need manual authentication
-        log.info(f"Please visit this URL to authenticate: {auth_url}")
-        return None
-        
-    except Exception as e:
-      log.warn(f"Leago login failed: {e}", exception=e)
-      return None
+    """Perform OAuth2 login flow with cookie-based authentication"""
+    session = requests.Session()
+    
+    # Step 1: Get the signin page to obtain __RequestVerificationToken and cookies
+    signin_url = f"{self.leago_id_url}/signin?returnUrl=https%3A%2F%2Fleago.gg%2F"
+    log.debug(f"Getting signin page: {signin_url}")
+    
+    response = session.get(signin_url)
+    response.raise_for_status()
+    
+    # Extract __RequestVerificationToken from the HTML response
+    token_match = re.search(r'name="__RequestVerificationToken" type="hidden" value="([^"]+)"', response.text)
+    if not token_match:
+      raise Exception("Could not find __RequestVerificationToken in signin page")
+    
+    request_verification_token = token_match.group(1)
+    log.debug("Extracted __RequestVerificationToken")
+    
+    # Step 2: Submit login credentials to get authenticated cookies
+    login_data = {
+      'Input.Email': self.user_email,
+      'Input.Password': self.user_password,
+      '__RequestVerificationToken': request_verification_token,
+      'Input.RememberMe': 'false'
+    }
+    
+    log.debug("Submitting login credentials")
+    response = session.post(signin_url, data=login_data)
+    response.raise_for_status()
+    
+    # Check if login was successful (should redirect or show success)
+    if response.status_code != 200 or "error" in response.text.lower():
+      raise Exception("Login failed - check credentials")
+    
+    log.debug("Login successful, cookies obtained")
+    
+    # Step 3: Start OAuth2 authorization flow using authenticated session
+    auth_url = self._get_authorization_url()
+    log.debug(f"Making OAuth2 authorization request: {auth_url}")
+    
+    response = session.get(auth_url, allow_redirects=False)
+    log.debug(f"Authorization response status: {response.status_code}")
+    
+    if response.status_code != 302:
+      raise Exception(f"Expected 302 redirect, got {response.status_code}")
+    
+    if 'Location' not in response.headers:
+      raise Exception("No Location header in authorization response")
+    
+    # Step 4: Extract authorization code from redirect URL
+    redirect_url = response.headers['Location']
+    log.debug(f"Authorization redirect URL: {redirect_url}")
+    
+    parsed_url = urlparse(redirect_url)
+    query_params = parse_qs(parsed_url.query)
+    
+    if 'error' in query_params:
+      error = query_params['error'][0]
+      error_description = query_params.get('error_description', [''])[0]
+      raise Exception(f"OAuth2 authorization failed: {error} - {error_description}")
+    
+    if 'code' not in query_params:
+      raise Exception("No authorization code found in redirect URL")
+    
+    authorization_code = query_params['code'][0]
+    log.debug("Got authorization code, exchanging for tokens")
+    
+    # Step 5: Exchange authorization code for access token
+    token_data = self._exchange_code_for_token(authorization_code)
+    
+    log.info("Leago login completed successfully")
+    return token_data['token']['access_token']
 
   def _load_token(self):
     """Load token from file if it exists and is valid"""
+
     # we probably don't want to memoize this, because we have a combination of daemon+manual scripts
     # (though this leaves a troubling race condition where two processes could try to refresh simultaneously)
 

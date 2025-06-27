@@ -15,6 +15,8 @@ badgefile = Badgefile()
 
 
 leago = Leago("https://api.leago.gg", "https://id.leago.gg", secret("leago_event_key"))
+leago.login()
+
 for tournament_title, tournament in leago.get_tournaments().items():
   print(f"Tournament: {tournament.get('title', 'no title')} [{tournament.get('key', 'no key')}] ({tournament.get('description', 'no description')})")
 
@@ -30,6 +32,3 @@ if False:
       leago.sync_attendee(attendee)
     except Exception as exc:
       log.info("Failed.", exception=exc)
-
-if True:
-  leago.hacky_refresh()
