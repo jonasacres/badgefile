@@ -31,5 +31,5 @@ while True:
     log.info(f"new value: {value}")
 
   if not token:
-    log.warn("Oh no! The leago token expired. Run leago-authenticate on this host to get one.")
+    log.warn("Oh no! The leago token expired. Run leago-authenticate on this host to get one manually.")
     sys.exit(1)

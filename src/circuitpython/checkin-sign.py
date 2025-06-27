@@ -6,6 +6,7 @@ import socketpool
 import adafruit_requests
 import json
 import traceback
+import random
 
 from rainbowio import colorwheel
 import board
@@ -14,12 +15,16 @@ import framebufferio
 import rgbmatrix
 import terminalio
 
-WIFI_SSID = ""
-WIFI_PASSWORD = ""
-EVENT_NAME = "signtest"
-BADGEFILE_URL = "https://registration-test.gocongress.org"
-SOCKET_ADDRESS = "10.101.1.160"
-SOCKET_PORT = 8081
+# Read secrets.json and parse config options
+with open("secrets.json", "r") as f:
+    secrets = json.load(f)
+
+WIFI_SSID = secrets.get("wifi_ssid")
+WIFI_PASSWORD = secrets.get("wifi_password") 
+EVENT_NAME = secrets.get("event_name")
+BADGEFILE_URL = secrets.get("badgefile_url")
+SOCKET_ADDRESS = secrets.get("socket_address")
+SOCKET_PORT = secrets.get("socket_port")
 
 BOOT_TIME = time.monotonic()
 
@@ -37,130 +42,6 @@ def logmsg(msg, exception=None):
         import traceback
         print(''.join(traceback.format_exception(None, exception, exception.__traceback__)))
 
-class Sign:
-    def __init__(self):
-        self.text = b" init"
-        self.progress = 0.0
-        self.angle = 10
-        
-        self.init_display()
-        self.init_groups()
-        
-        self.draw()
-    
-    def init_display(self):
-        displayio.release_displays()
-        self.matrix = rgbmatrix.RGBMatrix(
-            width=32, bit_depth=4,
-            rgb_pins=[
-                board.MTX_R1,
-                board.MTX_G1,
-                board.MTX_B1,
-                board.MTX_R2,
-                board.MTX_G2,
-                board.MTX_B2
-            ],
-            addr_pins=[
-                board.MTX_ADDRA,
-                board.MTX_ADDRB,
-                board.MTX_ADDRC
-            ],
-            clock_pin=board.MTX_CLK,
-            latch_pin=board.MTX_LAT,
-            output_enable_pin=board.MTX_OE
-        )
-        self.display = framebufferio.FramebufferDisplay(self.matrix)
-    
-    def init_groups(self):
-        g = displayio.Group()
-
-        # We only use the built in font which we treat as being 7x14 pixels
-        self.linelen = (64//7)+2
-
-        # prepare the main groups
-        self.l1 = displayio.Group()
-        self.l2 = displayio.Group()
-        g.append(self.l1)
-        g.append(self.l2)
-        self.display.root_group = g
-
-        self.l1.y = 1
-        self.l2.y = 16
-
-        # Prepare the palettes and the individual characters' tiles
-        self.sh = [displayio.Palette(2) for _ in range(self.linelen)]
-        self.tg1 = [self.tilegrid(shi) for shi in self.sh]
-        self.tg2 = [self.tilegrid(shi) for shi in self.sh]
-
-        # Prepare a fast map from byte values to
-        self.charmap = array.array('b', [terminalio.FONT.get_glyph(32).tile_index]) * 256
-        for ch in range(256):
-            glyph = terminalio.FONT.get_glyph(ch)
-            if glyph is not None:
-                self.charmap[ch] = glyph.tile_index
-
-        # Set the X coordinates of each character in label 1, and add it to its group
-        for idx, gi in enumerate(self.tg1):
-            gi.x = 7 * idx
-            self.l1.append(gi)
-
-        # Set the X coordinates of each character in label 2, and add it to its group
-        for idx, gi in enumerate(self.tg2):
-            gi.x = 7 * idx
-            self.l2.append(gi)
-
-        self.progress_bitmap = displayio.Bitmap(32, 3, 2)
-        progress_palette = displayio.Palette(2)
-        progress_palette[0] = 0x000000  # Black/transparent
-        progress_palette[1] = 0x00FF00  # Green
-
-        progress_bar = displayio.TileGrid(
-            bitmap=self.progress_bitmap,
-            pixel_shader=progress_palette,
-            width=1,
-            height=1,
-            x=0,
-            y=13
-        )
-        self.display.root_group.append(progress_bar)
-
-    def tilegrid(self, palette):
-        return displayio.TileGrid(
-            bitmap=terminalio.FONT.bitmap, pixel_shader=palette,
-            width=1, height=1, tile_width=6, tile_height=12, default_tile=32)
-    
-    def set_label(self, text):
-        new_text = b" " + str(text)
-        if self.text != new_text:
-            print(f"Sign: label set to '{text}'")
-            self.text = new_text
-            self.draw()
-
-    def set_progress(self, progress):
-        if self.progress != progress:
-            print(f"Sign: progress bar set to {100*progress}%")
-            self.progress = progress
-            self.draw()
-    
-    def draw(self, angle=None):
-        if angle:
-            self.angle = angle
-        for j in range(self.linelen):
-            self.sh[j][1] = colorwheel(self.angle)  # Use a single color
-            self.tg1[j][0] = self.charmap[self.text[j if j < len(self.text) else 0]]  # Top text
-            self.tg2[j][0] = self.charmap[b" " [0]]  # Bottom text blank
-        
-        self.l1.x = 12 - 3*len(self.text)
-        self.l1.y = -1
-        
-        width = int(32 * self.progress)
-        for x in range(32):
-            color = 1 if x < width else 0
-            for y in range(3):  # Fill all rows for each column
-                self.progress_bitmap[x, y] = color
-        
-        self.display.refresh(minimum_frames_per_second=0)
-
 class SocketClient:
     def __init__(self, pool, event_name, address, port):
         self.pool = pool
@@ -175,13 +56,21 @@ class SocketClient:
         
         print(f"SocketClient: Opening socket connection TCP ({self.address}:{self.port})...")
         self.disconnect()
+        self.was_connected = False
+        self.connect_start_time = time.monotonic()
         self.sock = self.pool.socket(self.pool.AF_INET, self.pool.SOCK_STREAM)
-        self.sock.connect(addr)
+        try:
+            self.sock.connect(addr)
+        except Exception as exc:
+            pass
         self.sock.setblocking(False)
 
         print("SocketClient: Connected")
     
     def is_connected(self):
+        # Note: This only checks if the socket object exists.
+        # Actual connection state (like remote peer disconnect) is detected
+        # in check_for_data() when recv_into() returns 0 bytes.
         if not self.sock:
             return False
         return True
@@ -202,8 +91,7 @@ class SocketClient:
                 self.connect()
             readbuf = bytearray(256)
             bytes_read = self.sock.recv_into(readbuf, 256)
-            if bytes_read == 0:
-                return None  # No data, return instantly
+            self.was_connected = True
             self.buffer += readbuf[:bytes_read]
             print(f"SocketClient: Received data, {bytes_read} bytes, accumulated buffer: {self.buffer}\n")
             
@@ -244,8 +132,21 @@ class SocketClient:
                 
         except Exception as e:
             # If the exception is due to no data available, return instantly
-            if isinstance(e, OSError) or "would block" in str(e).lower():
-                return None
+            if isinstance(e, OSError):
+                if e.errno == errno.ENOTCONN or e.errno == errno.EINPROGRESS:
+                    if not self.was_connected:
+                        if time.monotonic() - self.connect_start_time < 10:
+                            return None # give the socket a few seconds to connect
+                        print("connection timed out; trying again")
+                        self.connect()
+                    else:
+                        print("SocketClient: remote peer disconnected")
+                        self.connect()
+                    return None
+                elif e.errno == errno.EAGAIN:
+                    return None
+                elif e.errno == errno.EINPROGRESS:
+                    return None
             print(f"SocketClient: error reading socket, {e}")
             self.disconnect()
         return None
@@ -344,52 +245,1014 @@ class WifiConnection:
         wifi.radio.stop_station()
         print("WifiConnection: Disconnected!")
     
-    def wait_for_ip(self):
+    def wait_for_ip(self, callback=None):
         while not self.ip():
             print("WifiConnection: Waiting for IP address...")
+            if callback is not None:
+                if not callback():
+                    return False
             time.sleep(1)        
         print(f"WifiConnection: Obtained IP, {self.ip()}")
+        return True
     
     def ip(self):
         return wifi.radio.ipv4_address
+
+class LEDSign:
+    def __init__(self):
+        self.width = 32
+        self.height = 16
+        
+        # Initialize the display
+        self.init_display()
+        
+        # Clear the display initially
+        self.clear()
+    
+    def init_display(self):
+        displayio.release_displays()
+        self.matrix = rgbmatrix.RGBMatrix(
+            width=32, bit_depth=4,
+            rgb_pins=[
+                board.MTX_R1,
+                board.MTX_G1,
+                board.MTX_B1,
+                board.MTX_R2,
+                board.MTX_G2,
+                board.MTX_B2
+            ],
+            addr_pins=[
+                board.MTX_ADDRA,
+                board.MTX_ADDRB,
+                board.MTX_ADDRC
+            ],
+            clock_pin=board.MTX_CLK,
+            latch_pin=board.MTX_LAT,
+            output_enable_pin=board.MTX_OE
+        )
+        self.display = framebufferio.FramebufferDisplay(self.matrix)
+        
+        # Create a bitmap with full color support (256 colors)
+        self.bitmap = displayio.Bitmap(self.width, self.height, 256)
+        self.palette = displayio.Palette(256)
+        
+        # Initialize palette with black at index 0
+        self.palette[0] = 0x000000  # Black
+        
+        # Create tilegrid for display
+        self.tilegrid = displayio.TileGrid(
+            self.bitmap,
+            pixel_shader=self.palette,
+            width=1,
+            height=1
+        )
+        
+        # Create main group and set as root
+        self.group = displayio.Group()
+        self.group.append(self.tilegrid)
+        self.display.root_group = self.group
+        
+        print("LED Sign initialized successfully")
+    
+    def clear(self):
+        """Clear the entire grid (set all pixels off)"""
+        for y in range(self.height):
+            for x in range(self.width):
+                self.bitmap[x, y] = 0  # Black
+        self.display.refresh()
+        print("Display cleared")
+    
+    def setPixel(self, x, y, color):
+        """Set a given pixel to a specific color"""
+        if 0 <= x < self.width and 0 <= y < self.height:
+            # Find or add color to palette
+            color_index = self.find_or_add_color(color)
+            self.bitmap[x, y] = color_index
+            self.display.refresh()
+        else:
+            print(f"Invalid pixel coordinates: ({x}, {y})")
+    
+    def find_or_add_color(self, color):
+        """Find a color in the palette or add it if not present"""
+        # Check if color already exists in palette
+        for i in range(len(self.palette)):
+            if self.palette[i] == color:
+                return i
+        
+        # Add new color to palette
+        for i in range(1, 256):  # Start from 1 since 0 is black
+            if self.palette[i] == 0:  # Empty slot
+                self.palette[i] = color
+                return i
+        
+        # If palette is full, reuse a random slot (excluding 0)
+        reuse_index = random.randint(1, 255)
+        self.palette[reuse_index] = color
+        return reuse_index
+
+class ProgressBar:
+    def __init__(self, led_sign, x, y, width, height, border_color=0xFF8000, fill_color=0xFF0000):
+        """
+        Initialize a progress bar
+        
+        Args:
+            led_sign: LEDSign instance to draw on
+            x, y: Top-left corner position
+            width, height: Dimensions of the progress bar
+            border_color: Color for the border (default: orange 0xFF8000)
+            fill_color: Color for the fill (default: red 0xFF0000)
+        """
+        self.led_sign = led_sign
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.border_color = border_color
+        self.fill_color = fill_color
+        self.progress = 0.0  # 0.0 to 1.0
+        self.last_fill_width = -1  # Track last fill width to detect changes
+        
+        print(f"ProgressBar initialized at ({x}, {y}) with size {width}x{height}")
+    
+    def set_progress(self, pct):
+        """
+        Set the progress percentage (0.0 to 1.0)
+        
+        Args:
+            pct: Progress percentage from 0.0 to 1.0
+        """
+        new_progress = max(0.0, min(1.0, pct))
+        
+        # Calculate new fill width
+        interior_width = max(0, self.width - 2)
+        new_fill_width = int(interior_width * new_progress)
+        
+        # Only redraw if fill width has actually changed
+        if new_fill_width != self.last_fill_width:
+            self.progress = new_progress
+            self.last_fill_width = new_fill_width
+            print(f"Progress bar updating: {self.progress:.3f} -> fill_width: {new_fill_width}")
+            self._draw()
+    
+    def _draw(self):
+        """Draw the progress bar with border and fill"""
+        # Calculate interior dimensions (inside the border)
+        interior_x = self.x + 1
+        interior_y = self.y + 1
+        interior_width = max(0, self.width - 2)
+        interior_height = max(0, self.height - 2)
+        
+        # Calculate fill width based on progress
+        fill_width = int(interior_width * self.progress)
+        
+        # Draw border first (only if it fits within bounds)
+        self._draw_border()
+        
+        # Get the fill color index once
+        fill_color_index = self.led_sign.find_or_add_color(self.fill_color)
+        
+        # Update interior pixels efficiently
+        for dy in range(interior_height):
+            for dx in range(interior_width):
+                px, py = interior_x + dx, interior_y + dy
+                if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                    if dx < fill_width:
+                        # Fill area
+                        self.led_sign.bitmap[px, py] = fill_color_index
+                    else:
+                        # Empty area
+                        self.led_sign.bitmap[px, py] = 0  # Black
+        
+        # Don't refresh display here - let the calling code handle it
+        # self.led_sign.display.refresh()
+    
+    def _draw_border(self):
+        """Draw the 1px border around the progress bar"""
+        # Top border
+        for dx in range(self.width):
+            px, py = self.x + dx, self.y
+            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                color_index = self.led_sign.find_or_add_color(self.border_color)
+                self.led_sign.bitmap[px, py] = color_index
+        
+        # Bottom border
+        for dx in range(self.width):
+            px, py = self.x + dx, self.y + self.height - 1
+            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                color_index = self.led_sign.find_or_add_color(self.border_color)
+                self.led_sign.bitmap[px, py] = color_index
+        
+        # Left border
+        for dy in range(self.height):
+            px, py = self.x, self.y + dy
+            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                color_index = self.led_sign.find_or_add_color(self.border_color)
+                self.led_sign.bitmap[px, py] = color_index
+        
+        # Right border
+        for dy in range(self.height):
+            px, py = self.x + self.width - 1, self.y + dy
+            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                color_index = self.led_sign.find_or_add_color(self.border_color)
+                self.led_sign.bitmap[px, py] = color_index
+
+class ShimmeringSign:
+    def __init__(self, led_sign):
+        self.led_sign = led_sign
+        self.width = led_sign.width
+        self.height = led_sign.height
+        
+        # Initialize pixel states (True = on, False = off)
+        self.pixels = [[False for _ in range(self.height)] for _ in range(self.width)]
+        
+        # Color animation state
+        self.hue = 0.0  # Current hue (0.0 to 1.0)
+        self.hue_step = 0.005  # How much to increment hue each frame (reduced from 0.01)
+        
+        print("ShimmeringSign initialized")
+    
+    def set_pixel(self, x, y, state):
+        """Set a pixel to on (True) or off (False)"""
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.pixels[x][y] = state
+        else:
+            print(f"Invalid pixel coordinates: ({x}, {y})")
+    
+    def clear(self, x=None, y=None, width=None, height=None):
+        """Turn off pixels in the specified area (or all pixels if no bounds given)"""
+        if x is None or y is None or width is None or height is None:
+            # Clear all pixels
+            for y in range(self.height):
+                for x in range(self.width):
+                    self.pixels[x][y] = False
+        else:
+            # Clear only the specified area
+            for dy in range(height):
+                for dx in range(width):
+                    px, py = x + dx, y + dy
+                    if 0 <= px < self.width and 0 <= py < self.height:
+                        self.pixels[px][py] = False
+    
+    def draw_rectangle(self, x, y, width, height, fill=True):
+        """Draw a rectangle with top-left corner at (x, y)"""
+        for dy in range(height):
+            for dx in range(width):
+                px, py = x + dx, y + dy
+                if 0 <= px < self.width and 0 <= py < self.height:
+                    self.pixels[px][py] = fill
+    
+    def render(self, x=None, y=None, width=None, height=None):
+        """Render the current pixel states to the LED sign with gradient color"""
+        # Define corner hues for the gradient with much smaller offsets to reduce discontinuities
+        base_hue = self.hue
+        
+        # Use much smaller offsets to create smoother gradients
+        top_left_hue = base_hue
+        top_right_hue = (base_hue + 0.1) % 1.0  # Reduced from 0.2
+        bottom_left_hue = (base_hue + 0.15) % 1.0  # Reduced from 0.4
+        bottom_right_hue = (base_hue + 0.25) % 1.0  # Reduced from 0.6
+        
+        s = 0.7  # Saturation
+        v = 0.3  # Value/brightness
+        
+        # Determine render bounds
+        if x is None or y is None or width is None or height is None:
+            # Render all pixels
+            render_x, render_y = 0, 0
+            render_width, render_height = self.width, self.height
+        else:
+            # Render only the specified area
+            render_x, render_y = x, y
+            render_width, render_height = width, height
+        
+        # Only render pixels that are set to True in the pixels array within the bounds
+        for dy in range(render_height):
+            for dx in range(render_width):
+                px, py = render_x + dx, render_y + dy
+                if 0 <= px < self.width and 0 <= py < self.height:
+                    if self.pixels[px][py]:
+                        # Calculate interpolated hue based on position
+                        # Normalize coordinates to 0-1 range
+                        nx = px / (self.width - 1) if self.width > 1 else 0
+                        ny = py / (self.height - 1) if self.height > 1 else 0
+                        
+                        # Smooth bilinear interpolation with proper hue wrapping
+                        # Top edge interpolation
+                        top_hue = self._lerp_hue(top_left_hue, top_right_hue, nx)
+                        # Bottom edge interpolation  
+                        bottom_hue = self._lerp_hue(bottom_left_hue, bottom_right_hue, nx)
+                        # Vertical interpolation
+                        pixel_hue = self._lerp_hue(top_hue, bottom_hue, ny)
+                        
+                        # Convert interpolated hue to RGB using improved conversion
+                        color = self._hsv_to_rgb(pixel_hue, s, v)
+                        
+                        # Find or add color to palette
+                        color_index = self.led_sign.find_or_add_color(color)
+                        self.led_sign.bitmap[px, py] = color_index
+                    else:
+                        # Clear pixels that are False within the render bounds
+                        self.led_sign.bitmap[px, py] = 0  # Black
+        
+        # Don't refresh display here - let the calling code handle it
+        # self.led_sign.display.refresh()
+        
+        # Update hue for next frame
+        self.hue = (self.hue + self.hue_step) % 1.0
+    
+    def _hsv_to_rgb(self, h, s, v):
+        """Convert HSV to RGB with improved handling of edge cases"""
+        if s == 0.0:
+            # When saturation is 0, we get grayscale
+            rgb_val = int(v * 255)
+            return (rgb_val << 16) | (rgb_val << 8) | rgb_val
+        
+        # Normalize hue to 0-1 range
+        h = h % 1.0
+        
+        # Convert hue to 0-6 range for easier calculation
+        h6 = h * 6.0
+        
+        # Calculate chroma and intermediate values
+        c = v * s
+        x = c * (1 - abs((h6 % 2) - 1))
+        m = v - c
+        
+        # Determine RGB values based on hue sector
+        if h6 < 1:
+            r, g, b = c, x, 0
+        elif h6 < 2:
+            r, g, b = x, c, 0
+        elif h6 < 3:
+            r, g, b = 0, c, x
+        elif h6 < 4:
+            r, g, b = 0, x, c
+        elif h6 < 5:
+            r, g, b = x, 0, c
+        else:
+            r, g, b = c, 0, x
+        
+        # Add value offset and convert to 0-255 range
+        r = int((r + m) * 255)
+        g = int((g + m) * 255)
+        b = int((b + m) * 255)
+        
+        # Clamp values to valid range
+        r = max(0, min(255, r))
+        g = max(0, min(255, g))
+        b = max(0, min(255, b))
+        
+        # Return as 24-bit color
+        return (r << 16) | (g << 8) | b
+    
+    def _lerp_hue(self, h1, h2, t):
+        """Linear interpolation between two hues, handling wrapping properly"""
+        # Normalize both hues to 0-1 range
+        h1 = h1 % 1.0
+        h2 = h2 % 1.0
+        
+        # Handle the case where we need to interpolate across the 0/1 boundary
+        if abs(h2 - h1) > 0.5:
+            if h1 < h2:
+                h1 += 1.0
+            else:
+                h2 += 1.0
+        
+        # Interpolate
+        result = h1 + (h2 - h1) * t
+        
+        # Wrap back to 0-1 range
+        return result % 1.0
+
+class Glyph:
+    def __init__(self, char):
+        self.char = char
+        self.width = 6
+        self.height = 10
+        
+        # Define the pixel patterns for digits 0-9
+        # Each digit is 6x10 pixels, stored as a list of rows
+        self.digit_patterns = {
+            '0': [
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            '1': [
+                "   ██ ",
+                " ████ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                " █████"
+            ],
+            '2': [
+                " ████ ",
+                "██  ██",
+                "    ██",
+                "   ██ ",
+                "  ██  ",
+                " ██   ",
+                "██    ",
+                "██    ",
+                "██  ██",
+                "██████"
+            ],
+            '3': [
+                " ████ ",
+                "██  ██",
+                "    ██",
+                "    ██",
+                " ████ ",
+                "    ██",
+                "    ██",
+                "    ██",
+                "██  ██",
+                " ████ "
+            ],
+            '4': [
+                "   ██ ",
+                "  ███ ",
+                " ████ ",
+                "██ ██ ",
+                "██ ██ ",
+                "██████",
+                "   ██ ",
+                "   ██ ",
+                "   ██ ",
+                "   ██ "
+            ],
+            '5': [
+                "██████",
+                "██    ",
+                "██    ",
+                "██    ",
+                "█████ ",
+                "    ██",
+                "    ██",
+                "    ██",
+                "██  ██",
+                " ████ "
+            ],
+            '6': [
+                " ████ ",
+                "██  ██",
+                "██    ",
+                "██    ",
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            '7': [
+                "██████",
+                "██  ██",
+                "    ██",
+                "   ██ ",
+                "  ██  ",
+                " ██   ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    "
+            ],
+            '8': [
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            '9': [
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " █████",
+                "    ██",
+                "    ██",
+                "    ██",
+                "██  ██",
+                " ████ "
+            ],
+            'A': [
+                "  ██  ",
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██████",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'B': [
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█████ "
+            ],
+            'C': [
+                " ████ ",
+                "██  ██",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██  ██",
+                " ████ "
+            ],
+            'D': [
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█████ "
+            ],
+            'E': [
+                "██████",
+                "██    ",
+                "██    ",
+                "██    ",
+                "█████ ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██████"
+            ],
+            'F': [
+                "██████",
+                "██    ",
+                "██    ",
+                "██    ",
+                "█████ ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    "
+            ],
+            'G': [
+                " ████ ",
+                "██  ██",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██ ███",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            'H': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██████",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'I': [
+                "██████",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "██████"
+            ],
+            'J': [
+                "██████",
+                "    ██",
+                "    ██",
+                "    ██",
+                "    ██",
+                "    ██",
+                "    ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            'K': [
+                "██  ██",
+                "██  ██",
+                "██ ██ ",
+                "████  ",
+                "███   ",
+                "████  ",
+                "██ ██ ",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'L': [
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██████"
+            ],
+            'M': [
+                "██  ██",
+                "██████",
+                "██████",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'N': [
+                "██  ██",
+                "███ ██",
+                "██████",
+                "██████",
+                "██ ███",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'O': [
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            'P': [
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█████ ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    "
+            ],
+            'Q': [
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██ ██ ",
+                "██ ██ ",
+                " ████ "
+            ],
+            'R': [
+                "█████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█████ ",
+                "██ ██ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'S': [
+                " ████ ",
+                "██  ██",
+                "██    ",
+                "██    ",
+                " ████ ",
+                "    ██",
+                "    ██",
+                "    ██",
+                "██  ██",
+                " ████ "
+            ],
+            'T': [
+                "██████",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  "
+            ],
+            'U': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ "
+            ],
+            'V': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ ",
+                " ████ ",
+                "  ██  "
+            ],
+            'W': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "█    █",
+                "█    █",
+                "█ ██ █",
+                "██████",
+                "██  ██",
+                "██  ██"
+            ],
+            'X': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ ",
+                " ████ ",
+                " ████ ",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██"
+            ],
+            'Y': [
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                "██  ██",
+                " ████ ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  ",
+                "  ██  "
+            ],
+            'Z': [
+                "██████",
+                "    ██",
+                "   ██ ",
+                "  ██  ",
+                " ██   ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██    ",
+                "██████"
+            ],
+            '%': [
+                "██  ██",
+                "██  ██",
+                "   ██ ",
+                "   ██ ",
+                "  ██  ",
+                "  ██  ",
+                " ██   ",
+                " ██   ",
+                "██  ██",
+                "██  ██"
+            ],
+            '.': [
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "  ██  ",
+                "  ██  "
+            ],
+            ' ': [
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      ",
+                "      "
+            ]
+        }
+    
+    def drawInto(self, ary, x, y):
+        """Draw the glyph into the array at the specified x, y offset"""
+        if self.char not in self.digit_patterns:
+            print(f"Unsupported character: {self.char}")
+            return
+        
+        pattern = self.digit_patterns[self.char]
+        
+        # Check bounds
+        if x < 0 or y < 0 or x + self.width > len(ary) or y + self.height > len(ary[0]):
+            print(f"Glyph would be out of bounds at ({x}, {y})")
+            return
+        
+        # Draw the pattern into the array
+        for row in range(self.height):
+            for col in range(self.width):
+                if pattern[row][col] == '█':
+                    ary[x + col][y + row] = True
+                else:
+                    ary[x + col][y + row] = False
+
+class GlyphWriter:
+    def __init__(self, target_array, x, y):
+        self.target_array = target_array
+        self.x = x
+        self.y = y
+        self.glyph_width = 6
+        self.glyph_height = 10
+        self.glyph_spacing = 1  # 1 pixel of blank space between glyphs
+    
+    def write_string(self, string):
+        """Write a string of characters into the target array starting at the constructor position"""
+        current_x = self.x
+        
+        for char in string.upper():
+            if char.isdigit() or char.isupper() or char == '%' or char == ' ':
+                glyph = Glyph(char)
+                glyph.drawInto(self.target_array, current_x, self.y)
+                current_x += self.glyph_width + self.glyph_spacing
+            else:
+                # Skip non-digit/non-uppercase characters or add a space
+                current_x += self.glyph_width + self.glyph_spacing
+        
+        return current_x - self.glyph_spacing  # Return the end position (without trailing spacing)
+
+def marching_pixel_demo(sign):
+    """Run a marching pixel demo on the LED sign"""
+    pixel_x = 0
+    pixel_y = 0
+    
+    # Set initial pixel
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    color = (r << 16) | (g << 8) | b
+    sign.setPixel(pixel_x, pixel_y, color)
+    print(f"Initial pixel at ({pixel_x}, {pixel_y}) with color 0x{color:06X}")
+    
+    while True:
+        try:
+            # Clear current position
+            sign.setPixel(pixel_x, pixel_y, 0x000000)  # Black
+            
+            # Move to next position
+            pixel_x += 1
+            
+            # Wrap to next row if at end of current row
+            if pixel_x >= sign.width:
+                pixel_x = 0
+                pixel_y += 1
+                
+                # Wrap back to top if at bottom
+                if pixel_y >= sign.height:
+                    pixel_y = 0
+            
+            # Generate a random color for new position
+            r = random.randint(0, 255)
+            g = random.randint(0, 255)
+            b = random.randint(0, 255)
+            color = (r << 16) | (g << 8) | b
+            
+            # Set new position with random color
+            sign.setPixel(pixel_x, pixel_y, color)
+            print(f"x={pixel_x}, y={pixel_y}, color=0x{color:06X}")
+            
+            # Wait 100ms before next move
+            time.sleep(0.1)
+            
+        except Exception as e:
+            print(f"Error in marching pixel demo: {e}")
+            traceback.print_exception(e)
+            time.sleep(1)
+
 
 class SignApp:
     def __init__(self, wifi_ssid, wifi_password, event_name, url, socket_address, socket_port):
         self.pool = socketpool.SocketPool(wifi.radio)
         self.wifi = WifiConnection(wifi_ssid, wifi_password)
         self.data_source = DataSource(self.pool, event_name, url, socket_address, socket_port)
-        self.sign = Sign()
+        self.led_sign = LEDSign()
+        self.shimmering_sign = ShimmeringSign(self.led_sign)
+        self.progress_bar = ProgressBar(
+            led_sign=self.led_sign,
+            x=0,  # Start at left edge
+            y=12,  # Position at bottom (16 - 4 = 12)
+            width=32,  # Full width
+            height=4,  # 4px tall
+            border_color=0x002020,  # Dark blue border
+            fill_color=0x8000FF  # Bright purple fill
+        )
+        self.sign_text = ""
     
     def run(self):
         keep_going = True
         while keep_going:
             tick = 0
             try:
-                self.sign.set_label("wifi")
+                self.show_msg("WIFI", draw=True)
                 self.wifi.connect()
                 self.wifi_handshake_time = time.monotonic()
-                self.sign.set_label(" ip ")
-                self.wifi.wait_for_ip()
-                self.wifi_ip_time = time.monotonic()
-                self.sign.set_label("data")
-                self.data_source.init_time = self.wifi_ip_time
+
+                self.show_msg("IP", draw=True)
+                def ip_wait_callback():
+                    self.shimmering_sign.render()
+                    self.led_sign.display.refresh()
+                    return time.monotonic() - self.wifi_handshake_time < 60*5
+                keep_going = self.wifi.wait_for_ip(ip_wait_callback)
+                
+                if keep_going:
+                    self.wifi_ip_time = time.monotonic()
+                    self.led_sign.clear()
+                    self.show_msg("DATA", draw=True)
+                    self.data_source.init_time = self.wifi_ip_time
                 
                 while keep_going:
                     tick += 1
                     last_update = self.data_source.current_data()
                     if last_update is not None:
-                        self.sign.set_label(last_update['total_attendees_scanned'])
-                        self.sign.set_progress(last_update['total_attendees_scanned']/last_update['total_scannable'])
+                        self.show_msg(last_update['total_attendees_scanned'], draw=False)
+                        self.progress_bar.set_progress(last_update['total_attendees_scanned']/last_update['total_scannable'])
+                        self.shimmering_sign.render(0, 0, self.led_sign.width, 12)
+                        self.led_sign.display.refresh()
                     else:
-                        self.sign.set_label(b" data")
-                        self.sign.set_progress(0)
+                        self.show_msg("DATA", draw=False)
                     
                     last_update_time = self.data_source.last_update_time or self.wifi_ip_time
                     if last_update_time - time.monotonic() > 60*10:
                         print("Been too long since we saw data; maybe the wifi is bad? forcing a reboot")
                         keep_going = False
                     
-                    self.sign.draw(tick/5)
                 print("inner runloop has exited")
             except Exception as exc:
                 print(f"SignApp: Runloop caught exception on tick {tick}: {exc}")
@@ -397,12 +1260,41 @@ class SignApp:
         
         print(f"outer runloop has exited")
         self.teardown()
-            
+    
+    def show_msg(self, msg, draw=False):
+        msg = str(msg)
+        if msg == self.sign_text and not draw:
+            return True
+        print(f"Sign text: {msg}, draw={draw}")
+        # Only clear the text area (top 12 rows), not the entire display
+        self.shimmering_sign.clear(0, 0, self.led_sign.width, 12)
+        txt_width = 7*len(msg) - 1
+        txt_height = 10
+        x = (self.led_sign.width  - txt_width)  // 2
+        y = 1 # (self.led_sign.height - txt_height) // 2
+        if draw:
+            self.shimmering_sign.clear(0, 0, self.led_sign.width, 12)
+        
+        writer = GlyphWriter(self.shimmering_sign.pixels, x, y)
+        writer.write_string(msg)
+        if draw:
+            self.shimmering_sign.render(0, 0, self.led_sign.width, 12)
+            self.led_sign.display.refresh()
+        self.sign_text = msg
     
     def teardown(self):
         self.data_source.close()
         self.wifi.disconnect()
 
-while True:
-    # logmsg(f"Boot-up. WIFI_SSID='{WIFI_SSID}', WIFI_PASSWORD='{WIFI_PASSWORD}', EVENT_NAME='{EVENT_NAME}', BADGEFILE_URL='{BADGEFILE_URL}', SOCKET_ADDRESS='{SOCKET_ADDRESS}', SOCKET_PORT={SOCKET_PORT}")
+def main():
+    print("Starting LED Sign Demo")
+    
+    # Run the shimmering demo
+    # shimmering_demo()
+    # text_demo()
     SignApp(WIFI_SSID, WIFI_PASSWORD, EVENT_NAME, BADGEFILE_URL, SOCKET_ADDRESS, SOCKET_PORT).run()
+
+
+
+if __name__ == "__main__":
+    main()

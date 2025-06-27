@@ -21,12 +21,13 @@ class SocketServer:
     self.port = port or secret("socket_port", 8081)
     self.psk = psk or secret("socket_psk", "")
     self.clients = []
+    self.last_broadcast = None
 
     def received_notification(key, notification):
       if key != "event":
         return
       
-      event = notification["event"]
+      event = notification.get("event")
       num_scanned = event.num_scanned_attendees()
       num_eligible_attendees = event.num_eligible_attendees()
 
@@ -35,7 +36,7 @@ class SocketServer:
           'type': 'event',
           'data': {
             'event': {
-              'name': event.name,
+              'name': event.name if hasattr(event, 'name') else None,
               'total_attendees_scanned': num_scanned,
               'total_scannable': num_eligible_attendees,
             }
@@ -79,7 +80,8 @@ class SocketServer:
         log.debug(f"New connection from {client_ip}:{client_port}; {len(self.clients)+1} clients total")
 
         client = SocketClient(self, client_socket, client_ip, client_port)
-        client.send(self.last_broadcast)
+        if self.last_broadcast is not None:
+          client.send(self.last_broadcast)
         self.clients.append(client)
         
     except Exception as exc:
