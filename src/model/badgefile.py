@@ -6,6 +6,7 @@ from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from datasources.clubexpress.housing_activity_list import HousingActivityList
 from datasources.sheets.attendee_status import AttendeeStatusSource
+from datasources.sheets.masters_sheet import MastersSheet
 from datasources.clubexpress.housing_reglist import HousingReglist
 from datasources.clubexpress.payments_report import PaymentsReport
 from datasources.tdlist import TDList
@@ -52,10 +53,10 @@ class Badgefile:
     EmailReport(self).update()
 
   def update(self):
-    AttendeeStatusSource(self).read_tournament_overrides()
     self.update_attendees()
     self.update_raw_reports()
     self.update_attendee_status_sheet()
+    MastersSheet(self).read_sheet()
 
     self.generate_json()
     self.upload()
@@ -80,6 +81,19 @@ class Badgefile:
     
     TDList.latest().apply(self) # Now go apply ratings/expiration dates/chapters from the TD list
     
+    # now apply manual overrides
+    as_source = AttendeeStatusSource(self)
+    as_source.read_tournament_overrides()
+    overrides = as_source.read_manual_badge_data()
+    
+    for override in overrides:
+      if override['badgefile_id'] is not None:
+        attendee = self.lookup_attendee(override['badgefile_id'])
+        if attendee is None:
+          log.warn(f"Unable to find attendee for overridden badge with id {override['badgefile_id']}, description '{override['description']}'")
+          continue
+        attendee.set_manual_override(override)
+
     log.debug("Ensuring consistency...")
     start_time = time.time()
     self.ensure_consistency()
@@ -146,7 +160,11 @@ class Badgefile:
     if badgefile_id is None:
       return None
     
-    badgefile_id = int(badgefile_id)
+    try:
+      badgefile_id = int(badgefile_id)
+    except ValueError:
+      return None
+    
     for attendee in self.attendees():
       if attendee.id() == badgefile_id:
         return attendee

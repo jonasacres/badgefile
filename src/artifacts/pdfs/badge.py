@@ -9,18 +9,17 @@ import io
 from pylibdmtx.pylibdmtx import encode
 from PIL import Image as PILImage
 
-from inset_box import InsetBox
+from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width
 
 class Badge:
-  def __init__(self, attendee, bgart=None):
+  def __init__(self, attendee):
     self.attendee = attendee
 
   def path(self):
     info = self.attendee.info()
     return f"artifacts/badges/{info['name_family']}-{info['name_given']}-{self.attendee.id()}.pdf"
   
-  def generate(self, bgart):
-    self.bgart = bgart
+  def generate(self):
     BadgeRenderer(self).draw()
     return self
 
@@ -97,7 +96,7 @@ class BadgeRenderer:
   
   def layout_background(self):
     self.badge_box \
-        .add_leaf_image_centered(self.badge.bgart)
+        .add_leaf_image_centered(f"src/static/badge_art/2025-{self.attendee.badge_type()}.png")
 
   def layout_logo(self, y):
     logo_height = 1.0 * inch
@@ -110,12 +109,30 @@ class BadgeRenderer:
     info = self.attendee.info()
     info_height = 4.0*inch
 
-    city_state = "%s, %s" % (info["city"], info["state"])
+    def clean_caps(text):
+      if text:
+        if text.isupper() or text.islower():
+          text = text.title()
+
+        # Handle hyphenations
+        if '-' in text:
+          text = '-'.join(part.capitalize() for part in text.split('-'))
+      return text
+
+    name_given = clean_caps(info.get('override_name_given') or info.get('name_given'))
+    name_family = clean_caps(info.get('override_name_family') or info.get('name_family'))
+
+    city = clean_caps(info.get('override_city') or info.get('city'))
+    state = info.get('override_state') or info.get('state')
+    if state and len(state) > 3:
+      state = clean_caps(state)
+
+    city_state = ", ".join(filter(lambda x: x and x.strip(), [city, state]))
 
     info_enclosure = self.badge_box.inset(0.5*inch, y - info_height, self.badge_box.width-1.0*inch, info_height)
     info_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
-    info_enclosure.add_leaf_text_centered(info["name_given"], style(36, colors.black, bold=True), y=3.5*inch)
-    info_enclosure.add_leaf_text_centered(info["name_family"], style(28, colors.black, bold=True), y=3.0*inch)
+    info_enclosure.add_leaf_text_centered(name_given, style(36, colors.black, bold=True), y=3.5*inch)
+    info_enclosure.add_leaf_text_centered(name_family, style(28, colors.black, bold=True), y=3.0*inch)
     info_enclosure.add_leaf_text_centered("#" + str(self.attendee.id()), style(24, colors.red, bold=True), y=2.25*inch)
     info_enclosure.add_leaf_text_centered(city_state, style(20, colors.black), y=1.65*inch)
     info_enclosure.add_leaf_text_centered(self.attendee.badge_rating(), style(48, colors.black, bold=True), y=0.25*inch)
@@ -130,7 +147,7 @@ class BadgeRenderer:
     title_height = 0.5*inch
     title_enclosure = self.badge_box.inset(0.5*inch, y - title_height, self.badge_box.width - 1.0*inch, title_height)
     title_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
-    title_enclosure.add_leaf_text_centered(self.attendee.title(), style(28, colors.black, bold=True), y=0.125*inch) # TODO: bold
+    title_enclosure.add_leaf_text_centered(self.attendee.title(), style(28, colors.black, bold=True), y=0.125*inch, max_width=title_enclosure.width-2*self.margin_size) # TODO: bold
 
     return title_enclosure
 
@@ -170,7 +187,9 @@ class BadgeRenderer:
     return scan_enclosure
   
   def layout_country_flag(self, box):
-    country = self.attendee.info()["country"].lower()
+    info = self.attendee.info()
+    country = (info.get('override_country') or info.get('country')).lower()
+
     flag_img = f"src/static/flags/{country}.png"
 
     img = Image.open(flag_img)
@@ -201,18 +220,17 @@ class BadgeRenderer:
     }
 
     lang_box = box.inset(2.3 * inch, 0.25 *inch, 2*hz_space, 3*vt_space)
-    # langauges = self.attendee.languages()
-    languages = [
-      "english",
-      "japanese",
-      "korean",
-      "chinese",
-      "spanish"
-    ]
+    languages = self.attendee.languages()
 
+    count = 0
     for language in languages:
       flag_img, flag_x, flag_y = lang_defs[language]
+      flag_x = (count %  2) * hz_space
+      flag_y = (count // 2) * vt_space
+
       box = lang_box.inset(flag_x, flag_y, flag_width, flag_height)
       box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
       box.add_leaf_image_centered(flag_img)
+
+      count += 1
 

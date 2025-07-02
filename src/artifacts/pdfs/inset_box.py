@@ -66,15 +66,33 @@ class InsetBox:
     self.insets.append(inset)
     return self
   
+  def add_leaf_line(self, stroke_color, stroke_width, x0, y0, x1, y1):
+    inset = self.inset(x0, y0, x1-x0, y1-y0)
+
+    def draw_the_line(canvas):
+      canvas.setStrokeColor(stroke_color)
+      canvas.setLineWidth(stroke_width)
+      canvas.line(*inset.absolute_coords(), inset.absolute_coords()[0] + inset.width, inset.absolute_coords()[1] + inset.height)
+    
+    inset.draw_func = lambda canvas: draw_the_line(canvas)
+    self.insets.append(inset)
+    return self
+  
   def add_leaf_text_left(self, text, style, x, y, max_width = None):
     self._add_leaf_text(text, style, x, y, max_width, 0.0)
     return self
 
   def add_leaf_text_right(self, text, style, x, y, max_width = None):
+    if max_width is None:
+      max_width = x
     self._add_leaf_text(text, style, x, y, max_width, 1.0)
     return self
+    
 
   def add_leaf_text_centered(self, text, style, x=None, y=None, max_width=None):
+    if max_width is None:
+      max_width = self.width
+      
     if x is None:
       x = 0.5 * self.width
     if y is None:
@@ -95,7 +113,7 @@ class InsetBox:
       text_width = canvas.stringWidth(text, style.fontName, effective_size)
       
       canvas.setFont(style.fontName, effective_size)
-      canvas.setFillColor(style.fillColor if hasattr(style, "fillColor") else colors.black)
+      canvas.setFillColor(style.textColor if hasattr(style, "textColor") else colors.black)
       canvas.drawString(self.absolute_coords()[0] + x - offset_factor*text_width, self.absolute_coords()[1] + y, text)
 
     inset.draw_func = lambda canvas: draw_the_text(canvas)

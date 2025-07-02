@@ -21,6 +21,22 @@ class AttendeeStatusSource:
       self.file_id = files[0]['id']
     return self.file_id
 
+  def read_manual_badge_data(self):
+    file_id = self.locate_file()
+    data = read_sheet_data(self.service, file_id, "Manual Badges")
+    row_map = [ 'badgefile_id', 'description', 'name_given', 'name_family', 'city', 'state', 'country', 'badge_rating', 'title',  'email', 'phone', 'badge_type', 'speaks_english', 'speaks_chinese', 'speaks_korean', 'speaks_japanese', 'speaks_spanish']
+    
+    result = []
+    for row in data[1:]:
+      row_dict = {}
+      for i, key in enumerate(row_map):
+        if i < len(row):
+          row_dict[key] = row[i]
+        else:
+          row_dict[key] = None
+      result.append(row_dict)
+    return result
+
   def read_tournament_overrides(self):    
     file_id = self.locate_file()
     data = read_sheet_data(self.service, file_id, "Tournaments")

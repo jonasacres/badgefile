@@ -35,6 +35,10 @@ class Attendee:
     from artifacts.pdfs.badge import Badge
     return Badge(self)
   
+  def checksheet(self):
+    from artifacts.pdfs.checksheet import Checksheet
+    return Checksheet(self)
+  
   def latest_reglist(self):
     # need this accessor for our issue checks to access latest raw reglist
     return Reglist.latest()
@@ -48,9 +52,14 @@ class Attendee:
     return self
   
   def effective_rank(self):
+    override_rating = self._info['override_rating']
     if self._info.get('override_rating', None):
-      return self._info['override_rating']
-    return self._info.get('aga_rating', None)
+      if str(override_rating).lower() != "aga":
+        return float(override_rating)
+    try:
+      return float(self._info.get('aga_rating', None))
+    except TypeError:
+      return None
   
   def aga_rating(self):
     return self._info.get('aga_rating', None)
@@ -122,11 +131,14 @@ class Attendee:
     info = self.info()
     if "title" in info and info["title"] != "":
       return info["title"]
+    if info.get("override_title"):
+      return info.get("override_title")
     
+    if self.is_in_masters():
+      return "Masters Player"
     if self.is_participant():
       return "Player"
-    else:
-      return "Non-participant"
+    return "Non-participant"
 
   def phone(self):
     phone_keys = ['phone_mobile', 'phone_a', 'phone_cell']
@@ -162,17 +174,17 @@ class Attendee:
   
   def languages(self):
     langstr = str(self._info.get("languages", "")).lower()
-    languages = []
 
-    if "korean" in langstr:
-      languages.append("korean")
-    if "chinese" in langstr:
-      languages.append("chinese")
-    if "japanese" in langstr:
-      languages.append("japanese")
-    if "spanish" in langstr:
-      languages.append("spanish")
-    
+    languages = []
+    langs = ["korean", "chinese", "japanese", "spanish"]
+    for lang in langs:
+      key = "override_speaks_" + lang
+      override_lang = (self._info.get(key, "") or "").lower().strip()
+      override_lang_no = override_lang == "no"
+      override_lang_yes = override_lang == "yes"
+      if (lang in langstr and not override_lang_no) or override_lang_yes:
+        languages.append(lang)
+      
     return sorted(languages)
   
   def tournaments(self):
@@ -223,8 +235,29 @@ class Attendee:
       return "no"
     else:
       return "ambiguous"
+  
+  def badge_type(self):
+    override_type = (self._info.get('override_badge_type', "") or "").strip().lower()
+    if override_type != "":
+      if override_type in ["player", "volunteer", "pro", "masters"]:
+        return override_type
+      if override_type == 'aga/vip':
+        return 'aga'
+      if override_type == 'non-participant':
+        return 'nonparticipant'
+    rating = self.badge_rating()
+    if rating and rating[-1].lower() == 'p':
+      return 'pro'
+    if self.is_in_masters():
+      return 'masters'
+    if self.is_participant():
+      return 'player'
+    return 'nonparticipant'
 
   def badge_rating(self):
+    if (self._info.get('override_badge_rating', "") or "").strip() != "":
+      return self._info.get('override_badge_rating')
+    
     rating = self.effective_rank()
     if rating is None:
       return ""
@@ -255,6 +288,32 @@ class Attendee:
       return f"{self._info['name_family']}, {self._info['name_given']} {self._info['name_mi']}"
     else:
       return f"{self._info['name_family']}, {self._info['name_given']}"
+    
+  def set_in_masters(self, in_masters):
+    if self._info.get("in_masters") != in_masters:
+      self._info['in_masters'] = in_masters
+      self.sync_to_db()
+
+  def is_in_masters(self):
+    return self._info.get('in_masters', False)
+  
+  def set_manual_override(self, override):
+    summary_str_comps = []
+    for key, value in override.items():
+      self._info['override_'+key] = value
+      summary_str_comps.append(f"{key}={value}")
+
+    if len(summary_str_comps) > 0:
+      log.debug(f"Applying manual overrides to attendee #{self.id()} {self.full_name()} ({', '.join(summary_str_comps)})")
+      self.sync_to_db()
+
+  def set_housing_assignment(self, assignment):
+    self._info['housing_card_number'] = assignment.get('card_number')
+    self._info['housing_room_number'] = assignment.get('room_assigned')
+    self._info['housing_building'] = assignment.get('building')
+    self._info['housing_meal_plan'] = assignment.get('meal_plan')
+    self._info['housing_roommate'] = assignment.get('roommate')
+    self.sync_to_db()
   
   def is_attending_banquet(self):
     for activity in self.activities():
@@ -358,7 +417,7 @@ class Attendee:
   
   def ensure_attendee_table(self):
     Database.shared().execute("CREATE TABLE IF NOT EXISTS Attendees(badgefile_id INTEGER NOT NULL PRIMARY KEY, json TEXT NOT NULL)")
-    defns_dict = { col[0]: col[1] for col in self.column_definitions() } 
+    defns_dict = { col[0]: col[1] for col in self.column_definitions() }
     existing_cols = Database.shared().columns_of_table("Attendees")
     expected_cols = defns_dict.keys()
     missing_columns = list(set(expected_cols) - set(existing_cols))

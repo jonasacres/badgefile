@@ -10,20 +10,25 @@ sys.path.append(str(src_path))
 from model.badgefile import Badgefile
 from util.util import *
 from log.logger import log
+from datasources.sheets.masters_sheet import MastersSheet
+from datasources.sheets.attendee_status import AttendeeStatusSource
 
 badgefile = Badgefile()
 lyra = badgefile.lookup_attendee(24793)
+AttendeeStatusSource(badgefile).read_tournament_overrides()
+MastersSheet(badgefile).read_sheet()
+
 
 if lyra is None:
     print("Couldn't find test account")
     os._exit(1)
 
-for i in range(1, 7):
-    lyra.badge().generate(f"src/static/badge_art/{i}.png")
-    badge_path = lyra.badge().path()
-    badge_path = badge_path[:-4]  # Remove .pdf suffix
-    badge_path = f"{badge_path}-{i}.pdf"
-    os.rename(lyra.badge().path(), badge_path)
-    print(f"Generated badge: {badge_path}")
+for attendee in badgefile.attendees():
+    if attendee.is_cancelled():
+        continue
+    if not os.path.exists(attendee.badge().path()):
+        print(attendee.full_name())
+        attendee.badge().generate()
+        print(f"Generated badge: {attendee.badge().path()}")
 
 

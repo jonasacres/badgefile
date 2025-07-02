@@ -292,9 +292,9 @@ class LEDSign:
         )
         self.display = framebufferio.FramebufferDisplay(self.matrix)
         
-        # Create a bitmap with full color support (256 colors)
-        self.bitmap = displayio.Bitmap(self.width, self.height, 256)
-        self.palette = displayio.Palette(256)
+        # Create a bitmap with full color support (512 colors)
+        self.bitmap = displayio.Bitmap(self.width, self.height, 512)
+        self.palette = displayio.Palette(512)
         
         # Initialize palette with black at index 0
         self.palette[0] = 0x000000  # Black
@@ -340,35 +340,35 @@ class LEDSign:
                 return i
         
         # Add new color to palette
-        for i in range(1, 256):  # Start from 1 since 0 is black
-            if self.palette[i] == 0:  # Empty slot
+        for i in range(1, 512):  # Change from 256 to 512
+            if self.palette[i] == 0:
                 self.palette[i] = color
                 return i
         
         # If palette is full, reuse a random slot (excluding 0)
-        reuse_index = random.randint(1, 255)
+        reuse_index = random.randint(1, 511)  # Change from 255 to 511
         self.palette[reuse_index] = color
         return reuse_index
 
 class ProgressBar:
-    def __init__(self, led_sign, x, y, width, height, border_color=0xFF8000, fill_color=0xFF0000):
+    def __init__(self, shimmering_sign, x, y, width, height, border_hue_offset=0.0, fill_hue_offset=0.0):
         """
         Initialize a progress bar
         
         Args:
-            led_sign: LEDSign instance to draw on
+            shimmering_sign: ShimmeringSign instance to draw on
             x, y: Top-left corner position
             width, height: Dimensions of the progress bar
-            border_color: Color for the border (default: orange 0xFF8000)
-            fill_color: Color for the fill (default: red 0xFF0000)
+            border_hue_offset: Hue offset in degrees for the border (default: 0.0)
+            fill_hue_offset: Hue offset in degrees for the fill (default: 0.0)
         """
-        self.led_sign = led_sign
+        self.shimmering_sign = shimmering_sign
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.border_color = border_color
-        self.fill_color = fill_color
+        self.border_hue_offset = border_hue_offset
+        self.fill_hue_offset = fill_hue_offset
         self.progress = 0.0  # 0.0 to 1.0
         self.last_fill_width = -1  # Track last fill width to detect changes
         
@@ -405,56 +405,46 @@ class ProgressBar:
         # Calculate fill width based on progress
         fill_width = int(interior_width * self.progress)
         
-        # Draw border first (only if it fits within bounds)
+        # Draw border first
         self._draw_border()
-        
-        # Get the fill color index once
-        fill_color_index = self.led_sign.find_or_add_color(self.fill_color)
         
         # Update interior pixels efficiently
         for dy in range(interior_height):
             for dx in range(interior_width):
                 px, py = interior_x + dx, interior_y + dy
-                if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
+                if 0 <= px < self.shimmering_sign.width and 0 <= py < self.shimmering_sign.height:
                     if dx < fill_width:
                         # Fill area
-                        self.led_sign.bitmap[px, py] = fill_color_index
+                        self.shimmering_sign.set_pixel(px, py, self.fill_hue_offset)
                     else:
                         # Empty area
-                        self.led_sign.bitmap[px, py] = 0  # Black
-        
-        # Don't refresh display here - let the calling code handle it
-        # self.led_sign.display.refresh()
+                        self.shimmering_sign.set_pixel(px, py, None)
     
     def _draw_border(self):
-        """Draw the 1px border around the progress bar"""
-        # Top border
-        for dx in range(self.width):
+        """Draw the 1px border around the progress bar, leaving out corners for rounded look"""
+        # Top border (skip corners)
+        for dx in range(1, self.width - 1):
             px, py = self.x + dx, self.y
-            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
-                color_index = self.led_sign.find_or_add_color(self.border_color)
-                self.led_sign.bitmap[px, py] = color_index
+            if 0 <= px < self.shimmering_sign.width and 0 <= py < self.shimmering_sign.height:
+                self.shimmering_sign.set_pixel(px, py, self.border_hue_offset)
         
-        # Bottom border
-        for dx in range(self.width):
+        # Bottom border (skip corners)
+        for dx in range(1, self.width - 1):
             px, py = self.x + dx, self.y + self.height - 1
-            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
-                color_index = self.led_sign.find_or_add_color(self.border_color)
-                self.led_sign.bitmap[px, py] = color_index
+            if 0 <= px < self.shimmering_sign.width and 0 <= py < self.shimmering_sign.height:
+                self.shimmering_sign.set_pixel(px, py, self.border_hue_offset)
         
-        # Left border
-        for dy in range(self.height):
+        # Left border (skip corners)
+        for dy in range(1, self.height - 1):
             px, py = self.x, self.y + dy
-            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
-                color_index = self.led_sign.find_or_add_color(self.border_color)
-                self.led_sign.bitmap[px, py] = color_index
+            if 0 <= px < self.shimmering_sign.width and 0 <= py < self.shimmering_sign.height:
+                self.shimmering_sign.set_pixel(px, py, self.border_hue_offset)
         
-        # Right border
-        for dy in range(self.height):
+        # Right border (skip corners)
+        for dy in range(1, self.height - 1):
             px, py = self.x + self.width - 1, self.y + dy
-            if 0 <= px < self.led_sign.width and 0 <= py < self.led_sign.height:
-                color_index = self.led_sign.find_or_add_color(self.border_color)
-                self.led_sign.bitmap[px, py] = color_index
+            if 0 <= px < self.shimmering_sign.width and 0 <= py < self.shimmering_sign.height:
+                self.shimmering_sign.set_pixel(px, py, self.border_hue_offset)
 
 class ShimmeringSign:
     def __init__(self, led_sign):
@@ -462,8 +452,8 @@ class ShimmeringSign:
         self.width = led_sign.width
         self.height = led_sign.height
         
-        # Initialize pixel states (True = on, False = off)
-        self.pixels = [[False for _ in range(self.height)] for _ in range(self.width)]
+        # Initialize pixel states: None = off, numeric = hue offset in degrees
+        self.pixels = [[None for _ in range(self.height)] for _ in range(self.width)]
         
         # Color animation state
         self.hue = 0.0  # Current hue (0.0 to 1.0)
@@ -471,10 +461,17 @@ class ShimmeringSign:
         
         print("ShimmeringSign initialized")
     
-    def set_pixel(self, x, y, state):
-        """Set a pixel to on (True) or off (False)"""
+    def set_pixel(self, x, y, hue_offset=0.0):
+        """
+        Set a pixel to on with optional hue offset, or off
+        
+        Args:
+            x, y: Pixel coordinates
+            hue_offset: Hue offset in degrees (0.0 = use gradient hue, 180.0 = opposite hue)
+                       Use None to turn pixel off
+        """
         if 0 <= x < self.width and 0 <= y < self.height:
-            self.pixels[x][y] = state
+            self.pixels[x][y] = hue_offset
         else:
             print(f"Invalid pixel coordinates: ({x}, {y})")
     
@@ -484,22 +481,29 @@ class ShimmeringSign:
             # Clear all pixels
             for y in range(self.height):
                 for x in range(self.width):
-                    self.pixels[x][y] = False
+                    self.pixels[x][y] = None
         else:
             # Clear only the specified area
             for dy in range(height):
                 for dx in range(width):
                     px, py = x + dx, y + dy
                     if 0 <= px < self.width and 0 <= py < self.height:
-                        self.pixels[px][py] = False
+                        self.pixels[px][py] = None
     
-    def draw_rectangle(self, x, y, width, height, fill=True):
-        """Draw a rectangle with top-left corner at (x, y)"""
+    def draw_rectangle(self, x, y, width, height, hue_offset=0.0):
+        """
+        Draw a rectangle with top-left corner at (x, y)
+        
+        Args:
+            x, y: Top-left corner position
+            width, height: Rectangle dimensions
+            hue_offset: Hue offset in degrees for all pixels in the rectangle
+        """
         for dy in range(height):
             for dx in range(width):
                 px, py = x + dx, y + dy
                 if 0 <= px < self.width and 0 <= py < self.height:
-                    self.pixels[px][py] = fill
+                    self.pixels[px][py] = hue_offset
     
     def render(self, x=None, y=None, width=None, height=None):
         """Render the current pixel states to the LED sign with gradient color"""
@@ -525,12 +529,13 @@ class ShimmeringSign:
             render_x, render_y = x, y
             render_width, render_height = width, height
         
-        # Only render pixels that are set to True in the pixels array within the bounds
+        # Render pixels based on their state within the bounds
         for dy in range(render_height):
             for dx in range(render_width):
                 px, py = render_x + dx, render_y + dy
                 if 0 <= px < self.width and 0 <= py < self.height:
-                    if self.pixels[px][py]:
+                    pixel_state = self.pixels[px][py]
+                    if pixel_state is not None:
                         # Calculate interpolated hue based on position
                         # Normalize coordinates to 0-1 range
                         nx = px / (self.width - 1) if self.width > 1 else 0
@@ -542,7 +547,12 @@ class ShimmeringSign:
                         # Bottom edge interpolation  
                         bottom_hue = self._lerp_hue(bottom_left_hue, bottom_right_hue, nx)
                         # Vertical interpolation
-                        pixel_hue = self._lerp_hue(top_hue, bottom_hue, ny)
+                        gradient_hue = self._lerp_hue(top_hue, bottom_hue, ny)
+                        
+                        # Apply pixel-specific hue offset
+                        # Convert degrees to hue units (360 degrees = 1.0 hue)
+                        hue_offset_units = pixel_state / 360.0
+                        pixel_hue = (gradient_hue + hue_offset_units) % 1.0
                         
                         # Convert interpolated hue to RGB using improved conversion
                         color = self._hsv_to_rgb(pixel_hue, s, v)
@@ -551,7 +561,7 @@ class ShimmeringSign:
                         color_index = self.led_sign.find_or_add_color(color)
                         self.led_sign.bitmap[px, py] = color_index
                     else:
-                        # Clear pixels that are False within the render bounds
+                        # Clear pixels that are None within the render bounds
                         self.led_sign.bitmap[px, py] = 0  # Black
         
         # Don't refresh display here - let the calling code handle it
@@ -1120,9 +1130,9 @@ class Glyph:
         for row in range(self.height):
             for col in range(self.width):
                 if pattern[row][col] == '█':
-                    ary[x + col][y + row] = True
+                    ary[x + col][y + row] = 0.0  # On pixel with 0.0 hue offset
                 else:
-                    ary[x + col][y + row] = False
+                    ary[x + col][y + row] = None  # Off pixel
 
 class GlyphWriter:
     def __init__(self, target_array, x, y):
@@ -1205,13 +1215,13 @@ class SignApp:
         self.led_sign = LEDSign()
         self.shimmering_sign = ShimmeringSign(self.led_sign)
         self.progress_bar = ProgressBar(
-            led_sign=self.led_sign,
+            shimmering_sign=self.shimmering_sign,
             x=0,  # Start at left edge
             y=12,  # Position at bottom (16 - 4 = 12)
             width=32,  # Full width
             height=4,  # 4px tall
-            border_color=0x002020,  # Dark blue border
-            fill_color=0x8000FF  # Bright purple fill
+            border_hue_offset=240.0,  # Border hue offset
+            fill_hue_offset=120.0  # Fill hue offset
         )
         self.sign_text = ""
     
@@ -1239,11 +1249,12 @@ class SignApp:
                 
                 while keep_going:
                     tick += 1
+                    print(tick)
                     last_update = self.data_source.current_data()
                     if last_update is not None:
                         self.show_msg(last_update['total_attendees_scanned'], draw=False)
                         self.progress_bar.set_progress(last_update['total_attendees_scanned']/last_update['total_scannable'])
-                        self.shimmering_sign.render(0, 0, self.led_sign.width, 12)
+                        self.shimmering_sign.render()
                         self.led_sign.display.refresh()
                     else:
                         self.show_msg("DATA", draw=False)
