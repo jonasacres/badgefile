@@ -77,6 +77,7 @@ class Checksheet:
     self.canvas = canvas.Canvas(self.path(), pagesize=(8.5*inch, 11*inch))
     self.margin_size = 0.125*inch
     self.main_box = InsetBox(self.margin_size, self.margin_size, 8.5*inch - 2*self.margin_size, 11.0*inch - 2*self.margin_size, canvas=self.canvas)
+    self.default_section_height = 0.8*inch
 
     next_y  = self.main_box.height - self.margin_size
     next_y -= self.layout_header(next_y).height + self.margin_size
@@ -183,7 +184,7 @@ class Checksheet:
     else:
       need_sigs = []
 
-    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.0*inch, "2", "Youth", needs_youth_form)
+    stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "2", "Youth", needs_youth_form)
     count = 0
     if need_sigs:
       for youth in need_sigs:
@@ -206,7 +207,7 @@ class Checksheet:
     balance_due = self.attendee.balance_due()
     needs_renewal = self.attendee.needs_renewal()
     needs_stop = balance_due > 0 or needs_renewal
-    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.0*inch, "3", "Payments", needs_stop)
+    stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "3", "Payments", needs_stop)
 
     if balance_due == 0:
       content_enclosure.add_leaf_text_left(
@@ -244,57 +245,53 @@ class Checksheet:
 
   def layout_hospitality(self, y):
     ai = self.attendee.info()
+    issues = self.issues_of_type('housing')
+    issues = [issue for issue in issues if issue['code'] != '3e'] # ignore issues about attendee not making housing choices
     
     if ai.get('housing_card_number'):
       needs_stop = True
-    elif self.issues_of_type('housing'):
-      # TODO: need to write on here what these housing issues are!!
+    elif issues:
       needs_stop = True
     else:
       needs_stop = False
     
-    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.0*inch, "4", "Hospitality", needs_stop)
+    stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "4", "Hospitality", needs_stop)
 
-    banquet_str = "Has banquet ticket" if self.attendee.is_attending_banquet() else "Did not purchase banquet ticket"
-    
-    content_enclosure.add_leaf_text_left(
-        banquet_str,
-        style(12.0, colors.black, bold=False),
-        self.margin_size,
-        content_enclosure.height - 0.2*inch)
-    
+    banquet_str = "Has Banquet" if self.attendee.is_attending_banquet() else "No Banquet"
+
     if ai.get('housing_card_number'):
-      content_enclosure.add_leaf_text_left(
-        f"Assigned card: {ai['housing_card_number']}",
-        style(12.0, colors.black, bold=False),
-        self.margin_size,
-        content_enclosure.height - 0.45*inch)
-      
-      meal_plan_str = "Has meal plan" if ai.get('housing_meal_plan') else "No meal plan"
-      content_enclosure.add_leaf_text_left(
-        meal_plan_str,
-        style(12.0, colors.black, bold=False),
-        self.margin_size,
-        content_enclosure.height - 0.7*inch)
-      
       if ai.get('housing_building'):
         room_str = f"Room: {ai['housing_building']} {ai['housing_room_number']}"
         if ai.get('housing_roommate'):
           room_str += f", Roommate: {ai['housing_roommate']}"
       else:
         room_str = "No housing assigned"
-      
+
+      card_contents_str = f"Card {ai['housing_card_number']}"
+      card_contents_str += " | " + ("Has meal plan" if ai.get('housing_meal_plan') else "No meal plan")
+      card_contents_str += " | " + banquet_str
+      card_contents_str += " | " + room_str
       content_enclosure.add_leaf_text_left(
-        room_str,
-        style(12.0, colors.black, bold=False),
+        card_contents_str,
+        style(12.0, colors.black, bold=True),
         self.margin_size,
-        content_enclosure.height - 0.95*inch)
+        content_enclosure.height - 0.2*inch)
     else:
       content_enclosure.add_leaf_text_left(
-        "No housing/meal card assigned",
+        "No card | " + banquet_str,
         style(12.0, colors.black, bold=False),
         self.margin_size,
-        content_enclosure.height - 0.45*inch)
+        content_enclosure.height - 0.2*inch)
+    
+    count = 0
+    for issue in issues:
+      print(f"{self.attendee.full_name()} {self.attendee.id()} -- Issue {issue['category']}: {issue['msg']}")
+      content_enclosure.add_leaf_text_left(
+          str(f"Issue: {issue['msg']}"),
+          style(12.0, colors.black, bold=True),
+          self.margin_size,
+          content_enclosure.height - 0.45*inch - 0.2*inch*count)
+      count += 1
     
     return stop_enclosure
 
@@ -308,7 +305,7 @@ class Checksheet:
     else:
       needs_stop = False
     
-    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.0*inch, "5", "Tourney", needs_stop)
+    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.85*inch, "5", "Tourney", needs_stop)
     tournaments = self.attendee.tournaments()
 
     content_enclosure.add_leaf_text_left(
@@ -337,6 +334,26 @@ class Checksheet:
         self.margin_size,
         content_enclosure.height - 0.75*inch)
     
+    bye_margin = 0.5*inch
+    bye_width = content_enclosure.width - 2*bye_margin
+    bye_enclosure = content_enclosure.inset(bye_margin, 0.3*inch, bye_width, 0.5*inch)
+    bye_enclosure.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.05*inch)
+    bye_enclosure.add_leaf_line(colors.black, 0.01*inch, 0, 0.5*bye_enclosure.height, bye_enclosure.width, 0.5*bye_enclosure.height)
+    
+    content_enclosure.add_leaf_text_centered("Bye Requests", style(10), y=0.1*inch)
+    content_enclosure.add_leaf_text_right("PM", style(10, colors.darkgray), bye_margin-0.08*inch, 0.38*inch)
+    content_enclosure.add_leaf_text_right("AM", style(10, colors.darkgray), bye_margin-0.08*inch, 0.6*inch)
+
+    days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    for i in range(0, 7):
+      x_position = (bye_width/7)*(i+0.5) + bye_margin
+      content_enclosure.add_leaf_text_centered(days[i], style(10, colors.darkgray), x_position, 0.84*inch)
+
+    # Draw vertical lines to partition bye_enclosure into 7 equal areas
+    for i in range(1, 7):  # Draw 6 lines to create 7 areas
+      x_position = (bye_width / 7) * i
+      bye_enclosure.add_leaf_line(colors.black, 0.01*inch, x_position, 0.0, x_position, 0.5*inch)
+    
     if self.attendee.is_in_masters():
       masters_str = "YES"
     elif 'masters' in tournaments:
@@ -352,12 +369,12 @@ class Checksheet:
     return stop_enclosure
 
   def layout_swag(self, y):
-    stop_enclosure, content_enclosure = self.draw_table_stop(y, 1.0*inch, "6", "Swag", True)
+    stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "6", "Swag", True)
     content_enclosure.add_leaf_text_left(
         f"{self.attendee.info()['tshirt']}",
         style(18.0, colors.black, bold=True),
         self.margin_size,
-        content_enclosure.height - 0.6*inch)
+        content_enclosure.height - 0.5*inch)
     return stop_enclosure
   
   def layout_badge(self, y):
@@ -400,14 +417,14 @@ class Checksheet:
       stop_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.15, 4.0)
       title_box = stop_enclosure.inset(0, 0, title_width, height)
       title_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
-      title_box.add_leaf_text_centered(number, style(36, colors.black, bold=True), y=0.55*height)
-      title_box.add_leaf_text_centered(title, style(12, colors.black, bold=True), y=0.25*height, max_width=title_width-0.125*inch)
+      title_box.add_leaf_text_centered(number, style(36, colors.black, bold=True), y=0.45*height)
+      title_box.add_leaf_text_centered(title, style(12, colors.black, bold=True), y=0.15*height, max_width=title_width-0.125*inch)
     else:
       stop_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
       title_box = stop_enclosure.inset(0, 0, title_width, height)
       title_box.add_leaf_rounded_rect(colors.lightgrey, colors.gray, 0.05, 4.0)
-      title_box.add_leaf_text_centered(number, style(36, colors.black, bold=True), y=0.55*height)
-      title_box.add_leaf_text_centered(title, style(12, colors.black, bold=True), y=0.25*height, max_width=title_width-0.125*inch)
+      title_box.add_leaf_text_centered(number, style(36, colors.black, bold=True), y=0.45*height)
+      title_box.add_leaf_text_centered(title, style(12, colors.black, bold=True), y=0.15*height, max_width=title_width-0.125*inch)
 
     check_width = 0.5*inch
     check_box = stop_enclosure.inset(stop_enclosure.width - check_width, 0, check_width, height)

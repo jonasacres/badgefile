@@ -52,8 +52,8 @@ class Attendee:
     return self
   
   def effective_rank(self):
-    override_rating = self._info['override_rating']
-    if self._info.get('override_rating', None):
+    override_rating = self._info.get('override_rating', None)
+    if override_rating:
       if str(override_rating).lower() != "aga":
         return float(override_rating)
     try:
@@ -714,6 +714,7 @@ class Attendee:
 
   def set_housing_approval(self, approved):
     was_approved = self._info.get("housing_approved", False) == True
+    log.debug(f"Marking attendee {self.full_name()} #{self.id()} as approved={approved}, was_approved={was_approved}")
 
     if approved == was_approved:
       return

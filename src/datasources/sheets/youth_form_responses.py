@@ -19,6 +19,7 @@ class YouthFormResponses:
     data = read_sheet_data(service, file_id)
     map = self.column_map()
     responses = [self.transform_row({map[i]: val for i, val in enumerate(row)}) for row in data if self.row_looks_legit(row)]
+    responses = [response for response in responses if response.get("override", "").lower() != "ignore"]
 
     log.debug(f"{len(responses)} youth forms received so far.")
 
@@ -41,10 +42,21 @@ class YouthFormResponses:
       return False
   
   def locate_attendee_for_response(self, response):
+    try:
+      badgefile_id = int(response['override'])
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if not attendee:
+        log.warn(f"Youth form lists attendee '{response['name_full']}' DOB {response['date_of_birth']} with AGA ID {badgefile_id}, but can't find attendee with that ID.")
+      return attendee
+    except (KeyError, ValueError):
+      pass
     name_comps = [s.lower() for s in response['name_full'].split()]
 
     for attendee in self.badgefile.attendees():
-      attendee_name_comps = [s.lower() for s in [attendee.info()['name_given'], attendee.info()['name_family']]]
+      # sometimes names have space in them, so split them up
+      db_name_comps = " ".join([attendee.info()['name_given'], attendee.info()['name_family']]).split(" ")
+
+      attendee_name_comps = [s.lower() for s in db_name_comps]
       match_names = all(name_comp in name_comps for name_comp in attendee_name_comps)
       match_dob = attendee.date_of_birth() == response['date_of_birth']
       if match_dob:
@@ -99,4 +111,5 @@ class YouthFormResponses:
       'emergency_contact_phone',
       'signing_guardian_signature',
       'signing_guardian_signature_date',
+      'override'
     ]
