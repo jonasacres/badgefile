@@ -23,12 +23,13 @@ for tournament_title, tournament in leago.get_tournaments().items():
 for registration_id, registration in leago.get_registrations().items():
   print(f"registration: {registration.get('givenName', 'no given name')} {registration.get('familyName', 'no family name')} [{registration.get('key', 'no key')}] ({registration.get('organizationMemberKey', 'no AGAID')})")
 
-if False:
+if True:
   # try adding everyone's info
   participants = [attendee for attendee in badgefile.attendees() if attendee.is_participant() and str(attendee.badge_rating()) != '']
   for attendee in participants:
     log.info(f"Syncing #{attendee.id()} {attendee.full_name()} ({attendee.badge_rating()})")
     try:
-      leago.sync_attendee(attendee)
+      leago.sync_attendee_info(attendee)
+      leago.sync_attendee_enrollment(attendee)
     except Exception as exc:
       log.info("Failed.", exception=exc)

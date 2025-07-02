@@ -37,6 +37,8 @@ class Leago:
     self.leago_id_url = id_url
     self.event_key = event_key
     self.tournaments = None
+    self.tournaments_by_name = None
+    self.tournament_players = {}
     self.registrations = None
     self.token_file = "leago_token.json"
     self._token_data = None
@@ -453,14 +455,38 @@ class Leago:
     for tournament in response.json():
       self.tournaments[tournament.get('title').lower()] = tournament
     
+    our_tournaments = ["open", "diehard", "masters", "womens", "seniors"]
+    self.tournaments_by_name = {tourney_name: tournament for tourney_name in our_tournaments 
+                               if (tournament := self.tournament_by_badgefile_name(tourney_name)) is not None}
+
     return self.tournaments
+  
+  def tournament_by_badgefile_name(self, our_name):
+    valid_titles = {
+      "open": ["US Open", "2025 US Go Congress"],
+      "seniors": ["Seniors Tournament"],
+      "womens": ["Women's Tournament"],
+      "diehard": ["Die Hard"],
+      "masters": ["North American Masters", "Masters"]
+    }
+
+    # match on lowercase. this way, we can just copy-paste titles from leago and not worry.
+    for key, titles in valid_titles.items():
+      valid_titles[key] = [title.lower().strip() for title in titles]
+
+    for title, tournament in self.get_tournaments().items():
+      sanitized_title = title.lower().strip()
+      if sanitized_title in valid_titles[our_name]:
+        return tournament
+    
+    return None
+      
   
   def get_registrations(self, force=False):
     if self.registrations is not None and not force:
       return self.registrations
     
     url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations"
-    
     response = self.make_authenticated_request('GET', url)
     response.raise_for_status()
 
@@ -469,14 +495,35 @@ class Leago:
       self.registrations[registration.get('organizationMemberKey', 'none').lower()] = registration
     
     return self.registrations
+  
+  def get_tournament_players(self, tournament, force=False):
+    if tournament['key'] in self.tournament_players and not force:
+      return self.tournament_players[tournament['key']]
+    
+    self.tournament_players[tournament['key']] = []
+    
+    url = f"{self.leago_url}/api/v1/tournaments/{tournament['key']}/players"
+    response = self.make_authenticated_request('GET', url)
+    response.raise_for_status()
+
+    for player_info in response.json():
+      player_key = player_info['key']
+      found_player = False
+      for badgefile_id, reg in self.registrations.items():
+        if reg['key'] == player_key:
+          self.tournament_players[tournament['key']].append(badgefile_id)
+          found_player = True
+          break
+      
+      if not found_player:
+        log.warn(f"Tournament {tournament['key']} ({tournament['title']}) has unrecognized player: {player_info['givenName']} {player_info['familyName']} {player_info['key']}")
+    
+    return self.tournament_players[tournament['key']]
 
   def tournament_for_name(self, tournament_name):
     return self.get_tournaments().get(tournament_name.lower(), None)
 
-  def enroll_attendee_to_tournament(self, attendee, tournament_name):
-    pass
-
-  def sync_attendee(self, attendee, force=False):
+  def sync_attendee_info(self, attendee, force=False):
     registrations = self.get_registrations()
     id = str(attendee.id())
 
@@ -507,6 +554,32 @@ class Leago:
       self.update_attendee(attendee)
     else:
       self.register_attendee(attendee)
+  
+  def sync_attendee_enrollment(self, attendee, force=False):
+    registrations = self.get_registrations()
+    id = str(attendee.id())
+    registration = registrations.get(id, None)
+
+    if not registration:
+      log.warn(f"Can't sync enrollment of attendee {attendee.full_name()} {attendee.id()}: not registered in Leago")
+      return
+    
+    if self.tournaments_by_name is None:
+      self.get_tournaments()
+
+    player_tournaments = attendee.tournaments()
+
+    if attendee.is_in_masters():
+      if not "masters" in player_tournaments:
+        player_tournaments.append("masters")
+      if "open" in player_tournaments:
+        player_tournaments.remove("open")
+    elif "masters" in player_tournaments:
+      player_tournaments.remove("masters")
+    
+    for tournament_name, tournament in  self.tournaments_by_name.items():
+      is_participating = tournament_name in player_tournaments
+      self.set_player_tournament_participation(attendee, tournament, is_participating, force)
 
   def registration_payload_for_attendee(self, attendee):
     info = attendee.info()
@@ -560,6 +633,31 @@ class Leago:
       return False
     
     return self.unregister_by_key(registrations[id]['key'])
+  
+  def set_player_tournament_participation(self, attendee, tournament, is_participating, force=False):
+    log.debug(f"Setting player {attendee.full_name()} {attendee.id()} participating={is_participating} for tournament {tournament['key']} ({tournament['title']})")
+    str_id = str(attendee.id())
+
+    reg = self.get_registrations().get(str_id)
+    if reg is None and force:
+      reg = self.get_registrations(force=True).get(str_id)
+    if reg is None:
+      log.warn(f"Cannot set attendee {attendee.full_name()} {attendee.id()} participation={is_participating} for tournament {tournament['key']} ({tournament['title']}), as player does not seem to be in Leago")
+      return False
+
+    players = self.get_tournament_players(tournament)
+    is_already_participating = str_id in players
+
+    if is_participating != is_already_participating or force:
+      url = f"{self.leago_url}/api/v1/tournaments/{tournament['key']}/participants/{reg['key']}"
+      enrollment_payload = {'participating': is_participating}
+      response = self.make_authenticated_request('PUT', url, json=enrollment_payload)
+      response.raise_for_status()
+    
+    if is_participating and not is_already_participating:
+      players.append(str_id)
+    elif not is_participating and is_already_participating:
+      players.remove(str_id)
 
   def checkin_attendee(self, attendee):
     self.update_attendee(attendee, {'status': 1})
