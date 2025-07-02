@@ -62,12 +62,13 @@ class TournamentsReport:
       "Override Rating (Editable)",
       "Ignore Problems (Editable)",
       "Comments (Editable)",
+
     ]
     
     sheet_data = [self.tournament_attendee_row(att) for att in self.badgefile.attendees() if att.is_participant()]
     service = authenticate_service_account()
     
     log.debug("tournaments_report: Updating")
-    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Tournaments", secret("folder_id"))
+    sync_sheet_table(service, "Attendee Status", sheet_header, sheet_data, 1, "Tournaments", secret("folder_id"), valueInputOption='USER_ENTERED', preserve_columns_after=16)
 
 

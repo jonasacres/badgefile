@@ -106,26 +106,14 @@ class BadgeRenderer:
     return logo_enclosure
   
   def layout_info_section(self, y):
-    info = self.attendee.info()
+    info = self.attendee.final_info()
     info_height = 4.0*inch
 
-    def clean_caps(text):
-      if text:
-        if text.isupper() or text.islower():
-          text = text.title()
+    name_given = info.get('name_given')
+    name_family = info.get('name_family')
 
-        # Handle hyphenations
-        if '-' in text:
-          text = '-'.join(part.capitalize() for part in text.split('-'))
-      return text
-
-    name_given = clean_caps(info.get('override_name_given') or info.get('name_given'))
-    name_family = clean_caps(info.get('override_name_family') or info.get('name_family'))
-
-    city = clean_caps(info.get('override_city') or info.get('city'))
-    state = info.get('override_state') or info.get('state')
-    if state and len(state) > 3:
-      state = clean_caps(state)
+    city = info.get('city')
+    state = info.get('state')
 
     city_state = ", ".join(filter(lambda x: x and x.strip(), [city, state]))
 
@@ -187,8 +175,8 @@ class BadgeRenderer:
     return scan_enclosure
   
   def layout_country_flag(self, box):
-    info = self.attendee.info()
-    country = (info.get('override_country') or info.get('country')).lower()
+    info = self.attendee.final_info()
+    country = info.get('country').lower()
 
     flag_img = f"src/static/flags/{country}.png"
 

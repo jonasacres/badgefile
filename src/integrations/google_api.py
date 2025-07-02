@@ -270,8 +270,8 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
 
   for i, row in enumerate(existing_data):
     if len(row) > key_index:
-      mapped_rows[row[key_index]] = i
-      seen_rows[row[key_index]] = False
+      mapped_rows[str(row[key_index])] = i
+      seen_rows[str(row[key_index])] = False
 
   updated_data = existing_data.copy()
 
@@ -316,7 +316,7 @@ def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sh
       if i >= len(updated_data[best_row_index]):
           updated_data[best_row_index].extend([None] * (i - len(updated_data[best_row_index]) + 1))
       updated_data[best_row_index][i] = value
-  seen_rows[sheet_header[key_index]] = True
+  seen_rows[str(sheet_header[key_index])] = True
 
   updated_data.extend(new_rows)
 

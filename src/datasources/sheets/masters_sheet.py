@@ -27,4 +27,4 @@ class MastersSheet:
     for attendee in self.badgefile.attendees():
       in_masters = attendee.id() in masters
       print(f"Player {attendee.id()} {attendee.full_name()} -- {in_masters}")
-      attendee.set_in_masters(in_masters)
+      attendee.set_in_tournament('masters', in_masters)

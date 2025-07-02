@@ -113,8 +113,8 @@ class Checksheet:
     return title_enclosure
 
   def layout_info(self, y):
-    ii = self.attendee.info()
-    pp = self.attendee.primary().info()
+    ii = self.attendee.final_info()
+    pp = self.attendee.primary().final_info()
 
     info_height = 1.0*inch
     info_enclosure = self.main_box.inset(self.margin_size, y - info_height, self.main_box.width - self.margin_size, info_height)
@@ -176,7 +176,7 @@ class Checksheet:
     return info_enclosure
 
   def layout_youth(self, y):
-    needs_youth_form = False # self.attendee.still_needs_youth_form()
+    needs_youth_form = self.attendee.still_needs_youth_form()
     if self.attendee.is_primary():
       need_sigs = [guest for guest in self.attendee.party() if guest.still_needs_youth_form()]
     elif self.attendee.still_needs_youth_form():
@@ -189,7 +189,7 @@ class Checksheet:
     if need_sigs:
       for youth in need_sigs:
         count += 1
-        yi = youth.info()
+        yi = youth.final_info()
         content_enclosure.add_leaf_text_left(
           f"{yi['name_given']} {yi['name_family']}, #{youth.id()}, age {youth.age_at_congress()}",
           style(12.0, colors.black, bold=False),
@@ -208,6 +208,7 @@ class Checksheet:
     needs_renewal = self.attendee.needs_renewal()
     needs_stop = balance_due > 0 or needs_renewal
     stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "3", "Payments", needs_stop)
+    info = self.attendee.final_info()
 
     if balance_due == 0:
       content_enclosure.add_leaf_text_left(
@@ -230,13 +231,13 @@ class Checksheet:
       
     if self.attendee.needs_renewal():
       content_enclosure.add_leaf_text_left(
-        f"NEEDS AGA RENEWAL (expiration {self.attendee.info()['aga_expiration_date']})",
+        f"NEEDS AGA RENEWAL (expiration {info['aga_expiration_date']})",
         style(12.0, colors.black, bold=True),
         self.margin_size,
         content_enclosure.height - 0.45*inch)
     elif self.attendee.is_participant():
       content_enclosure.add_leaf_text_left(
-        f"Membership OK (expiration {self.attendee.info()['aga_expiration_date']})",
+        f"Membership OK (expiration {info['aga_expiration_date']})",
         style(12.0, colors.black, bold=False),
         self.margin_size,
         content_enclosure.height - 0.45*inch)
@@ -244,7 +245,7 @@ class Checksheet:
     return stop_enclosure
 
   def layout_hospitality(self, y):
-    ai = self.attendee.info()
+    ai = self.attendee.final_info()
     issues = self.issues_of_type('housing')
     issues = [issue for issue in issues if issue['code'] != '3e'] # ignore issues about attendee not making housing choices
     
@@ -297,7 +298,7 @@ class Checksheet:
 
 
   def layout_tournaments(self, y):
-    if 'masters' in self.attendee.tournaments() and self.attendee.is_in_masters() and self.attendee.effective_rank() >= 5.0:
+    if 'masters' in self.attendee.tournaments() and self.attendee.is_in_tournament('masters') and self.attendee.effective_rank() >= 5.0:
       needs_stop = True
     elif self.issues_of_type('tournament'):
       # TODO: need to write the issue on here
@@ -354,7 +355,7 @@ class Checksheet:
       x_position = (bye_width / 7) * i
       bye_enclosure.add_leaf_line(colors.black, 0.01*inch, x_position, 0.0, x_position, 0.5*inch)
     
-    if self.attendee.is_in_masters():
+    if self.attendee.is_in_tournament('masters'):
       masters_str = "YES"
     elif 'masters' in tournaments:
       masters_str = "Not Admitted"
@@ -371,7 +372,7 @@ class Checksheet:
   def layout_swag(self, y):
     stop_enclosure, content_enclosure = self.draw_table_stop(y, self.default_section_height, "6", "Swag", True)
     content_enclosure.add_leaf_text_left(
-        f"{self.attendee.info()['tshirt']}",
+        f"{self.attendee.final_info()['tshirt']}",
         style(18.0, colors.black, bold=True),
         self.margin_size,
         content_enclosure.height - 0.5*inch)
@@ -490,7 +491,7 @@ class Checksheet:
 
     for person in party:
       count += 1
-      pi = person.info()
+      pi = person.final_info()
       info_row = f"{pi['name_given']} {pi['name_family']}, {person.title()}, #{person.id()}"
       if person.is_primary():
         info_row += f", {person.phone()}"

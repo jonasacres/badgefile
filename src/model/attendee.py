@@ -134,7 +134,7 @@ class Attendee:
     if info.get("override_title"):
       return info.get("override_title")
     
-    if self.is_in_masters():
+    if self.is_in_tournament('masters'):
       return "Masters Player"
     if self.is_participant():
       return "Player"
@@ -188,11 +188,13 @@ class Attendee:
     return sorted(languages)
   
   def tournaments(self):
-    tournament_str = str(self._info['tournaments']).lower()
-    if tournament_str == "none":
-      return []
+    valid_tournaments = ['masters', 'open', 'seniors', 'womens', 'diehard']
+    enrolled_tournaments = [tournament for tournament in valid_tournaments if self.is_in_tournament(tournament)]
     
-    raw_tournaments = tournament_str.split(",")
+    return enrolled_tournaments
+  
+  def process_tournament_string(self, tournament_str):
+    raw_tournaments = tournament_str.lower().split(",")
     tournaments = []
 
     for rt in raw_tournaments:
@@ -209,6 +211,8 @@ class Attendee:
       else:
         log.warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
+
+    log.notice(f"'{tournament_str} -> {tournaments}")
       
     return sorted(tournaments)
   
@@ -248,7 +252,7 @@ class Attendee:
     rating = self.badge_rating()
     if rating and rating[-1].lower() == 'p':
       return 'pro'
-    if self.is_in_masters():
+    if self.is_in_tournament('masters'):
       return 'masters'
     if self.is_participant():
       return 'player'
@@ -289,13 +293,30 @@ class Attendee:
     else:
       return f"{self._info['name_family']}, {self._info['name_given']}"
     
-  def set_in_masters(self, in_masters):
-    if self._info.get("in_masters") != in_masters:
-      self._info['in_masters'] = in_masters
+  def set_in_tournament(self, tournament, is_in_tournament):
+    key = "in_" + tournament
+    if self._info.get(key) != is_in_tournament:
+      self._info[key] = is_in_tournament
       self.sync_to_db()
 
-  def is_in_masters(self):
-    return self._info.get('in_masters', False)
+  def is_in_tournament(self, tournament):
+    # see if we have a canonical answer based on TD overrides
+    key = 'in_' + tournament
+    if key in self._info:
+      return self._info.get(key)
+    
+    if tournament == 'masters':
+      return False # requesting Masters on your sign-up does not put you into the Masters!
+    
+    # for some reason we don't have their sign-up requests; assume no tournaments
+    if not self._info.get('tournaments'):
+      return False
+    
+    # they have sign-up requests, so go with that
+    sign_up_tournament_str = str(self._info['tournaments'])
+    sign_up_tournament_list = self.process_tournament_string(sign_up_tournament_str)
+    did_request_tournament = tournament in sign_up_tournament_list
+    return did_request_tournament
   
   def set_manual_override(self, override):
     summary_str_comps = []
@@ -451,6 +472,43 @@ class Attendee:
   # return the attendee's current info, based on latest regdata with overrides applied
   def info(self):
     return self._info
+  
+  # return the attendee's info, with overrides layered on top.
+  def final_info(self):
+    final = self.info().copy()
+
+    def clean_caps(text):
+      if text:
+        if text.isupper() or text.islower():
+          text = text.title()
+
+        # Handle hyphenations
+        if '-' in text:
+          text = '-'.join(part.capitalize() for part in text.split('-'))
+      return text
+
+
+
+    state = self._info.get('state')
+    if state and len(state) > 3:
+      final['state'] = clean_caps(state)
+    
+    bio_keys = ['name_given', 'name_family', 'city', 'country']
+    for key in bio_keys:
+      override_key = 'override_' + key
+      if self._info.get(override_key):
+        final[key] = self._info[override_key]
+      elif key in self._info:
+        final[key] = clean_caps(self._info[key])
+    
+    possible_tournaments = ['open', 'womens', 'diehard', 'seniors'] # handle masters separately
+    for tournament in possible_tournaments:
+      key = 'in_' + tournament
+      in_tournament = self.is_in_tournament(key)
+      final[key] = in_tournament
+    final['badge_rating'] = self.badge_rating()
+    
+    return final
   
   def web_info(self):
     web_info = self._info.copy()

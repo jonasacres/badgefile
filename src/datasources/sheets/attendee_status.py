@@ -46,36 +46,39 @@ class AttendeeStatusSource:
       return None
     
     # Find indices for key columns
-    agaid_idx = -1
-    override_rating_idx = -1
-    ignore_problems_idx = -1
+    # "why did you write it so dumb" because i only cared about agaid and override_rating at the time...
+    indices = {}
+    keys = {
+      "AGAID": "agaid",
+      "Override Rating (Editable)": "override_rating",
+      "Ignore Problems (Editable)": "ignore_problems",
+      "Final Open": "final_open",
+      "Final Womens": "final_womens",
+      "Final Seniors": "final_seniors",
+      "Final Diehard": "final_diehard",
+    }
+    
     
     for idx, column_title in enumerate(data[0]):
-      if column_title and isinstance(column_title, str):
-        title_lower = column_title.lower()
-        if "agaid" in title_lower:
-          agaid_idx = idx
-        elif "override rating" in title_lower:
-          override_rating_idx = idx
-        elif "ignore problems" in title_lower:
-          ignore_problems_idx = idx
-    
-    if agaid_idx == -1 or override_rating_idx == -1 or ignore_problems_idx == -1:
-      log.info("Unable to read tournament overrides; can't find required columns")
-      return None
+      if column_title in keys:
+        indices[keys[column_title]] = idx
+    for title, key in keys.items():
+      if not key in indices:
+        log.error(f"Unable to read tournament overrides; can't find expected column for {key} (expect column header '{title}')")
+        return None
 
     for row_idx, row in enumerate(data[1:]):
       try:
-        agaid = int(row[agaid_idx]) if agaid_idx < len(row) else None
-        override_rating = row[override_rating_idx] if override_rating_idx < len(row) else None
-        ignore_problems = row[agaid_idx].lower() if ignore_problems_idx < len(row) else None
+        agaid = int(row[indices['agaid']]) if indices['agaid'] < len(row) else None
+        override_rating = row[indices['override_rating']] if indices['override_rating'] < len(row) else None
+        ignore_problems = row[indices['agaid']].lower() if indices['ignore_problems'] < len(row) else None
 
         if agaid is None:
           continue
 
         attendee = self.badgefile.lookup_attendee(agaid)
         if attendee is None:
-          log.warn(f"Tournaments row {row_idx+1} has non-existent attendee {agaid_idx}")
+          log.warn(f"Tournaments row {row_idx+1} has non-existent attendee {indices['agaid']}")
           continue
         
         # Process override_rating
@@ -93,8 +96,17 @@ class AttendeeStatusSource:
         # setting override_rating None will clear the override
         attendee.override_rating(override_rating)
         
-        ignore_problems_bool = ignore_problems in ("1", "true", "yes", "ok")
-        attendee.set_ignore_tournament_issues(ignore_problems_bool)
+        bool_truthy_values = ("1", "true", "yes", "ok")
+        attendee.set_ignore_tournament_issues(ignore_problems in bool_truthy_values)
+        for key in ['open', 'womens', 'seniors', 'diehard']:
+          index = indices['final_'+key]
+          if len(row) > index:
+            if key == 'open':
+              log.info(f"Attendee {attendee.full_name()} {attendee.id()} has final_{key}='{row[index]}', idx={index}")
+            in_tournament = row[index].lower() in bool_truthy_values
+            attendee.set_in_tournament(key, in_tournament)
+          else:
+            log.warn(f"Attendee {attendee.full_name()} {attendee.id()} does not have final_{key} column (lol what the fuck ever)")
 
       except Exception as exc:
         log.warn(f"Caught exception processing row {row_idx+1} of Tournaments", exception=exc)

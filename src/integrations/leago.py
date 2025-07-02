@@ -509,6 +509,10 @@ class Leago:
     for player_info in response.json():
       player_key = player_info['key']
       found_player = False
+
+      if player_info['participationStatus'] != 1:
+        continue
+
       for badgefile_id, reg in self.registrations.items():
         if reg['key'] == player_key:
           self.tournament_players[tournament['key']].append(badgefile_id)
@@ -569,7 +573,7 @@ class Leago:
 
     player_tournaments = attendee.tournaments()
 
-    if attendee.is_in_masters():
+    if attendee.is_in_tournament('masters'):
       if not "masters" in player_tournaments:
         player_tournaments.append("masters")
       if "open" in player_tournaments:
