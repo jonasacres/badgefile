@@ -15,18 +15,24 @@ from datasources.sheets.attendee_status import AttendeeStatusSource
 
 badgefile = Badgefile()
 lyra = badgefile.lookup_attendee(24793)
+kevin = badgefile.lookup_attendee(30478)
+anchi = badgefile.lookup_attendee(1000090)
 AttendeeStatusSource(badgefile).read_tournament_overrides()
 MastersSheet(badgefile).read_sheet()
 
+test_attendees = [
+    lyra,
+    # kevin,
+    anchi,
+]
 
-if lyra is None:
-    print("Couldn't find test account")
-    os._exit(1)
+for attendee in test_attendees:
+    attendee.badge().generate()
 
 for attendee in badgefile.attendees():
     if attendee.is_cancelled():
         continue
-    if not os.path.exists(attendee.badge().path()):
+    if not attendee.badge().already_exists():
         print(attendee.full_name())
         attendee.badge().generate()
         print(f"Generated badge: {attendee.badge().path()}")

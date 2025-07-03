@@ -104,7 +104,7 @@ def update():
   log.notice(f"Updating badgefile.")
   bf = Badgefile()
   bf.update()
-  bf.update_attendees()
+  bf.update_attendees() # TODO: this might be redundant at this point; can't remember if there was a reason we needed to re-run before doing approvals.
   bf.run_approvals()
 
   log.notice("Running scheduled e-mails.")

@@ -16,6 +16,22 @@ class Checksheet:
   def __init__(self, attendee):
     self.attendee = attendee
 
+  def already_exists(self):
+    return os.path.exists(self.path()) and self._has_correct_hash()
+  
+  def _has_correct_hash(self):
+    """Check if the existing PDF has the correct checksheet hash in its metadata."""
+    try:
+      from PyPDF2 import PdfReader
+      reader = PdfReader(self.path())
+      metadata = reader.metadata
+      if metadata and metadata.get('/Title'):
+        return self.attendee.checksheet_hash() in metadata['/Title']
+      return False
+    except Exception:
+      # If we can't read the PDF or metadata, assume it needs regeneration
+      return False
+
   def issues_of_type(self, type):
     import json
     open_issues = self.attendee.open_issues()
@@ -76,6 +92,8 @@ class Checksheet:
   def layout(self):
     # the main box covers the left half of a page and includes the badge, tearaway tickets, etc.
     self.canvas = canvas.Canvas(self.path(), pagesize=(8.5*inch, 11*inch))
+    self.set_metadata()
+
     self.margin_size = 0.125*inch
     self.main_box = InsetBox(self.margin_size, self.margin_size, 8.5*inch - 2*self.margin_size, 11.0*inch - 2*self.margin_size, canvas=self.canvas)
     self.default_section_height = 0.8*inch
@@ -91,6 +109,31 @@ class Checksheet:
     next_y -= self.layout_badge(next_y).height + self.margin_size
     
     return self
+  
+  def set_metadata(self):
+    # Set PDF metadata including checksheet hash
+    from datetime import datetime
+    import time
+    hash = self.attendee.checksheet_hash()
+    
+    self.canvas.setTitle(f"2025 US Go Congress Checksheet - {self.attendee.id()} - {hash}")
+    self.canvas.setAuthor("American Go Association")
+    self.canvas.setSubject("Attendee Checksheet")
+    self.canvas.setCreator("Badgefile")
+    self.canvas.setProducer("ReportLab")
+    
+    # Add custom metadata for checksheet hash
+    info = self.attendee.final_info()
+    name_given = info.get('name_given', '')
+    name_family = info.get('name_family', '')
+    attendee_name = f"{name_given} {name_family}".strip()
+    
+    # Get current timestamp with timezone
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S %z")
+    
+    # Set keywords metadata to include checksheet hash and timestamp
+    keywords = f"US Go Congress 2025, Austin TX, Checksheet, {attendee_name}, {self.attendee.id()}, {hash}, Generated: {current_time}"
+    self.canvas.setKeywords(keywords)
   
   def layout_header(self, y):
     title_height = 0.5*inch
@@ -146,7 +189,7 @@ class Checksheet:
     scan_enclosure = info_enclosure.inset(info_enclosure.width - scan_height - 0.0625*inch, 0.0625*inch, scan_height, scan_height)
     
     # Generate Data Matrix with attendee ID
-    data = self.attendee.datamatrix_content()
+    data = self.attendee.datamatrix_content('c')
     encoded = encode(data, size='14x14')
     
     # Convert to PIL Image
@@ -163,7 +206,7 @@ class Checksheet:
     # Calculate dimensions and position for centered placement
     dm_size = scan_height
     dm_x = (scan_enclosure.width - dm_size) / 2
-    dm_y = (scan_height - dm_size) / 2
+    dm_y = scan_enclosure.height - scan_height + 0.05*inch
     
     # Draw the Data Matrix
     dm_box = scan_enclosure.inset(dm_x, dm_y, dm_size, dm_size)
@@ -173,6 +216,19 @@ class Checksheet:
       canvas.drawImage(img_reader, img_left, img_bottom, width=dm_size, height=dm_size)
     
     dm_box.draw_func = lambda canvas: draw_datamatrix(canvas)
+
+    from datetime import datetime
+    import socket
+    
+    # Get current timestamp with timezone
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S %z")
+    
+    # Get hostname
+    hostname = socket.gethostname()
+    
+    # Format timestamp string
+    timestamp = f"{current_time} {hostname}"
+    info_enclosure.add_leaf_text_right(timestamp, style(10), info_enclosure.width - self.margin_size, 0.5*self.margin_size)
 
     return info_enclosure
 
@@ -545,7 +601,7 @@ class Checksheet:
     count = 0
 
     activity_enclosure.add_leaf_text_left(
-        f"Invoice",
+        f"Transaction History",
         style(14, bold=True),
         self.margin_size,
         height - self.margin_size - 0.25*inch

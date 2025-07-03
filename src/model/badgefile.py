@@ -51,6 +51,10 @@ class Badgefile:
     sheet.update_from_housing_registration()
     HousingApprovalEmail(self).send()
     EmailReport(self).update()
+  
+  def fast_update(self):
+    self.update_attendees()
+    MastersSheet(self).read_sheet()
 
   def update(self):
     self.update_attendees()

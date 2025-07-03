@@ -11,9 +11,11 @@ from util.secrets import secret
 from integrations.leago import Leago
 from model.badgefile import Badgefile
 from datasources.sheets.attendee_status import AttendeeStatusSource
+from datasources.sheets.masters_sheet import MastersSheet
 
 badgefile = Badgefile()
 AttendeeStatusSource(badgefile).read_tournament_overrides()
+MastersSheet(badgefile).read_sheet()
 
 leago = Leago("https://api.leago.gg", "https://id.leago.gg", secret("leago_event_key"))
 leago.login()

@@ -26,6 +26,7 @@ class Attendee:
     self._info = {}
     self._badgefile = badgefile
     self._activities = None
+    self._issues = None
     pass
 
   def badgefile(self):
@@ -101,8 +102,8 @@ class Attendee:
   def id(self):
     return self._info["badgefile_id"]
   
-  def datamatrix_content(self):
-    return ("25GC" + str(self.id())).encode('utf8')
+  def datamatrix_content(self, suffix=""):
+    return ("25." + str(self.id()) + "." + suffix).encode('utf8')
   
   def hash_id(self):
     if "hash_id" in self._info and self._info["hash_id"] is not None:
@@ -476,13 +477,16 @@ class Attendee:
     final = self.info().copy()
 
     def clean_caps(text):
-      if text:
-        if text.isupper() or text.islower():
-          text = text.title()
+      try:
+        if text:
+          if text.isupper() or text.islower():
+            text = text.title()
 
-        # Handle hyphenations
-        if '-' in text:
-          text = '-'.join(part.capitalize() for part in text.split('-'))
+          # Handle hyphenations
+          if '-' in text:
+            text = '-'.join(part.capitalize() for part in text.split('-'))
+      except AttributeError:
+        pass
       return text
 
 
@@ -503,11 +507,18 @@ class Attendee:
           final[key] = clean_caps(self._info[key])
     
     possible_tournaments = ['open', 'womens', 'diehard', 'seniors'] # handle masters separately
+    enrolled_tournaments = []
     for tournament in possible_tournaments:
       key = 'in_' + tournament
       in_tournament = self.is_in_tournament(key)
       final[key] = in_tournament
+      if in_tournament:
+        enrolled_tournaments.append(tournament)
     final['badge_rating'] = self.badge_rating()
+    final['badge_type'] = self.badge_type()
+    final['title'] = self.title()
+    final['phone'] = self.phone()
+    final['tournaments_list'] = ','.join(enrolled_tournaments)
     
     return final
   
@@ -575,9 +586,10 @@ class Attendee:
     return score
   
   # return a dict of previously identified issues that are not marked as resolved in the database
-  def open_issues(self):
-    # TODO: Strongly consider memoizing this!!
-    return IssueManager.shared().open_issues_for_attendee(self)
+  def open_issues(self, force=False):
+    if self._issues is None or force:
+      self._issues = IssueManager.shared().open_issues_for_attendee(self)
+    return self._issues
 
   # return a list of previously identified issues regardless of status
   def all_issues(self):
@@ -895,6 +907,76 @@ class Attendee:
     # this is a werid hack to make 2g_registration_duplicate work
     # (might not need this now that ce_report_base has latest implemented as a singleton)
     return ReglistCacher.shared()
+  
+  def badge_hash(self):
+    # honestly, the hash calculations should go into Badge and Checksheet.
+    # this Attendee class shouldn't know/care what info consumers are using...
+    keys = [
+      'name_given',
+      'name_family',
+      'badgefile_id',
+      'city',
+      'state',
+      'country',
+      'badge_rating',
+      'title',
+      'badge_type',
+      'languages',
+    ]
+
+    fi = self.final_info()
+    hash_string = json.dumps({key: fi[key] for key in keys})
+    return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
+  
+  def checksheet_hash(self):
+    keys = [
+      'badgefile_id',
+      'name_given',
+      'name_family',
+      'name_mi',
+      'city',
+      'state',
+      'country',
+      'phone',
+      'email',
+      'tshirt',
+      'translator',
+      'languages',
+      'title',
+      'badge_type',
+      'is_primary',
+      'badge_rating',
+      'tournaments_list',
+      'date_of_birth',
+      'aga_chapter',
+      'aga_rating',
+      'aga_expiration_date',
+      'primary_registrant_id',
+      'override_rating',
+      'housing_approved',
+      'will_arrange_own_housing',
+      'housing_card_number',
+      'housing_room_number',
+      'housing_building',
+    ]
+
+    fi = self.final_info()
+    hashable = {key: fi[key] for key in keys}
+    party = sorted(self.party(), key=lambda party_member: party_member.id())
+    hashable['party'] = []
+    hashable['issues'] = self.open_issues()
+
+    for member in party:
+      if member == self:
+        continue
+      mi = member.final_info()
+      member_hashable = {key: mi[key] for key in keys}
+      member_hashable['issues'] = member.open_issues()
+      member_hash = hashlib.sha256(json.dumps(member_hashable).encode('utf-8')).hexdigest()
+      hashable['party'].append(member_hash)
+    
+    hash_string = json.dumps(hashable)
+    return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
   
 class ReglistCacher:
   _instance = None

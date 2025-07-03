@@ -27,6 +27,22 @@ class Badge:
     # upload the badge to the Google Drive
     pass
 
+  def already_exists(self):
+    return os.path.exists(self.path()) and self._has_correct_hash()
+  
+  def _has_correct_hash(self):
+    """Check if the existing PDF has the correct badge hash in its metadata."""
+    try:
+      from PyPDF2 import PdfReader
+      reader = PdfReader(self.path())
+      metadata = reader.metadata
+      if metadata and metadata.get('/Title'):
+        return self.attendee.badge_hash() in metadata['/Title']
+      return False
+    except Exception:
+      # If we can't read the PDF or metadata, assume it needs regeneration
+      return False
+
 class BadgeRenderer:
   # all the badge generation stuff has to go in here...
   # print onto Avery 8422 stock (6" x 4.25" -- has two badges per sheet, mirror them)
@@ -79,6 +95,8 @@ class BadgeRenderer:
   def layout(self):
     # the main box covers the left half of a page and includes the badge, tearaway tickets, etc.
     self.canvas = canvas.Canvas(self.path, pagesize=(8.5*inch, 11*inch))
+    self.set_metadata()
+        
     self.main_box = InsetBox(0, 0.5*inch, 4.25*inch, 9.0*inch, canvas=self.canvas)
     self.margin_size = 0.125*inch
 
@@ -93,6 +111,31 @@ class BadgeRenderer:
     next_y -= self.layout_title_section(next_y).height + self.margin_size
     
     return self
+  
+  def set_metadata(self):
+    # Set PDF metadata including badge hash
+    from datetime import datetime
+    import time
+    
+    self.canvas.setTitle(f"2025 US Go Congress Badge - {self.attendee.id()} - {self.attendee.badge_hash()}")
+    self.canvas.setAuthor("American Go Association")
+    self.canvas.setSubject("Attendee Badge")
+    self.canvas.setCreator("Badgefile")
+    self.canvas.setProducer("ReportLab")
+    
+    # Add custom metadata for badge hash
+    info = self.attendee.final_info()
+    name_given = info.get('name_given', '')
+    name_family = info.get('name_family', '')
+    attendee_name = f"{name_given} {name_family}".strip()
+    
+    # Get current timestamp with timezone
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S %z")
+    
+    # Set keywords metadata to include badge hash and timestamp
+    keywords = f"US Go Congress 2025, Austin TX, Badge, {attendee_name}, {self.attendee.id()}, {self.attendee.badge_hash()}, Generated: {current_time}"
+    self.canvas.setKeywords(keywords)
+
   
   def layout_background(self):
     self.badge_box \
@@ -112,8 +155,8 @@ class BadgeRenderer:
     name_given = info.get('name_given')
     name_family = info.get('name_family')
 
-    city = info.get('city')
-    state = info.get('state')
+    city = str(info.get('city') or "")
+    state = str(info.get('state') or "")
 
     city_state = ", ".join(filter(lambda x: x and x.strip(), [city, state]))
 
@@ -127,7 +170,7 @@ class BadgeRenderer:
 
     self.layout_scannable(info_enclosure)
     self.layout_country_flag(info_enclosure)
-    self.layout_language_flags(info_enclosure)
+    self.layout_language_pips(info_enclosure)
 
     return info_enclosure
   
@@ -144,7 +187,7 @@ class BadgeRenderer:
     scan_enclosure = box.inset(0, 0.85*inch, box.width, scan_height)
     
     # Generate Data Matrix with attendee ID
-    data = self.attendee.datamatrix_content()
+    data = self.attendee.datamatrix_content('b')
     encoded = encode(data, size='14x14')
     
     # Convert to PIL Image
@@ -191,6 +234,34 @@ class BadgeRenderer:
     flag_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
     flag_box.add_leaf_image_centered(flag_img)
 
+  def layout_language_pips(self, box):
+    pip_spacing = 0.05*inch
+    pip_width = 0.4*inch
+    pip_height = 0.2*inch
+
+    codes = {
+      "english": "EN",
+      "korean": "한글",
+      "chinese": "中文",
+      "japanese": "日本",
+      "spanish": "ES",
+    }
+
+    lang_box = box.inset(2.3 * inch, 0.25 *inch, 2*pip_width+pip_spacing, 3*pip_height+2*pip_spacing)
+    languages = self.attendee.languages()
+    
+    count = 0
+    for language in languages:
+      pip_code = codes[language]
+      pip_x = (count %  2) * (pip_width  + pip_spacing)
+      pip_y = (count // 2) * (pip_height + pip_spacing)
+      
+      pip_box = lang_box.inset(pip_x, pip_y, pip_width, pip_height)
+      pip_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.04*inch)
+      pip_box.add_leaf_text_centered(pip_code, style(12, bold=True), y=0.05*inch)
+
+      count += 1
+
   def layout_language_flags(self, box):
     flag_width = 0.4 * inch
     flag_height = flag_width / 1.5
@@ -204,8 +275,11 @@ class BadgeRenderer:
       "korean":   ["src/static/flags/kor.png", 1 * hz_space, 0 * vt_space],
       "chinese":  ["src/static/flags/chn.png", 0 * hz_space, 1 * vt_space],
       "japanese": ["src/static/flags/jpn.png", 1 * hz_space, 1 * vt_space],
-      "spanish":  ["src/static/flags/spn.png", 0 * hz_space, 2 * vt_space],
+      "spanish":  ["src/static/flags/mex.png", 0 * hz_space, 2 * vt_space],
     }
+
+    if self.attendee.final_info()['country'].lower() == 'twn':
+      lang_defs['chinese'][0] = "src/static/flags/twn.png" # ooof
 
     lang_box = box.inset(2.3 * inch, 0.25 *inch, 2*hz_space, 3*vt_space)
     languages = self.attendee.languages()

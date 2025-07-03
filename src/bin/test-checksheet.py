@@ -32,7 +32,9 @@ for attendee in badgefile.attendees():
   if attendee.is_cancelled():
     continue
   attendee.scan_issues()
-  if not os.path.exists(attendee.checksheet().path()):
+  if not attendee.checksheet().already_exists():
     attendee.checksheet().generate()
+    import json
+    # print(json.dumps(attendee.final_info(), indent=2))
     print(f"Generated checksheet: {attendee.checksheet().path()}")
 
