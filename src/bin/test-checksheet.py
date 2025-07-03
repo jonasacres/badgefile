@@ -14,9 +14,14 @@ from log.logger import log
 badgefile = Badgefile()
 
 lyra = badgefile.lookup_attendee(24793)
-peng = badgefile.lookup_attendee(6)
+keith = badgefile.lookup_attendee(81)
+stephanie = badgefile.lookup_attendee(19270)
 
-generate = [lyra, peng]
+generate = [
+  # lyra,
+  keith,
+  stephanie,
+]
 
 for att in generate:
   att.checksheet().generate()

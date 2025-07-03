@@ -212,8 +212,6 @@ class Attendee:
         log.warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
 
-    log.notice(f"'{tournament_str} -> {tournaments}")
-      
     return sorted(tournaments)
   
   def activities(self):
@@ -883,7 +881,7 @@ class Attendee:
         seen_trns.add(line['transrefnum'])
         balance_due += line['balance_due']
     
-    return balance_due    
+    return balance_due
 
   
   def balance_due(self):

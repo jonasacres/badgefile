@@ -10,6 +10,7 @@ from pylibdmtx.pylibdmtx import encode
 from PIL import Image as PILImage
 
 from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width
+from log.logger import log
 
 class Checksheet:
   def __init__(self, attendee):
@@ -330,7 +331,7 @@ class Checksheet:
         self.margin_size + 4*inch,
         content_enclosure.height - 0.50*inch)
     content_enclosure.add_leaf_text_left(
-        f"Diehard: {'YES' if 'open' in tournaments else 'NO'}",
+        f"Diehard: {'YES' if 'diehard' in tournaments else 'NO'}",
         style(12.0, colors.black, bold=False),
         self.margin_size,
         content_enclosure.height - 0.75*inch)
@@ -663,6 +664,14 @@ class Checksheet:
   
     count = 0
     total_payments = 0
+
+    if len(payments_by_trn) == 2:
+      payments_list = list(payments_by_trn.values())
+      pay0 = payments_list[0]
+      pay1 = payments_list[1]
+      if pay0['payment_amount'] == pay1['payment_amount'] and float(pay0['payment_amount']) == grand_total:
+        payments_by_trn = {pay0['transrefnum']: pay0}
+
     for trn, payment in payments_by_trn.items():
       count += 1
       amount = payment['payment_amount'] or 0
