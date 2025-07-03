@@ -90,7 +90,7 @@ class Badgefile:
       if override['badgefile_id'] is not None:
         attendee = self.lookup_attendee(override['badgefile_id'])
         if attendee is None:
-          log.warn(f"Unable to find attendee for overridden badge with id {override['badgefile_id']}, description '{override['description']}'")
+          log.notice(f"Unable to find attendee for overridden badge with id {override['badgefile_id']}, description '{override['description']}'")
           continue
         attendee.set_manual_override(override)
 

@@ -497,7 +497,10 @@ class Attendee:
       if self._info.get(override_key):
         final[key] = self._info[override_key]
       elif key in self._info:
-        final[key] = clean_caps(self._info[key])
+        if key == 'country':
+          final[key] = self._info[key]
+        else:
+          final[key] = clean_caps(self._info[key])
     
     possible_tournaments = ['open', 'womens', 'diehard', 'seniors'] # handle masters separately
     for tournament in possible_tournaments:
