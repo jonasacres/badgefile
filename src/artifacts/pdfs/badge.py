@@ -9,7 +9,7 @@ import io
 from pylibdmtx.pylibdmtx import encode
 from PIL import Image as PILImage
 
-from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width
+from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width, find_and_register_noto_cjk_fonts
 
 class Badge:
   def __init__(self, attendee):
@@ -75,6 +75,9 @@ class BadgeRenderer:
     self.badge = badge
     self.attendee = badge.attendee
     self.path = badge.path()
+    
+    # Register CJK fonts at the start
+    find_and_register_noto_cjk_fonts()
 
   def draw(self):
     # Create parent directories for the badge file if they don't exist
@@ -236,8 +239,8 @@ class BadgeRenderer:
 
   def layout_language_pips(self, box):
     pip_spacing = 0.05*inch
-    pip_width = 0.4*inch
-    pip_height = 0.2*inch
+    pip_width = 0.8*inch
+    pip_height = 0.4*inch
 
     codes = {
       "english": "EN",
@@ -253,12 +256,12 @@ class BadgeRenderer:
     count = 0
     for language in languages:
       pip_code = codes[language]
-      pip_x = (count %  2) * (pip_width  + pip_spacing)
-      pip_y = (count // 2) * (pip_height + pip_spacing)
+      pip_x = 0 # (count %  2) * (pip_width  + pip_spacing)
+      pip_y = (count) * (pip_height + pip_spacing)
       
       pip_box = lang_box.inset(pip_x, pip_y, pip_width, pip_height)
       pip_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.04*inch)
-      pip_box.add_leaf_text_centered(pip_code, style(12, bold=True), y=0.05*inch)
+      pip_box.add_leaf_text_centered(pip_code, style(18, bold=True, font_name="NotoSansCJK-Bold"), y=0.10*inch)
 
       count += 1
 

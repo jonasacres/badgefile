@@ -519,6 +519,8 @@ class Attendee:
     final['title'] = self.title()
     final['phone'] = self.phone()
     final['tournaments_list'] = ','.join(enrolled_tournaments)
+    final['age_at_congress'] = self.age_at_congress()
+    final['is_attending_banquet'] = self.is_attending_banquet()
     
     return final
   

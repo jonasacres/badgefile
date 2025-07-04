@@ -31,6 +31,8 @@ pkgs.mkShell {
     python.pkgs.pyyaml
     python.pkgs.boto3
     python.pkgs.pylibdmtx
+    
+    pkgs.noto-fonts-cjk-sans
   ];
 
   shellHook = ''

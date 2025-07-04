@@ -15,6 +15,7 @@ from datasources.sheets.attendee_status import AttendeeStatusSource
 
 badgefile = Badgefile()
 lyra = badgefile.lookup_attendee(24793)
+peter = badgefile.lookup_attendee(24807)
 kevin = badgefile.lookup_attendee(30478)
 anchi = badgefile.lookup_attendee(1000090)
 AttendeeStatusSource(badgefile).read_tournament_overrides()
@@ -22,6 +23,7 @@ MastersSheet(badgefile).read_sheet()
 
 test_attendees = [
     lyra,
+    peter,
     # kevin,
     anchi,
 ]
