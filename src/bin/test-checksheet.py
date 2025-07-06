@@ -18,7 +18,7 @@ keith = badgefile.lookup_attendee(81)
 stephanie = badgefile.lookup_attendee(19270)
 
 generate = [
-  # lyra,
+  lyra,
   keith,
   stephanie,
 ]

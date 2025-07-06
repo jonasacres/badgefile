@@ -9,7 +9,7 @@ import io
 from pylibdmtx.pylibdmtx import encode
 from PIL import Image as PILImage
 
-from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width
+from artifacts.pdfs.inset_box import InsetBox, style, font_size_for_width, find_and_register_noto_cjk_fonts
 from log.logger import log
 
 class Checksheet:
@@ -463,7 +463,31 @@ class Checksheet:
     correction_line("AGA #",                  self.margin_size,              2, 1.5*inch)
     correction_line("Title",                2*self.margin_size + 1.5*inch,   2, 4.625*inch)
 
-    correction_line("Languages",              self.margin_size,              3, 6.25*inch)
+    languages_box = content_enclosure.inset(self.margin_size, content_enclosure.height - 3.0*inch, content_enclosure.width - 2*self.margin_size, 0.5*inch)
+
+    find_and_register_noto_cjk_fonts()
+
+    checkbox_size = 0.25*inch
+    left_pad = 0.55*inch
+    check_zh = languages_box.inset(left_pad + 0, 0.25*inch, checkbox_size, checkbox_size)
+    check_zh.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
+    languages_box.add_leaf_text_left("中文", style(18, bold=True, font_name="NotoSansSC-ExtraBold"), check_zh.x + check_zh.width + 0.05*inch, check_zh.y + 0.03*inch)
+
+
+    check_ko = languages_box.inset(left_pad + 1.25*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_ko.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
+    languages_box.add_leaf_text_left("한글", style(18, bold=True, font_name="NotoSansKR-Regular"), check_ko.x + check_ko.width + 0.05*inch, check_ko.y + 0.03*inch)
+
+    check_jp = languages_box.inset(left_pad + 2.5*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_jp.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
+    languages_box.add_leaf_text_left("日本語", style(18, bold=True, font_name="NotoSansJP-Regular"), check_jp.x + check_jp.width + 0.05*inch, check_jp.y + 0.03*inch)
+
+    check_es = languages_box.inset(left_pad + 4.0*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_es.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
+    languages_box.add_leaf_text_left("Español", style(18, bold=True, font_name="NotoSansJP-Regular"), check_es.x + check_es.width + 0.05*inch, check_es.y + 0.03*inch)
+
+
+    # correction_line("Languages",              self.margin_size,              3, 6.25*inch)
 
     return stop_enclosure
 

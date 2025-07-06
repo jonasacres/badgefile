@@ -246,8 +246,8 @@ class BadgeRenderer:
       "english": ("EN", style(18)),
       "korean": ("한글", style(18, bold=False, font_name="NotoSansKR-Regular")),
       "chinese": ("中文", style(18, bold=True, font_name="NotoSansSC-ExtraBold")),
-      "japanese": ("日本", style(18, bold=False, font_name="NotoSansJP-Regular")),
-      "spanish": ("ES", style(18)),
+      "japanese": ("日本語", style(18, bold=False, font_name="NotoSansJP-Regular")),
+      "spanish": ("Español", style(18)),
     }
 
     lang_box = box.inset(2.3 * inch, 0.25 *inch, 2*pip_width+pip_spacing, 3*pip_height+2*pip_spacing)
@@ -258,10 +258,14 @@ class BadgeRenderer:
       pip_code, font_style = codes[language]
       pip_x = 0 # (count %  2) * (pip_width  + pip_spacing)
       pip_y = (count) * (pip_height + pip_spacing)
+
+      y_base = 0.10*inch
+      if language == "spanish":
+        y_base += 0.025*inch
       
       pip_box = lang_box.inset(pip_x, pip_y, pip_width, pip_height)
       pip_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.04*inch)
-      pip_box.add_leaf_text_centered(pip_code, font_style, y=0.10*inch)
+      pip_box.add_leaf_text_centered(pip_code, font_style, y=y_base, max_width=pip_box.width-0.1*inch)
 
       count += 1
 

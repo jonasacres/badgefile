@@ -103,7 +103,6 @@ def find_and_register_noto_cjk_fonts():
                         try:
                             if font_name not in pdfmetrics._fonts:
                                 pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                print(f"Registered font: {font_name} from {font_path} ({style_name})")
                                 registered_count += 1
                         except Exception as e:
                             print(f"Failed to register font {font_name}: {e}")
@@ -121,7 +120,6 @@ def find_and_register_noto_cjk_fonts():
                 if generic_name not in pdfmetrics._fonts:
                     try:
                         pdfmetrics.registerFont(TTFont(generic_name, fallback_font_path))
-                        print(f"Registered generic CJK font: {generic_name} from {fallback_font_path}")
                         registered_count += 1
                     except Exception as e:
                         print(f"Failed to register generic CJK font {generic_name}: {e}")
