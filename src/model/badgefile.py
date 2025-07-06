@@ -171,14 +171,14 @@ class Badgefile:
     except ValueError:
       return None
     
-    for attendee in self.attendees():
+    for attendee in self.attendees(include_cancelled=True):
       if attendee.id() == badgefile_id:
         return attendee
 
     override_map = self.override_map()   
     if badgefile_id in override_map:
       badgefile_id = override_map[badgefile_id]
-    for attendee in self.attendees():
+    for attendee in self.attendees(include_cancelled=True):
       if attendee.id() == badgefile_id:
         return attendee
     
@@ -194,14 +194,14 @@ class Badgefile:
     return self._override_map
 
   def lookup_attendee_by_hash_id(self, hash_id):
-    for attendee in self.attendees():
+    for attendee in self.attendees(include_cancelled=True):
       if attendee.hash_id() == hash_id:
         return attendee
     
     return None
   
   # return list of all attendees
-  def attendees(self, force_refresh=False):
+  def attendees(self, force_refresh=False, include_cancelled=False):
     if self._attendees is None or force_refresh:
       log.debug("badgefile: Loading attendees list")
       Attendee(self).ensure_attendee_table() # shouldn't be instance method of Attendee
@@ -209,6 +209,8 @@ class Badgefile:
       self._attendees = [Attendee(self).load_db_row(row) for row in rows]
       self.ensure_consistency()
       log.debug(f"badgefile: Loaded {len(self._attendees)} attendees")
+    if not include_cancelled:
+      return [att for att in self._attendees if not att.is_cancelled()]
     return self._attendees
   
   def parties(self):
@@ -230,14 +232,14 @@ class Badgefile:
 
     if badgefile_id != None:
       canonical_id = IdManager.shared().canonical_id(badgefile_id)
-      for attendee in self.attendees():
+      for attendee in self.attendees(include_cancelled=True):
         if IdManager.shared().canonical_id(attendee.id()) == canonical_id:
           return attendee
       
       log.debug(f"Attendee has badgefile_id {badgefile_id}, but no attendee matches.", data=row)
       return None
 
-    scored = [ [attendee, attendee.similarity_score(row)] for attendee in self.attendees() ]
+    scored = [ [attendee, attendee.similarity_score(row)] for attendee in self.attendees(include_cancelled=True) ]
     scored.sort(key=lambda x: x[1], reverse=True)
 
     # no attendees yet

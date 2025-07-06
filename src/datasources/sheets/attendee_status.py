@@ -106,7 +106,7 @@ class AttendeeStatusSource:
             in_tournament = row[index].lower() in bool_truthy_values
             attendee.set_in_tournament(key, in_tournament)
           else:
-            log.warn(f"Attendee {attendee.full_name()} {attendee.id()} does not have final_{key} column (lol what the fuck ever)")
+            log.notice(f"Attendee {attendee.full_name()} {attendee.id()} does not have final_{key} column")
 
       except Exception as exc:
         log.warn(f"Caught exception processing row {row_idx+1} of Tournaments", exception=exc)

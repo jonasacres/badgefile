@@ -10,94 +10,124 @@ from reportlab.pdfbase.ttfonts import TTFont
 from copy import copy
 
 def find_and_register_noto_cjk_fonts():
+    # Check if we already ran this function
+    if hasattr(find_and_register_noto_cjk_fonts, '_fonts_registered'):
+        return
+    
+    # Mark that we've run this function
+    find_and_register_noto_cjk_fonts._fonts_registered = True
     """
-    Find and register Noto CJK fonts using fc-list command.
+    Find and register Noto CJK fonts in the nix environment.
     This function should be called once before using CJK fonts.
     """
     try:
-        # Use fc-list to find Noto CJK fonts
-        result = subprocess.run(['fc-list', ':family=Noto Sans CJK', 'file', 'style'], 
-                               capture_output=True, text=True, check=True)
+        # Use fc-list to find individual CJK fonts for each language
+        languages = [
+            ('ko', 'Korean'),
+            ('zh', 'Chinese'),
+            ('ja', 'Japanese'),
+        ]
         
-        font_mappings = {}
+        registered_count = 0
+        fallback_font_path = None  # Store path for generic CJK font
         
-        for line in result.stdout.strip().split('\n'):
-            if not line.strip():
-                continue
-            
-            # Parse fc-list output format: /path/to/font.otf: Family:style
-            parts = line.split(':')
-            if len(parts) >= 3:
-                font_path = parts[0].strip()
-                style_info = parts[2].strip() if len(parts) > 2 else ""
-                
-                # Map different styles to ReportLab font names
-                if 'Bold' in style_info and 'Italic' not in style_info:
-                    font_name = 'NotoSansCJK-Bold'
-                elif 'Regular' in style_info or 'Medium' in style_info:
-                    font_name = 'NotoSansCJK-Regular'
-                elif 'Light' in style_info:
-                    font_name = 'NotoSansCJK-Light'
-                else:
-                    continue  # Skip other styles for now
-                
-                # Only register if we haven't seen this font name yet
-                if font_name not in font_mappings and os.path.exists(font_path):
-                    font_mappings[font_name] = font_path
-        
-        # Register the fonts with ReportLab
-        for font_name, font_path in font_mappings.items():
+        for lang_code, lang_name in languages:
             try:
-                # Check if font is already registered
-                if font_name not in pdfmetrics._fonts:
-                    pdfmetrics.registerFont(TTFont(font_name, font_path))
-                    print(f"Registered font: {font_name} from {font_path}")
-            except Exception as e:
-                print(f"Failed to register font {font_name}: {e}")
-        
-        # If we didn't find any fonts, try a more comprehensive search
-        if not font_mappings:
-            # Search for fonts that support multiple CJK languages
-            languages = ['zh', 'ko', 'ja']  # Chinese, Korean, Japanese
-            for lang in languages:
-                try:
-                    result = subprocess.run(['fc-list', f':lang={lang}', 'file', 'family'], 
-                                           capture_output=True, text=True, check=True)
+                # Use fc-list to find fonts for this language, looking for different weights
+                result = subprocess.run(['fc-list', f':lang={lang_code}', 'file', 'family', 'style'], 
+                                       capture_output=True, text=True, check=True)
+                
+                # Organize fonts by weight
+                fonts_by_weight = {
+                    'Regular': [],
+                    'Bold': [],
+                    'ExtraBold': [],
+                    'Light': [],
+                    'Medium': []
+                }
+                
+                for line in result.stdout.strip().split('\n'):
+                    if not line.strip():
+                        continue
                     
-                    for line in result.stdout.strip().split('\n'):
-                        if not line.strip():
+                    # Parse fc-list output format: /path/to/font.ttf: Family:style
+                    parts = line.split(':')
+                    if len(parts) >= 2:
+                        font_path = parts[0].strip()
+                        family_name = parts[1].strip() if len(parts) > 1 else ""
+                        style_name = parts[2].strip() if len(parts) > 2 else ""
+                        
+                        # Only process .ttf files (not .otf.ttc or .pcf.gz)
+                        if not font_path.endswith('.ttf'):
                             continue
                         
-                        parts = line.split(':')
-                        if len(parts) >= 2:
-                            font_path = parts[0].strip()
-                            family_name = parts[1].strip() if len(parts) > 1 else ""
+                        # Look for CJK fonts
+                        if ('Noto Sans' in family_name or 'IBM Plex Sans' in family_name or
+                            'Zen Kaku Gothic' in family_name or 'Shippori' in family_name):
                             
-                            if ('Noto' in family_name or 'CJK' in family_name) and os.path.exists(font_path):
-                                try:
-                                    font_name = f'NotoSansCJK-Bold-{lang}'
-                                    if font_name not in pdfmetrics._fonts:
-                                        pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                        print(f"Registered fallback font: {font_name} from {font_path}")
-                                        
-                                        # Also register as generic names if not already registered
-                                        if 'NotoSansCJK-Bold' not in pdfmetrics._fonts:
-                                            pdfmetrics.registerFont(TTFont('NotoSansCJK-Bold', font_path))
-                                            print(f"Registered generic font: NotoSansCJK-Bold from {font_path}")
-                                        if 'NotoSansCJK-Regular' not in pdfmetrics._fonts:
-                                            pdfmetrics.registerFont(TTFont('NotoSansCJK-Regular', font_path))
-                                            print(f"Registered generic font: NotoSansCJK-Regular from {font_path}")
-                                        break
-                                except Exception as e:
-                                    continue
-                except subprocess.CalledProcessError:
-                    continue
-                            
-        return True
+                            # Categorize by weight
+                            if 'ExtraBold' in style_name:
+                                fonts_by_weight['ExtraBold'].append((font_path, family_name, style_name))
+                            elif 'Bold' in style_name:
+                                fonts_by_weight['Bold'].append((font_path, family_name, style_name))
+                            elif 'Regular' in style_name:
+                                fonts_by_weight['Regular'].append((font_path, family_name, style_name))
+                            elif 'Light' in style_name:
+                                fonts_by_weight['Light'].append((font_path, family_name, style_name))
+                            elif 'Medium' in style_name:
+                                fonts_by_weight['Medium'].append((font_path, family_name, style_name))
+                
+                # Register fonts for each weight that's available
+                weights_to_register = ['Regular', 'Bold', 'ExtraBold', 'Light', 'Medium']
+                
+                for weight in weights_to_register:
+                    if fonts_by_weight[weight]:
+                        # Use the first available font for this weight
+                        font_path, family_name, style_name = fonts_by_weight[weight][0]
+                        
+                        # Create language-specific font name
+                        if lang_code == 'ko':  # Korean
+                            font_name = f'NotoSansKR-{weight}'
+                        elif lang_code == 'zh':  # Chinese
+                            font_name = f'NotoSansSC-{weight}'
+                            if weight == 'Regular':
+                                fallback_font_path = font_path  # Use Chinese Regular as fallback
+                        elif lang_code == 'ja':  # Japanese
+                            font_name = f'NotoSansJP-{weight}'
+                            if weight == 'Regular' and fallback_font_path is None:
+                                fallback_font_path = font_path  # Use Japanese Regular as fallback if no Chinese
+                        else:
+                            continue
+                        
+                        # Register the font
+                        try:
+                            if font_name not in pdfmetrics._fonts:
+                                pdfmetrics.registerFont(TTFont(font_name, font_path))
+                                print(f"Registered font: {font_name} from {font_path} ({style_name})")
+                                registered_count += 1
+                        except Exception as e:
+                            print(f"Failed to register font {font_name}: {e}")
+                            continue
+                
+            except subprocess.CalledProcessError:
+                print(f"fc-list command failed for language {lang_code}")
+                continue
         
-    except subprocess.CalledProcessError:
-        print("fc-list command failed - fontconfig may not be available")
-        return False
+        # Register generic CJK fonts using the best available font
+        if fallback_font_path:
+            generic_weights = ['Regular', 'Bold']
+            for weight in generic_weights:
+                generic_name = f'NotoSansCJK-{weight}'
+                if generic_name not in pdfmetrics._fonts:
+                    try:
+                        pdfmetrics.registerFont(TTFont(generic_name, fallback_font_path))
+                        print(f"Registered generic CJK font: {generic_name} from {fallback_font_path}")
+                        registered_count += 1
+                    except Exception as e:
+                        print(f"Failed to register generic CJK font {generic_name}: {e}")
+        
+        return registered_count > 0
+        
     except Exception as e:
         print(f"Error finding fonts: {e}")
         return False
