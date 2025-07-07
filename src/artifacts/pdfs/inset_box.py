@@ -228,6 +228,8 @@ class InsetBox:
     return self
   
   def _add_leaf_text(self, text, style, x, y, max_width, offset_factor):
+    if not text:
+       text = ""
     inset_width = self.width - x
     inset_height = self.height - y
     inset = self.inset(x, y, inset_width, inset_height)
@@ -308,6 +310,8 @@ def style(font_size, color="black", bold=False, font_name=None):
   return style
 
 def font_size_for_width(text, style, max_width, canvas, start_size=None):
+  if not text:
+     text = ""
   if start_size is None:
     start_size = style.fontSize
   if max_width is None:

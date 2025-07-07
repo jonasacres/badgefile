@@ -230,6 +230,8 @@ class WebService:
     
     @self.app.route('/scanner/<event_name>', methods=['GET'])
     def scanner_get(event_name):
+      # Force template reload by clearing the template cache
+      self.app.jinja_env.cache.clear()
       return render_template('event-scanner.html',
                              event_name=event_name)
     

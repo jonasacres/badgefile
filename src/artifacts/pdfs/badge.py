@@ -173,6 +173,7 @@ class BadgeRenderer:
 
     self.layout_scannable(info_enclosure)
     self.layout_country_flag(info_enclosure)
+    self.layout_banquet_mark(info_enclosure)
     self.layout_language_pips(info_enclosure)
 
     return info_enclosure
@@ -223,6 +224,8 @@ class BadgeRenderer:
   def layout_country_flag(self, box):
     info = self.attendee.final_info()
     country = info.get('country').lower()
+    if not country:
+      return
 
     flag_img = f"src/static/flags/{country}.png"
 
@@ -236,6 +239,11 @@ class BadgeRenderer:
     flag_box = box.inset(0.15*inch, 0.25*inch, flag_width, flag_height)
     flag_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.0)
     flag_box.add_leaf_image_centered(flag_img)
+  
+  def layout_banquet_mark(self, box):
+    if self.attendee.is_attending_banquet():
+      mark_box = box.inset(0.15*inch, 0.95*inch, 0.8*inch, 0.8*inch)
+      mark_box.add_leaf_text_centered("Banquet", style(18, bold=True), y=0)
 
   def layout_language_pips(self, box):
     pip_spacing = 0.05*inch

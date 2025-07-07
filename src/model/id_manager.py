@@ -93,7 +93,7 @@ class IdManager:
   
   def lookup_reg_info(self, info):
     # If the user info includes an AGA number, that's their official ID. So work with that.
-    if info["aga_id"] != None:
+    if info.get("aga_id") != None:
       return self.map_aga_id(info["aga_id"])
     
     # No AGA number, so digest their info into a hash we can use as a lookup key to see if we've issued a guest ID to this person.
@@ -123,11 +123,11 @@ class IdManager:
     return self.db.last_id()
 
   def calculate_userhash(self, info):
-    name_given = info["name_given"].lower()
-    name_family = info["name_family"].lower()
-    name_mi = info["name_mi"].lower() if info["name_mi"] != None else ""
+    name_given = info.get("name_given").lower()
+    name_family = info.get("name_family").lower()
+    name_mi = info.get("name_mi").lower() if info.get("name_mi") != None else ""
 
-    dob = info["date_of_birth"]
+    dob = info.get("date_of_birth")
 
     hash_input = f"{name_family}|{name_given}|{name_mi}|{dob}"
 

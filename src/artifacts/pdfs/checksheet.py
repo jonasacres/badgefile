@@ -468,21 +468,21 @@ class Checksheet:
     find_and_register_noto_cjk_fonts()
 
     checkbox_size = 0.25*inch
-    left_pad = 0.55*inch
+    left_pad = 0.18*inch
     check_zh = languages_box.inset(left_pad + 0, 0.25*inch, checkbox_size, checkbox_size)
     check_zh.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
     languages_box.add_leaf_text_left("中文", style(18, bold=True, font_name="NotoSansSC-ExtraBold"), check_zh.x + check_zh.width + 0.05*inch, check_zh.y + 0.03*inch)
 
 
-    check_ko = languages_box.inset(left_pad + 1.25*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_ko = languages_box.inset(left_pad + 1.55*inch, 0.25*inch, checkbox_size, checkbox_size)
     check_ko.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
     languages_box.add_leaf_text_left("한글", style(18, bold=True, font_name="NotoSansKR-Regular"), check_ko.x + check_ko.width + 0.05*inch, check_ko.y + 0.03*inch)
 
-    check_jp = languages_box.inset(left_pad + 2.5*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_jp = languages_box.inset(left_pad + 3.1*inch, 0.25*inch, checkbox_size, checkbox_size)
     check_jp.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
     languages_box.add_leaf_text_left("日本語", style(18, bold=True, font_name="NotoSansJP-Regular"), check_jp.x + check_jp.width + 0.05*inch, check_jp.y + 0.03*inch)
 
-    check_es = languages_box.inset(left_pad + 4.0*inch, 0.25*inch, checkbox_size, checkbox_size)
+    check_es = languages_box.inset(left_pad + 4.9*inch, 0.25*inch, checkbox_size, checkbox_size)
     check_es.add_leaf_rounded_rect(colors.white, colors.black, 0.01*inch, 0.02*inch)
     languages_box.add_leaf_text_left("Español", style(18, bold=True, font_name="NotoSansJP-Regular"), check_es.x + check_es.width + 0.05*inch, check_es.y + 0.03*inch)
 

@@ -92,12 +92,15 @@ class Badgefile:
     overrides = as_source.read_manual_badge_data()
     
     for override in overrides:
-      if override['badgefile_id'] is not None:
+      if override.get('badgefile_id'):
         attendee = self.lookup_attendee(override['badgefile_id'])
         if attendee is None:
           log.notice(f"Unable to find attendee for overridden badge with id {override['badgefile_id']}, description '{override['description']}'")
           continue
         attendee.set_manual_override(override)
+      elif (override.get('name_given') or override.get('name_family')) and override.get('badge_type'):
+        log.info(f"issuing manual badge: {override}")
+        self.issue_manual_attendee(override)
 
     log.debug("Ensuring consistency...")
     start_time = time.time()
@@ -137,6 +140,71 @@ class Badgefile:
     MembershipReport(self).update()
     PaymentReport(self).update()
     OtherIssuesReport(self).update()
+  
+  def issue_manual_attendee(self, info):
+    row = {
+      "event_title": "Congress Registration 2025",
+      "regtime": time.strftime("%m/%d/%Y %H:%M:%S"),
+      "status": "Paid",
+      "transrefnum": None,
+      "registrant_fees": 0,
+      "name_given": info.get("name_given", ""),
+      "name_mi": info.get("name_mi", ""),
+      "name_family": info.get("name_family", ""),
+      "name_nickname": info.get("name_nickname", ""),
+      "email": info.get("email", ""),
+      "phone_a": info.get("phone_a", ""),
+      "addr1": info.get("addr1", ""),
+      "addr2": info.get("addr2", ""),
+      "city": info.get("city", ""),
+      "state": info.get("state", ""),
+      "postcode": info.get("postcode", ""),
+      "country": info.get("country", ""),
+      "company": info.get("company", ""),
+      "phone_cell": info.get("phone_cell", ""),
+      "job_title": info.get("job_title", ""),
+      "is_primary": info.get("is_primary", ""),
+      "is_member": info.get("is_member", ""),
+      "aga_id": info.get("aga_id", None),
+      "regtype": "manual",
+      "primary_registrant_name": info.get("primary_registrant_name", f"{info.get('name_given')} {info.get('name_family')}".strip()),
+      "seqno": info.get("seqno", ""),
+      "signed_datetime": time.strftime("%m/%d/%Y %H:%M:%S"),
+      "state": info.get("state", ""),
+      "state_comments": info.get("state_comments", ""),
+      "country": info.get("country", ""),
+      "country_comments": info.get("country_comments", ""),
+      "date_of_birth": info.get("date_of_birth", ""),
+      "date_of_birth_comments": info.get("date_of_birth_comments", ""),
+      "tshirt": info.get("tshirt", ""),
+      "tshirt_comments": info.get("tshirt_comments", ""),
+      "rank_playing": info.get("rank_playing", ""),
+      "rank_comments": info.get("rank_comments", ""),
+      "tournaments": info.get("tournaments", ""),
+      "tournaments_comments": info.get("tournaments_comments", ""),
+      "phone_mobile": info.get("phone_mobile", ""),
+      "phone_mobile_comments": info.get("phone_mobile_comments", ""),
+      "emergency_contact_name": info.get("emergency_contact_name", ""),
+      "emergency_contact_comments": info.get("emergency_contact_comments", ""),
+      "emergency_contact_phone": info.get("emergency_contact_phone", ""),
+      "emergency_contact_phone_comments": info.get("emergency_contact_phone_comments", ""),
+      "emergency_contact_email": info.get("emergency_contact_email", ""),
+      "emergency_contact_email_comments": info.get("emergency_contact_email_comments", ""),
+      "emergency_contact_": info.get("emergency_contact_", ""),
+      "youth_adult_at_congress": info.get("youth_adult_at_congress", ""),
+      "youth_adult_type": info.get("youth_adult_type", ""),
+      "youth_adult_type_comments": info.get("youth_adult_type_comments", ""),
+      "languages": info.get("languages", ""),
+      "languages_comments": info.get("languages_comments", ""),
+      "translator": info.get("translator", ""),
+      "translator_comments": info.get("translator_comments", ""),
+      "admin1": info.get("admin1", ""),
+      "admin1_comments": info.get("admin1_comments", ""),
+      "title": info.get("title", "")
+    }
+
+    att = Attendee(self).load_reglist_row(row)    
+    att.set_manual_override(info)
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist
@@ -291,7 +359,7 @@ class Badgefile:
       if trn:
         trns.add(int(trn))
     
-    prunable = [att for att in self.attendees() if not att.is_cancelled() and int(att.info()['transrefnum']) not in trns]
+    prunable = [att for att in self.attendees() if not att.is_cancelled() and not att.is_manual() and int(att.info()['transrefnum']) not in trns]
     for attendee in prunable:
       log.info(f"Marking attendee {attendee.id()} {attendee.full_name()} as cancelled, as transrefnum {attendee.info()['transrefnum']} is not in current reglist")
       attendee.mark_cancelled()

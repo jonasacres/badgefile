@@ -73,7 +73,10 @@ class Attendee:
     
     for key, value in rowinfo.items():
       if isinstance(value, str):
-        rowinfo[key] = value.encode('latin-1').decode('utf-8')
+        try:
+          rowinfo[key] = value.encode('latin-1').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+          rowinfo[key] = value
     self._info.update(rowinfo)
 
     agaid = self._info.get("aga_id")
@@ -91,8 +94,8 @@ class Attendee:
       IdManager.shared().set_id_alias(agaid, bfid)
     
     self._info["badge_rating"] = self.badge_rating()
-    if self._info["emergency_contact_phone"] is not None:
-      self._info["emergency_contact_phone_std"] = standardize_phone(self._info["emergency_contact_phone"])
+    if self._info.get("emergency_contact_phone") is not None:
+      self._info["emergency_contact_phone_std"] = standardize_phone(self._info.get("emergency_contact_phone"))
 
     if sync:
       self.sync_to_db(bfid)
@@ -130,10 +133,13 @@ class Attendee:
 
   def title(self):
     info = self.info()
-    if "title" in info and info["title"] != "":
-      return info["title"]
-    if info.get("override_title"):
+    override = info.get("override_title")
+    if override and override.strip():
       return info.get("override_title")
+    
+    title = info.get("title")
+    if title and title.strip():
+      return info["title"]
     
     if self.is_in_tournament('masters'):
       return "Masters Player"
@@ -172,6 +178,9 @@ class Attendee:
   
   def is_participant(self):
     return "member" in self._info["regtype"].lower()
+
+  def is_manual(self):
+    return "manual" in self._info["regtype"].lower()
   
   def languages(self):
     langstr = str(self._info.get("languages", "")).lower()
@@ -279,11 +288,16 @@ class Attendee:
   def date_of_birth(self):
     if not 'date_of_birth' in self._info or self._info['date_of_birth'] is None:
       return None
-    return datetime.strptime(self._info['date_of_birth'], "%m/%d/%Y")
+    try:
+      return datetime.strptime(self._info['date_of_birth'], "%m/%d/%Y")
+    except ValueError:
+      return None
 
   def age_at_congress(self):
     congress_date = datetime(2025, 7, 13)
     birth_date = self.date_of_birth()
+    if not birth_date:
+      return None
     return congress_date.year - birth_date.year - ((congress_date.month, congress_date.day) < (birth_date.month, birth_date.day))
   
   def full_name(self):
@@ -428,7 +442,11 @@ class Attendee:
 
     if affected_rows == 0:
       insert_sql = f"INSERT INTO Attendees (badgefile_id, json, {','.join(keys)}) VALUES (?, ?, {', '.join(['?' for _ in keys])})"
-      Database.shared().execute(insert_sql, base_args)
+      try:
+        Database.shared().execute(insert_sql, base_args)
+      except Exception as exc:
+        log.error(f"Failed SQL:\n{insert_sql}\n{base_args}")
+        raise(exc)
 
     if existing_id != self.id():
       # TODO: placeholder. we're going to want a column for the primary registrant's badgefile id.
@@ -601,6 +619,9 @@ class Attendee:
   # scan for new issues and insert them into the database if no similar issue is open for this user;
   # mark previous issues as resolved if the issue has been corrected.
   def scan_issues(self):
+    if self.is_manual():
+      return {}
+    
     script_dir = os.path.dirname(os.path.abspath(__file__))
     issue_dir = os.path.join(script_dir, "issue_checks")
     current_issues = {}
@@ -744,11 +765,13 @@ class Attendee:
     return None
 
   def is_subject_to_youth_form(self):
-    return self.age_at_congress() < 18
+    age = self.age_at_congress()
+    return age and age < 18
   
   def needs_renewal(self):
     if not self.is_participant():
       return False
+    
     congress_end_cutoff = datetime.strptime("2025-08-01", "%Y-%m-%d")
     try:
       return self.membership_expiration() < congress_end_cutoff
@@ -817,7 +840,7 @@ class Attendee:
     return self.primary().info().get("housing_approved", False) == True
   
   def congress_payment_lines(self):
-    if self.is_cancelled():
+    if self.is_cancelled() or self.is_manual():
       return []
     
     from datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
@@ -963,7 +986,7 @@ class Attendee:
     ]
 
     fi = self.final_info()
-    hashable = {key: fi[key] for key in keys}
+    hashable = {key: fi.get(key) for key in keys}
     party = sorted(self.party(), key=lambda party_member: party_member.id())
     hashable['party'] = []
     hashable['issues'] = self.open_issues()
@@ -972,7 +995,7 @@ class Attendee:
       if member == self:
         continue
       mi = member.final_info()
-      member_hashable = {key: mi[key] for key in keys}
+      member_hashable = {key: mi.get(key) for key in keys}
       member_hashable['issues'] = member.open_issues()
       member_hash = hashlib.sha256(json.dumps(member_hashable).encode('utf-8')).hexdigest()
       hashable['party'].append(member_hash)

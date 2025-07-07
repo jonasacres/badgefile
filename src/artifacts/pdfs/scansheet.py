@@ -43,7 +43,7 @@ class ScanSheet:
         attendee = attendees[index]
           
         # Generate Data Matrix with attendee ID
-        data = attendee.datamatrix_content()
+        data = attendee.datamatrix_content('b')
         encoded = encode(data, size='14x14')
         
         # Convert to PIL Image
