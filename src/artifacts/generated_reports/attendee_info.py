@@ -36,6 +36,7 @@ class AttendeeInfo:
         'name_given',
         'name_family',
         'name_mi',
+        'email',
         'title',
         'badge_rating',
         'donation_tier',
