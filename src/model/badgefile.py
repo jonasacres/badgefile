@@ -144,7 +144,7 @@ class Badgefile:
   def issue_manual_attendee(self, info):
     row = {
       "event_title": "Congress Registration 2025",
-      "regtime": time.strftime("%m/%d/%Y %H:%M:%S"),
+      "regtime": time.strftime("%m/%d/%Y %I:%M:%S %p"),
       "status": "Paid",
       "transrefnum": None,
       "registrant_fees": 0,

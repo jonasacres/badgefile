@@ -86,6 +86,7 @@ class BadgeRenderer:
     # Initialize the canvas and layout the badge
     self.layout()
     self.main_box.draw()
+    self.top_box.draw()
 
     # draw the copy so the badge is double-sided
     self.main_box.x += 4.25*inch
@@ -98,16 +99,23 @@ class BadgeRenderer:
   def layout(self):
     # the main box covers the left half of a page and includes the badge, tearaway tickets, etc.
     self.canvas = canvas.Canvas(self.path, pagesize=(8.5*inch, 11*inch))
+    self.margin_size = 0.125*inch
+
     self.set_metadata()
+
+    self.top_box = InsetBox(0, 9.5*inch, 8.5*inch, 1.5*inch, canvas=self.canvas)
+    self.layout_top()
         
     self.main_box = InsetBox(0, 0.5*inch, 4.25*inch, 9.0*inch, canvas=self.canvas)
-    self.margin_size = 0.125*inch
 
     # the badge area is the region of the page that is perforated to be torn off and stuffed in the badge holder
     self.badge_box = self.main_box.inset(0, 3.0*inch, 4.25*inch, 6.0*inch)
     self.badge_box.add_leaf_rounded_rect(colors.white, colors.lightgrey, 1.0/64.0 * inch, 0.0)
-    self.layout_background()
 
+    self.ticket_box = self.main_box.inset(0, 0, 4.25*inch, 3.0*inch)
+    self.layout_tickets()
+
+    self.layout_background()
     next_y = self.badge_box.height - self.margin_size
     next_y -= self.layout_logo(next_y).height + self.margin_size
     next_y -= self.layout_info_section(next_y).height + self.margin_size
@@ -139,6 +147,28 @@ class BadgeRenderer:
     keywords = f"US Go Congress 2025, Austin TX, Badge, {attendee_name}, {self.attendee.id()}, {self.attendee.badge_hash()}, Generated: {current_time}"
     self.canvas.setKeywords(keywords)
 
+  def layout_top(self):
+    fi = self.attendee.final_info()
+    pr = self.attendee.primary().final_info()
+
+    self.top_box.add_leaf_text_left(f"{fi['name_family']}, {fi['name_given']} ({fi['title']})", style(24, bold=True), 2*self.margin_size, 1.0*inch, max_width=6.0*inch)
+    self.top_box.add_leaf_text_left(f"Primary: {pr['name_family']}, {pr['name_given']} #{pr['badgefile_id']}", style(18, bold=False), 2*self.margin_size, 0.5*inch)
+    
+    self.top_box.add_leaf_text_right(f"#{fi['badgefile_id']}", style(24, bold=True), 8.5*inch - 2*self.margin_size, 1.0*inch)
+
+  def layout_tickets(self):
+    for i in range(2):
+      box = self.ticket_box.inset(0, 1.5*inch*i, 4.25*inch, 1.5*inch)
+      logo_height = box.height - 2*self.margin_size
+      logo_width = 5/4 *logo_height
+      logo_enclosure = box.inset(self.margin_size, self.margin_size, logo_width, logo_height)
+      logo_enclosure.add_leaf_image_centered("src/static/logos/2025-congress-logo.png")
+
+      center_x = 0.5*(box.width + logo_enclosure.x + logo_enclosure.width)
+      fare = "Adult" if i == 0 else "Youth"
+      fare_color = colors.black if i == 0 else colors.green
+      box.add_leaf_text_centered("Banquet", style(30, bold=True), center_x, 0.70*inch)
+      box.add_leaf_text_centered(f"Admit One {fare}", style(14, fare_color, bold=False), center_x, 0.4*inch)
   
   def layout_background(self):
     self.badge_box \
@@ -272,7 +302,7 @@ class BadgeRenderer:
         y_base += 0.025*inch
       
       pip_box = lang_box.inset(pip_x, pip_y, pip_width, pip_height)
-      pip_box.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 0.04*inch)
+      pip_box.add_leaf_rounded_rect(colors.white, colors.black, 0.02*inch, 0.04*inch)
       pip_box.add_leaf_text_centered(pip_code, font_style, y=y_base, max_width=pip_box.width-0.1*inch)
 
       count += 1

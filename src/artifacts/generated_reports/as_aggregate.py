@@ -54,7 +54,7 @@ class AggregateReport:
 
   def update(self):
     all_attendees = self.badgefile.attendees()
-    real_attendees = [att for att in all_attendees if not att.is_cancelled()]
+    real_attendees = [att for att in all_attendees if not att.is_cancelled() and not att.is_manual()]
     primaries = [att for att in real_attendees if att.is_primary()]
     translators = [att for att in real_attendees if att.info().get('translator', '') == "Yes"]
     housing = []
