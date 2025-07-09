@@ -6,7 +6,7 @@ import base64
 import logging
 import time
 
-from flask import Flask, request, redirect, render_template, jsonify, abort
+from flask import Flask, request, redirect, render_template, jsonify, abort, send_file
 from flask_sock import Sock
 from werkzeug.exceptions import NotFound
 
@@ -14,6 +14,7 @@ from log.logger import log
 from util.version import Version
 from util.secrets import secret
 from model.event import Event, AttendeeNotEligible
+from model.local_attendee_overrides import LocalAttendeeOverrides
 from server.socketserver import SocketServer
 
 class HTTPError(Exception):
@@ -228,6 +229,12 @@ class WebService:
     def version():
       return jsonify({'version': Version().hash()})
     
+    @self.app.route('/reprint', methods=['GET'])
+    def reprint_get():
+      # Force template reload by clearing the template cache
+      self.app.jinja_env.cache.clear()
+      return render_template('checkin_page.html')
+    
     @self.app.route('/scanner/<event_name>', methods=['GET'])
     def scanner_get(event_name):
       # Force template reload by clearing the template cache
@@ -421,6 +428,91 @@ class WebService:
         
         # Sleep for 100ms before checking again
         time.sleep(0.1)
+
+    @self.app.route('/attendees', methods=['GET'])
+    def attendees_get():
+      # self.require_authentication()
+      
+      # Get all attendees from the badgefile
+      attendees = self.badgefile.attendees()
+      
+      # Convert attendee objects to web-friendly format
+      attendees_data = []
+      for attendee in attendees:
+        attendee_info = attendee.web_info()
+        attendees_data.append(attendee_info)
+      
+      # Sort attendees by family name, then given name
+      attendees_data.sort(key=lambda x: (x.get('name_family', ''), x.get('name_given', '')))
+      
+      self.respond(attendees_data)
+
+    @self.app.route('/attendees/<badgefile_id>', methods=['POST'])
+    def attendee_override_post(badgefile_id):
+      # self.require_authentication()
+      
+      data = self.parse_request()
+      
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      override_result = LocalAttendeeOverrides.shared().set_override(attendee, data)
+      attendee.badge().generate()
+      attendee.checksheet().generate()
+
+      attendee_info = attendee.web_info()
+
+      websocket_message = {
+        "type": "attendee_update", 
+        "data": attendee_info,
+      }
+      self.broadcast_to_websockets(websocket_message)
+
+      self.respond(override_result)
+
+    @self.app.route('/attendees/<badgefile_id>/badge', methods=['GET'])
+    def attendee_badge_get(badgefile_id):
+      # self.require_authentication()
+      
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      badge = attendee.badge()
+      if not badge.already_exists():
+        badge.generate()
+      
+      return send_file(os.path.abspath(badge.path()), mimetype='application/pdf')
+
+    @self.app.route('/attendees/<badgefile_id>/checksheet', methods=['GET'])
+    def attendee_checksheet_get(badgefile_id):
+      # self.require_authentication()
+      
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      checksheet = attendee.checksheet()
+      if not checksheet.already_exists():
+        checksheet.generate()
+      
+      return send_file(os.path.abspath(checksheet.path()), mimetype='application/pdf')
 
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)

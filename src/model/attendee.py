@@ -15,6 +15,7 @@ from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
 from util.secrets import secret
+from model.local_attendee_overrides import LocalAttendeeOverrides
 
 from log.logger import log
 
@@ -184,12 +185,13 @@ class Attendee:
   
   def languages(self):
     langstr = str(self._info.get("languages", "")).lower()
+    fi = self.final_info()
 
     languages = []
     langs = ["korean", "chinese", "japanese", "spanish"]
     for lang in langs:
       key = "override_speaks_" + lang
-      override_lang = (self._info.get(key, "") or "").lower().strip()
+      override_lang = (fi.get(key, "") or "").lower().strip()
       override_lang_no = override_lang == "no"
       override_lang_yes = override_lang == "yes"
       if (lang in langstr and not override_lang_no) or override_lang_yes:
@@ -491,7 +493,7 @@ class Attendee:
     return self._info
   
   # return the attendee's info, with overrides layered on top.
-  def final_info(self):
+  def final_info(self, apply_local_overrides=True):
     final = self.info().copy()
 
     def clean_caps(text):
@@ -539,13 +541,20 @@ class Attendee:
     final['tournaments_list'] = ','.join(enrolled_tournaments)
     final['age_at_congress'] = self.age_at_congress()
     final['is_attending_banquet'] = self.is_attending_banquet()
+    final['badgefile_id'] = self.id()  # Ensure badgefile_id is always present
+
+    if apply_local_overrides:
+      final = LocalAttendeeOverrides.shared().apply_overrides(final)
     
     return final
   
   def web_info(self):
-    web_info = self._info.copy()
+    web_info = self.final_info().copy()
     if "json" in web_info:
       del web_info["json"]
+    web_info['badgefile_id'] = self.id()
+    web_info['languages'] = self.languages()
+    web_info['tournaments'] = self.tournaments()
     return web_info
 
   def refresh(self, row=None):
@@ -946,7 +955,10 @@ class Attendee:
       'badge_rating',
       'title',
       'badge_type',
-      'languages',
+      'override_speaks_japanese',
+      'override_speaks_korean',
+      'override_speaks_chinese',
+      'override_speaks_spanish',
     ]
 
     fi = self.final_info()
@@ -966,7 +978,10 @@ class Attendee:
       'email',
       'tshirt',
       'translator',
-      'languages',
+      'override_speaks_japanese',
+      'override_speaks_korean',
+      'override_speaks_chinese',
+      'override_speaks_spanish',
       'title',
       'badge_type',
       'is_primary',

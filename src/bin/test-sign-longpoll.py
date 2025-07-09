@@ -31,7 +31,7 @@ def main():
                       listen_interface=args.interface, 
                       port=args.port)
     
-    event = Event("signtest") # create the test event if it doesn't exist already
+    event = Event("congress") # create the test event if it doesn't exist already
 
     # mark every attendee as eligible, and reset their scan count to zero
     for attendee in badgefile.attendees():

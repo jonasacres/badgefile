@@ -172,7 +172,7 @@ class BadgeRenderer:
   
   def layout_background(self):
     self.badge_box \
-        .add_leaf_image_centered(f"src/static/badge_art/2025-{self.attendee.badge_type()}.png")
+        .add_leaf_image_centered(f"src/static/badge_art/2025-{self.attendee.final_info()['badge_type']}.png")
 
   def layout_logo(self, y):
     logo_height = 1.0 * inch
@@ -199,7 +199,7 @@ class BadgeRenderer:
     info_enclosure.add_leaf_text_centered(name_family, style(28, colors.black, bold=True), y=3.0*inch)
     info_enclosure.add_leaf_text_centered("#" + str(self.attendee.id()), style(24, colors.red, bold=True), y=2.25*inch)
     info_enclosure.add_leaf_text_centered(city_state, style(20, colors.black), y=1.65*inch)
-    info_enclosure.add_leaf_text_centered(self.attendee.badge_rating(), style(48, colors.black, bold=True), y=0.25*inch)
+    info_enclosure.add_leaf_text_centered(info['badge_rating'], style(48, colors.black, bold=True), y=0.25*inch)
 
     self.layout_scannable(info_enclosure)
     self.layout_country_flag(info_enclosure)
@@ -212,7 +212,7 @@ class BadgeRenderer:
     title_height = 0.5*inch
     title_enclosure = self.badge_box.inset(0.5*inch, y - title_height, self.badge_box.width - 1.0*inch, title_height)
     title_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
-    title_enclosure.add_leaf_text_centered(self.attendee.title(), style(28, colors.black, bold=True), y=0.125*inch, max_width=title_enclosure.width-2*self.margin_size) # TODO: bold
+    title_enclosure.add_leaf_text_centered(self.attendee.final_info()['title'], style(28, colors.black, bold=True), y=0.125*inch, max_width=title_enclosure.width-2*self.margin_size) # TODO: bold
 
     return title_enclosure
 
@@ -271,7 +271,8 @@ class BadgeRenderer:
     flag_box.add_leaf_image_centered(flag_img)
   
   def layout_banquet_mark(self, box):
-    if self.attendee.is_attending_banquet():
+    fi = self.attendee.final_info()
+    if fi.get('is_attending_banquet'):
       mark_box = box.inset(0.15*inch, 0.95*inch, 0.8*inch, 0.8*inch)
       mark_box.add_leaf_text_centered("Banquet", style(18, bold=True), y=0)
 
