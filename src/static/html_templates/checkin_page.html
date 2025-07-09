@@ -29,6 +29,7 @@
             
             /* Rainbow gradient definitions - compressed spectrum */
             --rainbow-gradient: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            --rainbow-gradient-slow: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
             --rainbow-gradient-vertical: linear-gradient(180deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
             --rainbow-gradient-diagonal: linear-gradient(135deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
             --rainbow-glow: 0 0 20px rgba(255, 100, 200, 0.4), 0 0 40px rgba(100, 255, 200, 0.2), 0 0 60px rgba(100, 200, 255, 0.1);
@@ -70,7 +71,7 @@
         .top-bar h1 {
             font-size: 24px;
             font-weight: 700;
-            background: var(--rainbow-gradient);
+            background: var(--rainbow-gradient-slow);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
@@ -286,7 +287,7 @@
         }
 
         .attendee-name.checked-in {
-            background: var(--rainbow-gradient);
+            background: var(--rainbow-gradient-slow);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
