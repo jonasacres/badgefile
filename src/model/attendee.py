@@ -211,7 +211,7 @@ class Attendee:
     tournaments = []
 
     for rt in raw_tournaments:
-      if "die hard" in rt:
+      if "die hard" in rt or "diehard" in rt:
         tournaments.append("diehard")
       elif "women" in rt:
         tournaments.append("womens")
@@ -318,18 +318,20 @@ class Attendee:
   def is_in_tournament(self, tournament):
     # see if we have a canonical answer based on TD overrides
     key = 'in_' + tournament
-    if key in self._info:
-      return self._info.get(key)
+    dumb_hacky_override = LocalAttendeeOverrides.shared().apply_overrides(self._info)
+
+    if key in dumb_hacky_override:
+      return dumb_hacky_override.get(key)
     
     if tournament == 'masters':
       return False # requesting Masters on your sign-up does not put you into the Masters!
     
     # for some reason we don't have their sign-up requests; assume no tournaments
-    if not self._info.get('tournaments'):
+    if not dumb_hacky_override.get('tournaments'):
       return False
     
     # they have sign-up requests, so go with that
-    sign_up_tournament_str = str(self._info['tournaments'])
+    sign_up_tournament_str = str(dumb_hacky_override['tournaments'])
     sign_up_tournament_list = self.process_tournament_string(sign_up_tournament_str)
     did_request_tournament = tournament in sign_up_tournament_list
     return did_request_tournament
@@ -779,7 +781,7 @@ class Attendee:
     if primary_registrant_id:
       return self.badgefile().lookup_attendee(primary_registrant_id)
     
-    return None
+    return self
 
   def is_subject_to_youth_form(self):
     age = self.age_at_congress()

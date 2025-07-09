@@ -34,5 +34,9 @@ if True:
     try:
       leago.sync_attendee_info(attendee)
       leago.sync_attendee_enrollment(attendee)
+      if attendee.is_checked_in():
+        leago.checkin_attendee(attendee)
+      else:
+        leago.checkout_attendee(attendee)
     except Exception as exc:
       log.info("Failed.", exception=exc)

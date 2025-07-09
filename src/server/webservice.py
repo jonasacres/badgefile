@@ -497,12 +497,106 @@ class WebService:
       
       self.respond(attendees_data)
 
+    @self.app.route('/attendees', methods=['POST'])
+    def attendees_post():
+      # self.require_authentication()
+      
+      try:
+        data = self.parse_request()
+        
+        # Validate required fields
+        required_fields = ['name_given', 'name_family', 'badge_type']
+        for field in required_fields:
+          if not data.get(field):
+            self.fail_request(400, f"Missing required field: {field}")
+        
+        # Create manual attendee info
+        manual_info = {
+          'name_given': data.get('name_given', ''),
+          'name_family': data.get('name_family', ''),
+          'name_mi': data.get('name_mi', ''),
+          'name_nickname': data.get('name_nickname', ''),
+          'email': data.get('email', ''),
+          'phone_a': data.get('phone', ''),
+          'addr1': data.get('addr1', ''),
+          'addr2': data.get('addr2', ''),
+          'city': data.get('city', ''),
+          'state': data.get('state', ''),
+          'postcode': data.get('postcode', ''),
+          'country': data.get('country', ''),
+          'company': data.get('company', ''),
+          'phone_cell': data.get('phone', ''),
+          'job_title': data.get('title', ''),
+          'is_primary': 'Yes',
+          'is_member': 'Yes',
+          'aga_id': None,
+          'regtype': 'manual',
+          'primary_registrant_name': f"{data.get('name_given')} {data.get('name_family')}".strip(),
+          'seqno': '',
+          'signed_datetime': time.strftime("%m/%d/%Y %H:%M:%S"),
+          'state_comments': '',
+          'country_comments': '',
+          'date_of_birth': '',
+          'date_of_birth_comments': '',
+          'tshirt': '',
+          'tshirt_comments': '',
+          'rank_playing': data.get('badge_rating', ''),
+          'rank_comments': '',
+          'tournaments': ','.join(data.get('tournaments', [])),
+          'tournaments_comments': '',
+          'phone_mobile': data.get('phone', ''),
+          'phone_mobile_comments': '',
+          'emergency_contact_name': '',
+          'emergency_contact_comments': '',
+          'emergency_contact_phone': '',
+          'emergency_contact_phone_comments': '',
+          'emergency_contact_email': '',
+          'emergency_contact_email_comments': '',
+          'emergency_contact_': '',
+          'youth_adult_at_congress': '',
+          'youth_adult_type': '',
+          'youth_adult_type_comments': '',
+          'languages': ','.join(data.get('languages', [])),
+          'languages_comments': '',
+          'translator': '',
+          'translator_comments': '',
+          'admin1': '',
+          'admin1_comments': '',
+          'title': data.get('title', ''),
+          'badge_type': data.get('badge_type', 'player'),
+          'is_attending_banquet': data.get('is_attending_banquet', False),
+          'is_checked_in': data.get('is_checked_in', False),
+          'aga_chapter': data.get('aga_chapter', ''),
+        }
+        
+        # Create the manual attendee
+        attendee = self.badgefile.issue_manual_attendee(manual_info)
+        LocalAttendeeOverrides.shared().set_override(attendee, data)
+        Event("congress").mark_attendee_eligible(attendee, is_eligible=True)
+        if(data.get('is_checked_in', False)):
+          Event("congress").scan_in_attendee(attendee, is_reset=False)
+        
+        # Update the badgefile to include the new attendee
+        # self.badgefile.update_attendees()
+        
+        # Return the created attendee info
+        return jsonify({
+          'status': 200,
+          'response': attendee.web_info()
+        })
+        
+      except HTTPError:
+        raise
+      except Exception as exc:
+        log.error(f"Error creating manual attendee: {str(exc)}", exception=exc)
+        self.fail_request(500, "Internal error creating manual attendee")
+
     @self.app.route('/attendees/<badgefile_id>', methods=['POST'])
     def attendee_override_post(badgefile_id):
       # self.require_authentication()
       
       data = self.parse_request()
-      
+
       try:
         badgefile_id = int(badgefile_id)
       except ValueError:
@@ -512,7 +606,17 @@ class WebService:
       if attendee is None:
         self.fail_request(404, "Attendee not found")
       
+      if 'is_checked_in' in data:
+        event = Event("congress")
+        checked_in = data['is_checked_in']
+        del data['is_checked_in']
+
+        was_checked_in = event.num_times_attendee_scanned(attendee) != 0
+        if was_checked_in != checked_in:
+          event.scan_in_attendee(attendee, is_reset=not checked_in)
+      
       override_result = LocalAttendeeOverrides.shared().set_override(attendee, data)
+      log.debug(f"Attendee {attendee.full_name()} {attendee.id()} override result: {override_result}")
       attendee.badge().generate()
       attendee.checksheet().generate()
 
@@ -522,7 +626,9 @@ class WebService:
         "type": "attendee_update", 
         "data": attendee_info,
       }
+
       self.broadcast_to_websockets(websocket_message)
+      NotificationManager.shared().notify("attendee_update", {"attendee": attendee})
 
       self.respond(override_result)
 
@@ -563,6 +669,31 @@ class WebService:
         checksheet.generate()
       
       return send_file(os.path.abspath(checksheet.path()), mimetype='application/pdf')
+    
+    @self.app.route('/media/<filename>', methods=['GET'])
+    def send_media(filename):
+      path = os.path.abspath("src/static/media/" + filename)
+      if not os.path.exists(path):
+        abort(404, description="Media file not found")
+
+      ext = os.path.splitext(filename)[1].lower()
+      if ext == ".png":
+        mimetype = "image/png"
+      elif ext in [".jpg", ".jpeg"]:
+        mimetype = "image/jpeg"
+      elif ext == ".gif":
+        mimetype = "image/gif"
+      elif ext == ".wav":
+        mimetype = "audio/wav"
+      elif ext == ".mp3":
+        mimetype = "audio/mpeg"
+      elif ext == ".pdf":
+        mimetype = "application/pdf"
+      else:
+        # Default to octet-stream for unknown types
+        mimetype = "application/octet-stream"
+
+      return send_file(path, mimetype=mimetype)
 
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)

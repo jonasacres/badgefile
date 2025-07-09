@@ -9,9 +9,11 @@ import argparse
 src_path = pathlib.Path(__file__).parent.parent
 sys.path.append(str(src_path))
 
+from server.socketserver import SocketServer
 from server.webservice import WebService
 from model.badgefile import Badgefile
 from model.event import Event
+from model.leago_sync import LeagoSync
 
 def main():
   parser = argparse.ArgumentParser(description='Start the Go Congress WebService')
@@ -21,13 +23,20 @@ def main():
                       help='Port to listen on (default: 8080)')
   
   args = parser.parse_args()
+
   
   try:
     badgefile = Badgefile()
+    leago_sync = LeagoSync(badgefile)
+    leago_sync.run()
+    leago_sync.sync_all()
+
     service = WebService(badgefile, 
                         listen_interface=args.interface, 
                         port=args.port)
     
+    SocketServer.shared().listen()
+
     print(f"Starting WebService on {args.interface}:{args.port}")
     service.run()
   except Exception as e:

@@ -46,8 +46,17 @@ class LocalAttendeeOverrides:
       for lang in supported_languages:
         speaks_language = lang in override_info['languages']
         override_info['override_speaks_' + lang] = 'yes' if speaks_language else 'no'
-      
       del override_info['languages']
+    
+    if 'tournaments' in override_info:
+      supported_tournaments = ['open', 'seniors', 'diehard', 'masters', 'womens']
+
+      override_info = override_info.copy()
+      for tournament in supported_tournaments:
+        in_tournament = tournament in override_info['tournaments']
+        override_info['in_' + tournament] = in_tournament
+      del override_info['tournaments']
+      
     
     diff = {}
     for key in override_info:
@@ -55,7 +64,8 @@ class LocalAttendeeOverrides:
       override_value = override_info[key]
       
       # Include the override if the value is different from base, or if the key doesn't exist in base
-      if base_value != override_value:
+      # dumb hack to force tournaments to be included
+      if base_value != override_value or key.startswith('in_'):
         diff[key] = override_value
 
     self.data[attendee.id()] = diff

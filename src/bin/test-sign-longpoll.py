@@ -43,7 +43,7 @@ def main():
       while True:
         # Scan each attendee one by one with a delay
         for attendee in badgefile.attendees():
-          event.scan_in_attendee(attendee)
+          #event.scan_in_attendee(attendee)
           time.sleep(10)
         
         # Reset all attendees at the end of each cycle
@@ -52,7 +52,7 @@ def main():
     
     # Start the scanning thread
     scan_thread = threading.Thread(target=scan_attendees_thread, daemon=True)
-    scan_thread.start()
+    # scan_thread.start()
 
     SocketServer.shared().listen()
 

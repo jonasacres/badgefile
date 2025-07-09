@@ -205,6 +205,9 @@ class Badgefile:
 
     att = Attendee(self).load_reglist_row(row)    
     att.set_manual_override(info)
+    if self._attendees:
+      self._attendees.append(att)
+    return att
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist

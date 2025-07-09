@@ -553,8 +553,6 @@ class Leago:
         if not differences:
             # our local copy matches what's in leago; don't waste a network operation unless forced
             return None
-        else:
-            print(f"Differences found for attendee {attendee.id()}: {', '.join(differences)}")
       self.update_attendee(attendee)
     else:
       self.register_attendee(attendee)
@@ -580,13 +578,15 @@ class Leago:
         player_tournaments.remove("open")
     elif "masters" in player_tournaments:
       player_tournaments.remove("masters")
+
+    log.debug(f"Attendee {attendee.full_name()} {attendee.id()} tournaments: {player_tournaments}")
     
     for tournament_name, tournament in  self.tournaments_by_name.items():
       is_participating = tournament_name in player_tournaments
       self.set_player_tournament_participation(attendee, tournament, is_participating, force)
 
   def registration_payload_for_attendee(self, attendee):
-    info = attendee.info()
+    info = attendee.final_info()
     id = str(attendee.id())
 
     # start by building the POST version (ie. registering someone into Leago who wasn't there before)
@@ -597,10 +597,10 @@ class Leago:
       "city": info['city'],
       "subnation": info['state'],
       "country": info['country'],
-      "rankId": aga_badge_to_leago(attendee.badge_rating()),
+      "rankId": aga_badge_to_leago(info['badge_rating']),
       "rating": 0,
       "memberId": id,
-      "clubName": info['aga_chapter'] or "",
+      "clubName": info.get('aga_chapter') or "",
       "teamKey": "",
       "countryCode": "",
     }
@@ -664,13 +664,24 @@ class Leago:
       players.remove(str_id)
 
   def checkin_attendee(self, attendee):
-    self.update_attendee(attendee, {'status': 1})
+    self.update_attendee_checkin(attendee, 1)
   
   def checkout_attendee(self, attendee):
-    self.update_attendee(attendee, {'status': 0})
+    self.update_attendee_checkin(attendee, 0)
+
+  def update_attendee_checkin(self, attendee, status):
+    registrations = self.get_registrations()
+    id = str(attendee.id())
+    reg = registrations[id]
+
+    if reg.get('status') == status:
+      log.debug(f"Attendee {attendee.full_name()} {attendee.id()} already has status {status} in Leago")
+      return None # already matches what's in Leago
+    
+    log.debug(f"Attendee {attendee.full_name()} {attendee.id()} updating status to {status} in Leago")
+    return self.update_attendee(attendee, {'status': status})
 
   def update_attendee(self, attendee, extra = {}):
-    info = attendee.info()
     if not str(attendee.id()) in self.get_registrations():
       if not str(attendee.id()) in self.get_registrations(force=True):
         log.warn(f"Cannot update attendee {attendee.full_name()} (#{attendee.id()}) in Leago, since this member is not registered to event {self.event_key}")
@@ -683,10 +694,7 @@ class Leago:
 
     url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations/{key}"
     
-    print(f"PUT {url}")
-    print(f"Payload: {reg_payload}")
     response = self.make_authenticated_request('PUT', url, json=reg_payload)
-    print(f"Response: {response.text}")
     response.raise_for_status()
     registration = response.json()
 
