@@ -16,6 +16,7 @@ from util.secrets import secret
 from model.event import Event, AttendeeNotEligible
 from model.local_attendee_overrides import LocalAttendeeOverrides
 from server.socketserver import SocketServer
+from model.notification_manager import NotificationManager
 
 class HTTPError(Exception):
   def __init__(self, status, message=None, data=None):
@@ -37,6 +38,44 @@ class WebService:
     self.sock = Sock(self.app)
     self.websocket_clients = set()
     self._setup_routes()
+    self.recent_scans = {}
+
+    def received_notification(key, notification):
+      if key != "event":
+        return
+      
+      event = notification.get("event")
+      attendee = notification.get("attendee")
+      data = notification.get("data", {})
+
+      num_scanned = event.num_scanned_attendees()
+      num_eligible_attendees = event.num_eligible_attendees()
+
+      response_data = {
+        "attendee": attendee.web_info(),
+        "event": {
+          "name": event.name,
+          "is_reset": data.get("is_reset"),
+          "num_scans_for_attendee": data.get('num_times_attendee_scanned'),
+          "total_attendees_scanned": num_scanned,
+          "total_scannable": num_eligible_attendees,
+        }
+      }
+
+      websocket_message = {
+        "type": "scan", 
+        "data": response_data,
+      }
+
+      self.broadcast_to_websockets(websocket_message)
+
+      if not event.name in self.recent_scans:
+        self.recent_scans[event.name] = []
+      self.recent_scans[event.name].append(websocket_message)
+      while len(self.recent_scans[event.name]) > 20:
+        self.recent_scans[event.name] = self.recent_scans[event.name][1:]
+    
+    NotificationManager.shared().observe(received_notification)
 
   def ip():    
     client_ip = request.remote_addr
@@ -153,6 +192,7 @@ class WebService:
 
   def broadcast_to_websockets(self, message):
     closed_sockets = set()
+    log.debug(f"Broadcasting message of type {message.get('type')} to {len(self.websocket_clients)} websocket clients")
     for ws in self.websocket_clients:
       try:
         ws.send(json.dumps(message))
@@ -370,6 +410,16 @@ class WebService:
           "scans": event.scan_counts(),
         }
       })
+
+    @self.app.route('/events/<event_name>/scans/recent', methods=['GET'])
+    def event_scans_recent_get(event_name):
+      # self.require_authentication()
+
+      if not Event.exists(event_name):
+        self.fail_request(404, "Event not found")
+      
+      event = Event(event_name)
+      self.respond(self.recent_scans.get(event_name, []))
     
     @self.app.route('/events/<event_name>/status', methods=['GET'])
     def event_status_get(event_name):

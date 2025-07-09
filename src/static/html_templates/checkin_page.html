@@ -52,6 +52,9 @@
             border-image: var(--rainbow-border) 1;
             box-shadow: var(--rainbow-glow);
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .top-bar::before {
@@ -73,6 +76,47 @@
             color: transparent;
             text-shadow: 0 0 10px rgba(255, 100, 200, 0.5);
             letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .progress-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            min-width: 250px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            border: 1px solid var(--border-primary);
+            overflow: hidden;
+            position: relative;
+            --progress-clip: inset(0 100% 0 0);
+        }
+
+        .progress-bar-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            border-radius: 5px;
+            clip-path: var(--progress-clip);
+            transition: clip-path 0.5s ease;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: right;
+            letter-spacing: 0.5px;
         }
 
         .main-container {
@@ -91,12 +135,13 @@
 
         .sidebar::before {
             content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
+            position: fixed;
+            top: 63px; /* Account for top-bar height: 15px + 24px + 15px + 2px border */
             bottom: 0;
+            left: 350px; /* Width of sidebar */
             width: 1px;
             background: var(--rainbow-gradient-vertical);
+            z-index: 10;
         }
 
         .sidebar-header {
@@ -186,10 +231,18 @@
         }
 
         .attendee-item.selected {
-            background: linear-gradient(90deg, rgba(255, 100, 200, 0.1), rgba(100, 255, 200, 0.05));
+            background: linear-gradient(90deg, rgba(255, 100, 200, 0.2), rgba(100, 255, 200, 0.1));
             border-left: 4px solid;
             border-image: var(--rainbow-border) 1;
-            box-shadow: inset 0 0 20px rgba(255, 100, 200, 0.1);
+            box-shadow: inset 0 0 20px rgba(255, 100, 200, 0.2);
+        }
+
+        .attendee-item.selected .attendee-name.checked-in {
+            background: var(--rainbow-gradient);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 12px rgba(255, 100, 200, 0.8);
         }
 
         .attendee-item.selected::before {
@@ -230,6 +283,14 @@
             font-size: 16px;
             color: var(--text-primary);
             margin-bottom: 4px;
+        }
+
+        .attendee-name.checked-in {
+            background: var(--rainbow-gradient);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 8px rgba(255, 100, 200, 0.4);
         }
 
         .attendee-title {
@@ -548,7 +609,10 @@
 <body>
     <div class="top-bar">
         <h1>DEATH TO INEFFICENCY.</h1>
-        <!-- Placeholder for eventual header showing count of attendees checked in -->
+        <div class="progress-section">
+            <div class="progress-bar-container"></div>
+            <div class="progress-label" id="progress-label">0 / 0</div>
+        </div>
     </div>
 
     <div class="main-container">
@@ -652,6 +716,12 @@
                                             Attending Banquet
                                         </label>
                                     </div>
+                                    <div class="checkbox-item">
+                                        <label for="checked-in">
+                                            <input type="checkbox" id="checked-in">
+                                            Checked In
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -748,101 +818,176 @@
     </div>
 
     <script>
-        // Dummy data for testing
-        const dummyData = {
-            event: {
-                name: "congress_checkin",
-                total_attendees_scanned: 47,
-                total_scannable: 234
-            },
-            attendees: [
-                {
-                    badgefile_id: 1001,
-                    name_given: "Alice",
-                    name_family: "Chen",
-                    title: "Masters Player",
-                    badge_rating: "6d",
-                    city: "San Francisco",
-                    state: "CA",
-                    country: "USA",
-                    badge_type: "masters",
-                    languages: ["chinese"],
-                    tournaments: ["masters", "open"],
-                    email: "alice.chen@email.com",
-                    phone: "(555) 123-4567",
-                    scan_count: 3,
-                    is_attending_banquet: true
-                },
-                {
-                    badgefile_id: 1002,
-                    name_given: "Robert",
-                    name_family: "Johnson",
-                    title: "Player",
-                    badge_rating: "2k",
-                    city: "Seattle",
-                    state: "WA",
-                    country: "USA",
-                    badge_type: "player",
-                    languages: [],
-                    tournaments: ["open", "seniors"],
-                    email: "r.johnson@email.com",
-                    phone: "(555) 987-6543",
-                    scan_count: 1
-                },
-                {
-                    badgefile_id: 1003,
-                    name_given: "Kenji",
-                    name_family: "Tanaka",
-                    title: "Professional",
-                    badge_rating: "7p",
-                    city: "Los Angeles",
-                    state: "CA",
-                    country: "USA",
-                    badge_type: "pro",
-                    languages: ["japanese"],
-                    tournaments: ["open"],
-                    email: "k.tanaka@email.com",
-                    phone: "(555) 456-7890",
-                    scan_count: 2
-                },
-                {
-                    badgefile_id: 1004,
-                    name_given: "Maria",
-                    name_family: "Rodriguez",
-                    title: "Player",
-                    badge_rating: "1d",
-                    city: "Austin",
-                    state: "TX",
-                    country: "USA",
-                    badge_type: "player",
-                    languages: ["spanish"],
-                    tournaments: ["open", "womens"],
-                    email: "maria.rodriguez@email.com",
-                    phone: "(555) 234-5678",
-                    scan_count: 4,
-                    is_attending_banquet: false
-                },
-                {
-                    badgefile_id: 1005,
-                    name_given: "David",
-                    name_family: "Kim",
-                    title: "Player",
-                    badge_rating: "3k",
-                    city: "Portland",
-                    state: "OR",
-                    country: "USA",
-                    badge_type: "player",
-                    languages: ["korean"],
-                    tournaments: ["open", "diehard"],
-                    email: "david.kim@email.com",
-                    phone: "(555) 345-6789",
-                    scan_count: 1
-                }
-            ]
-        };
-
         let selectedAttendee = null;
         let allAttendeesData = [];
+        let recentlyScannedAttendees = [];
+        let websocket = null;
+        let websocketReconnectAttempts = 0;
+        let reconnectTimeout = null;
+
+        function connectWebSocket() {
+            try {
+                // Use wss:// for HTTPS connections, ws:// for HTTP
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                
+                websocket = new WebSocket(wsUrl);
+                
+                websocket.onopen = function(event) {
+                    console.log('WebSocket connected');
+                    websocketReconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                };
+                
+                websocket.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        handleWebSocketMessage(message);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                websocket.onclose = function(event) {
+                    console.log('WebSocket disconnected');
+                    scheduleReconnect();
+                };
+                
+                websocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+                
+            } catch (error) {
+                console.error('Error creating WebSocket connection:', error);
+                scheduleReconnect();
+            }
+        }
+
+        function scheduleReconnect() {
+            websocketReconnectAttempts++;
+            const delay = Math.min(100 * Math.pow(2, websocketReconnectAttempts - 1), 10000); // Exponential backoff, min 100ms, max 10s
+            
+            console.log(`Scheduling WebSocket reconnection attempt ${websocketReconnectAttempts} in ${delay}ms`);
+            
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
+            
+            reconnectTimeout = setTimeout(() => {
+                connectWebSocket();
+            }, delay);
+        }
+
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'scan':
+                    handleScanMessage(message.data);
+                    break;
+                case 'attendee_update':
+                    handleAttendeeUpdateMessage(message.data);
+                    break;
+                default:
+                    console.log('Unknown WebSocket message type:', message.type);
+            }
+        }
+
+        function handleScanMessage(data) {
+            // Only process scans for the congress event
+            if (data.event && data.event.name === 'congress') {
+                const attendee = data.attendee;
+                if (attendee) {
+                    // Update or add attendee to main dataset
+                    updateAttendeeInDataset(attendee);
+                    
+                    // Update scan count
+                    attendee.scan_count = data.event.num_scans_for_attendee;
+                    
+                    // Add to recently scanned list (or update existing entry)
+                    updateRecentlyScannedAttendee(attendee);
+                    
+                    // Refresh the scans list display
+                    populateScansAttendeeList();
+                    
+                    // Update progress bar
+                    updateProgressBar();
+                    
+                    // If this attendee is currently selected, update the form
+                    if (selectedAttendee && selectedAttendee.badgefile_id === attendee.badgefile_id) {
+                        selectedAttendee = attendee;
+                        populateAttendeeForm(attendee);
+                    }
+                }
+            }
+        }
+
+        function handleAttendeeUpdateMessage(attendeeData) {
+            // Update or add attendee to main dataset
+            updateAttendeeInDataset(attendeeData);
+            
+            // Update recently scanned list if this attendee is in it
+            updateRecentlyScannedAttendee(attendeeData);
+            
+            // Refresh displays
+            populateScansAttendeeList();
+            const searchBox = document.getElementById('attendee-search');
+            const currentSearchTerm = searchBox ? searchBox.value : '';
+            populateIndexAttendeeList(currentSearchTerm);
+            
+            // Update progress bar
+            updateProgressBar();
+            
+            // If this attendee is currently selected, update the form
+            if (selectedAttendee && selectedAttendee.badgefile_id === attendeeData.badgefile_id) {
+                selectedAttendee = attendeeData;
+                populateAttendeeForm(attendeeData);
+            }
+        }
+
+        function updateAttendeeInDataset(attendeeData) {
+            const existingIndex = allAttendeesData.findIndex(a => a.badgefile_id === attendeeData.badgefile_id);
+            if (existingIndex !== -1) {
+                // Replace existing attendee data
+                allAttendeesData[existingIndex] = attendeeData;
+            } else {
+                // Add new attendee
+                allAttendeesData.push(attendeeData);
+            }
+        }
+
+        function updateRecentlyScannedAttendee(attendeeData) {
+            const existingIndex = recentlyScannedAttendees.findIndex(a => a.badgefile_id === attendeeData.badgefile_id);
+            if (existingIndex !== -1) {
+                // Update existing entry
+                recentlyScannedAttendees[existingIndex] = attendeeData;
+            } else {
+                // Add new entry at the beginning
+                recentlyScannedAttendees.unshift(attendeeData);
+                // Keep only the most recent 50 scans
+                if (recentlyScannedAttendees.length > 50) {
+                    recentlyScannedAttendees = recentlyScannedAttendees.slice(0, 50);
+                }
+            }
+        }
+
+        function updateProgressBar() {
+            // Calculate checked-in vs total eligible attendees
+            const totalEligible = allAttendeesData.length;
+            const checkedIn = allAttendeesData.filter(attendee => attendee.is_checked_in).length;
+            
+            // Update progress bar
+            const progressContainer = document.querySelector('.progress-bar-container');
+            const progressLabel = document.getElementById('progress-label');
+            
+            if (progressContainer && progressLabel) {
+                const percentage = totalEligible > 0 ? (checkedIn / totalEligible) * 100 : 0;
+                const rightClip = 100 - percentage; // clip from right = 100% - fill percentage
+                const beforeElement = progressContainer.querySelector('::before') || progressContainer;
+                
+                // Update the clip-path to reveal the appropriate portion of the rainbow
+                progressContainer.style.setProperty('--progress-clip', `inset(0 ${rightClip}% 0 0)`);
+                
+                progressLabel.textContent = `${checkedIn} / ${totalEligible} | ${Math.round(percentage)}%`;
+            }
+        }
 
         async function fetchAllAttendees() {
             try {
@@ -852,18 +997,86 @@
                 }
                 const responseData = await response.json();
                 // Extract the attendees data from the response wrapper
-                allAttendeesData = responseData.response || responseData;
+                const fetchedAttendees = responseData.response || responseData;
+                
+                // Merge fetched data with any existing data from websocket messages
+                // This prevents duplicates and ensures websocket data takes precedence
+                const mergedData = [...allAttendeesData];
+                
+                fetchedAttendees.forEach(fetchedAttendee => {
+                    const existingIndex = mergedData.findIndex(a => a.badgefile_id === fetchedAttendee.badgefile_id);
+                    if (existingIndex !== -1) {
+                        // If we already have this attendee from websocket, keep the existing data
+                        // as it's more recent
+                    } else {
+                        // Add new attendee from fetch
+                        mergedData.push(fetchedAttendee);
+                    }
+                });
+                
+                allAttendeesData = mergedData;
+                
                 // Apply current search term when data loads
                 const searchBox = document.getElementById('attendee-search');
                 const currentSearchTerm = searchBox ? searchBox.value : '';
                 populateIndexAttendeeList(currentSearchTerm);
+                
+                // Update progress bar with loaded data
+                updateProgressBar();
             } catch (error) {
                 console.error('Error fetching attendees:', error);
-                // Fall back to dummy data for testing
-                allAttendeesData = dummyData.attendees;
+                // Don't fall back to dummy data anymore - just log the error
                 const searchBox = document.getElementById('attendee-search');
                 const currentSearchTerm = searchBox ? searchBox.value : '';
                 populateIndexAttendeeList(currentSearchTerm);
+                
+                // Update progress bar even on error (will show 0/0)
+                updateProgressBar();
+            }
+        }
+
+        async function fetchRecentScans() {
+            try {
+                const response = await fetch('/events/congress/scans/recent');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch recent scans');
+                }
+                const responseData = await response.json();
+                // Extract the scans data from the response wrapper
+                const fetchedScans = responseData.response || responseData;
+                
+                // Process the scans data to extract attendee information with scan counts
+                recentlyScannedAttendees = [];
+                
+                fetchedScans.forEach(scan => {
+                    console.log(scan)
+                    if (scan.data.attendee) {
+                        // Add scan count to attendee data
+                        const attendeeWithScanCount = {
+                            ...scan.data.attendee,
+                            scan_count: scan.data.event.num_scans_for_attendee || 0
+                        };
+                        
+                        // Add to recently scanned list if not already present
+                        const existingIndex = recentlyScannedAttendees.findIndex(a => a.badgefile_id === attendeeWithScanCount.badgefile_id);
+                        if (existingIndex === -1) {
+                            recentlyScannedAttendees.push(attendeeWithScanCount);
+                        }
+                        
+                        // Also update the main attendees dataset
+                        updateAttendeeInDataset(attendeeWithScanCount);
+                    }
+                });
+                
+                // Update the scans list display
+                populateScansAttendeeList();
+                
+                // Update progress bar with scan data
+                updateProgressBar();
+                
+            } catch (error) {
+                console.error('Error fetching recent scans:', error);
+                // Keep the empty state showing "No recent scans yet..."
             }
         }
 
@@ -871,15 +1084,26 @@
             const attendeeList = document.getElementById('scans-attendee-list');
             attendeeList.innerHTML = '';
 
-            dummyData.attendees.forEach(attendee => {
+            if (recentlyScannedAttendees.length === 0) {
+                const noScans = document.createElement('div');
+                noScans.className = 'loading-state';
+                noScans.textContent = 'No recent scans yet...';
+                attendeeList.appendChild(noScans);
+                return;
+            }
+
+            recentlyScannedAttendees.forEach(attendee => {
                 const item = document.createElement('div');
                 item.className = 'attendee-item';
                 item.dataset.badgefileId = attendee.badgefile_id;
                 
+                const isCheckedIn = attendee.is_checked_in || false;
+                const nameClass = isCheckedIn ? 'attendee-name checked-in' : 'attendee-name';
+                
                 item.innerHTML = `
-                    <div class="scan-count">${attendee.scan_count}</div>
+                    <div class="scan-count">${attendee.scan_count || 0}</div>
                     <div class="attendee-info">
-                        <div class="attendee-name">${attendee.name_family}, ${attendee.name_given}</div>
+                        <div class="${nameClass}">${attendee.name_family}, ${attendee.name_given}</div>
                         <div class="attendee-title">${attendee.badgefile_id}</div>
                     </div>
                 `;
@@ -953,10 +1177,13 @@
                 item.dataset.badgefileId = attendee.badgefile_id;
                 
                 // For index view, show badge rating instead of scan count
+                const isCheckedIn = attendee.is_checked_in || false;
+                const nameClass = isCheckedIn ? 'attendee-name checked-in' : 'attendee-name';
+                
                 item.innerHTML = `
                     <div class="scan-count" style="background: linear-gradient(135deg, var(--accent-warning), #dd8800); color: var(--bg-primary); box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); border: 1px solid var(--accent-warning);">${attendee.badge_rating || 'N/A'}</div>
                     <div class="attendee-info">
-                        <div class="attendee-name">${attendee.name_family}, ${attendee.name_given}</div>
+                        <div class="${nameClass}">${attendee.name_family}, ${attendee.name_given}</div>
                         <div class="attendee-title">${attendee.badgefile_id}</div>
                     </div>
                 `;
@@ -967,11 +1194,20 @@
         }
 
         function selectAttendee(attendee) {
-            // Update visual selection
+            // Update visual selection - remove from all items
             document.querySelectorAll('.attendee-item').forEach(item => {
                 item.classList.remove('selected');
             });
-            document.querySelector(`[data-badgefile-id="${attendee.badgefile_id}"]`).classList.add('selected');
+            
+            // Determine which tab is currently active
+            const isScansTabActive = document.querySelector('[data-tab="scans"]').classList.contains('active');
+            const activeTabSelector = isScansTabActive ? '#scans-attendee-list' : '#index-attendee-list';
+            
+            // Only select the element in the currently active tab
+            const selectedElement = document.querySelector(`${activeTabSelector} [data-badgefile-id="${attendee.badgefile_id}"]`);
+            if (selectedElement) {
+                selectedElement.classList.add('selected');
+            }
 
             // Store selected attendee
             selectedAttendee = attendee;
@@ -1023,6 +1259,12 @@
             const banquetCheckbox = document.getElementById('attending-banquet');
             if (banquetCheckbox) {
                 banquetCheckbox.checked = attendee.is_attending_banquet || false;
+            }
+
+            // Set checked-in checkbox
+            const checkedInCheckbox = document.getElementById('checked-in');
+            if (checkedInCheckbox) {
+                checkedInCheckbox.checked = attendee.is_checked_in || false;
             }
         }
 
@@ -1083,7 +1325,7 @@
                 
                 // Get the attendee data and select it
                 const badgefileId = targetItem.dataset.badgefileId;
-                const attendeeData = isScansTabActive ? dummyData.attendees : allAttendeesData;
+                const attendeeData = isScansTabActive ? recentlyScannedAttendees : allAttendeesData;
                 const attendee = attendeeData.find(a => a.badgefile_id == badgefileId);
                 if (attendee) {
                     selectAttendee(attendee);
@@ -1100,7 +1342,8 @@
             const attendeeItems = document.querySelectorAll(selector);
             
             for (let i = 0; i < attendeeItems.length; i++) {
-                if (attendeeItems[i].dataset.badgefileId == selectedAttendee.badgefile_id) {
+                if (attendeeItems[i].dataset.badgefileId == selectedAttendee.badgefile_id && 
+                    attendeeItems[i].classList.contains('selected')) {
                     return i;
                 }
             }
@@ -1199,6 +1442,9 @@
                     // Collect banquet checkbox
                     formData.is_attending_banquet = document.getElementById('attending-banquet').checked;
 
+                    // Collect checked-in checkbox
+                    formData.is_checked_in = document.getElementById('checked-in').checked;
+
                     // Send POST request to the override endpoint
                     const response = await fetch(`/attendees/${selectedAttendee.badgefile_id}`, {
                         method: 'POST',
@@ -1227,6 +1473,9 @@
                             nameElement.textContent = `${formData.name_family}, ${formData.name_given}`;
                         }
                     }
+                    
+                    // Update progress bar in case check-in status changed
+                    updateProgressBar();
                     
                     regenerateBtn.textContent = 'Regenerate ✓';
                     setTimeout(() => {
@@ -1326,7 +1575,7 @@
                     if (scansAttendeeItems.length > 0) {
                         const mostRecentItem = scansAttendeeItems[0];
                         const badgefileId = mostRecentItem.dataset.badgefileId;
-                        const attendee = dummyData.attendees.find(a => a.badgefile_id == badgefileId);
+                        const attendee = recentlyScannedAttendees.find(a => a.badgefile_id == badgefileId);
                         if (attendee) {
                             selectAttendee(attendee);
                         }
@@ -1345,8 +1594,12 @@
             setupSearch();
             setupButtons();
             setupKeyboardShortcuts();
-            populateScansAttendeeList();
-            await fetchAllAttendees();
+            populateScansAttendeeList(); // Will show "No recent scans yet..." initially
+            connectWebSocket(); // Start websocket connection
+            await Promise.all([
+                fetchAllAttendees(),
+                fetchRecentScans()
+            ]);
         });
     </script>
 </body>

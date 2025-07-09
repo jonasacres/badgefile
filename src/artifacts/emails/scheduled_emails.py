@@ -78,6 +78,10 @@ class ScheduledEmails:
       if not Event.exists("congress"):
         return False
       
+      # sanity check: if we haven't checked 100 people in, this probably isn't live post-checkin data :)
+      if Event("congress").num_scanned_attendees() < 100:
+        return False
+      
       # don't send if the player isn't in one of the AM tournaments
       in_morning_tournament = attendee.is_in_open() or attendee.is_in_masters()
       if not in_morning_tournament:

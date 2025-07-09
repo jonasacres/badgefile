@@ -16,6 +16,7 @@ from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
 from util.secrets import secret
 from model.local_attendee_overrides import LocalAttendeeOverrides
+from model.event import Event
 
 from log.logger import log
 
@@ -542,6 +543,7 @@ class Attendee:
     final['age_at_congress'] = self.age_at_congress()
     final['is_attending_banquet'] = self.is_attending_banquet()
     final['badgefile_id'] = self.id()  # Ensure badgefile_id is always present
+    final['is_checked_in'] = self.is_checked_in()
 
     if apply_local_overrides:
       final = LocalAttendeeOverrides.shared().apply_overrides(final)
@@ -715,6 +717,12 @@ class Attendee:
   # returns the latest ReglistRow for this user
   def latest_row(self):
     return self.reglist_rows()[-1]
+  
+  def is_checked_in(self):
+    if not Event.exists("congress"):
+      return False
+    scan_count = Event("congress").num_times_attendee_scanned(self)
+    return scan_count > 0
   
   # boolean: is this the primary registrant?
   def is_primary(self):
