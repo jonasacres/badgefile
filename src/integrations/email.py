@@ -140,11 +140,19 @@ class Email:
       
       if self.email_address_allowed(email_to):
         log.info(f"ACTUAL EMAIL: Sending email {self.template} to {email_to}")
-        try:
-          server.send_message(msg)
-        except SMTPRecipientsRefused:
-          log.notice(f"Member {self.attendee.full_name()} (#{self.attendee.id()}) has invalid e-mail address {email_to}; not sending e-mail")
-          return False
+        retry_count = 0
+        while retry_count < 3:
+          try:
+            server.send_message(msg)
+            break
+          except SMTPRecipientsRefused:
+            log.notice(f"Member {self.attendee.full_name()} (#{self.attendee.id()}) has invalid e-mail address {email_to}; not sending e-mail")
+            return False
+          except smtplib.SMTPServerDisconnected:
+            log.warn(f"Got SMTPServerDisconnected; retrying (attempt {retry_count+1})")
+            retry_count += 1
+            Email._default_server = None
+            server = Email.default_server()
       else:
         log.debug(f"Skipping email {self.template} to {email_to}; address not in whitelist")
     else:
