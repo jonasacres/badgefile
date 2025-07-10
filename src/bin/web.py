@@ -27,6 +27,7 @@ def main():
   
   try:
     badgefile = Badgefile()
+    badgefile.is_online = True
     leago_sync = LeagoSync(badgefile)
     leago_sync.run()
     leago_sync.sync_all()

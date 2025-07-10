@@ -43,6 +43,7 @@ class Badgefile:
     self._attendees = None
     self._parties = None
     self._override_map = None
+    self.is_online = True
 
   def path(self):
     return "artifacts/badgefile.json"
@@ -425,4 +426,7 @@ class Badgefile:
       # multiple matches; very bad!! needs manual solution.
       log.warn(f"Found multiple possible primary registrants for attendee {attendee.info()['name_given']} {attendee.info()['name_family']} ({attendee.info()['badgefile_id']}); searched for name '{prn}', found {len(candidates)} matches")
       return None
+  
+  def is_online(self):
+    return self.is_online
 

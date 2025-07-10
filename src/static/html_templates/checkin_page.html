@@ -80,6 +80,43 @@
             margin: 0;
         }
 
+        .websocket-status {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #00ff88;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        }
+
+        .status-indicator.offline {
+            background: #ff4444;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+        }
+
+        .status-indicator.connecting {
+            background: #ffaa00;
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+        }
+
+        .status-text {
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .progress-section {
             display: flex;
             flex-direction: column;
@@ -137,7 +174,7 @@
         .sidebar::before {
             content: '';
             position: fixed;
-            top: 63px; /* Account for top-bar height: 15px + 24px + 15px + 2px border */
+            top: 84px; /* Account for top-bar height: 15px + 24px + 15px + 2px border */
             bottom: 0;
             left: 350px; /* Width of sidebar */
             width: 1px;
@@ -623,7 +660,13 @@
 </head>
 <body>
     <div class="top-bar">
-        <h1>DEATH TO INEFFICENCY.</h1>
+        <div>
+            <h1>DEATH TO INEFFICIENCY.</h1>
+            <div class="websocket-status">
+                <div class="status-indicator offline" id="websocket-indicator"></div>
+                <span class="status-text" id="websocket-status-text">Offline</span>
+            </div>
+        </div>
         <div class="progress-section">
             <div class="progress-bar-container"></div>
             <div class="progress-label" id="progress-label">0 / 0</div>
@@ -841,8 +884,25 @@
         let websocketReconnectAttempts = 0;
         let reconnectTimeout = null;
 
+        function updateWebSocketStatus(status, text) {
+            const indicator = document.getElementById('websocket-indicator');
+            const statusText = document.getElementById('websocket-status-text');
+            
+            if (indicator && statusText) {
+                // Remove all status classes
+                indicator.classList.remove('online', 'offline', 'connecting');
+                // Add the new status class
+                indicator.classList.add(status);
+                // Update the text
+                statusText.textContent = text;
+            }
+        }
+
         function connectWebSocket() {
             try {
+                // Update status to connecting
+                updateWebSocketStatus('connecting', 'Connecting...');
+                
                 // Use wss:// for HTTPS connections, ws:// for HTTP
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -852,6 +912,7 @@
                 websocket.onopen = function(event) {
                     console.log('WebSocket connected');
                     websocketReconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                    updateWebSocketStatus('online', 'Connected');
                 };
                 
                 websocket.onmessage = function(event) {
@@ -865,15 +926,18 @@
                 
                 websocket.onclose = function(event) {
                     console.log('WebSocket disconnected');
+                    updateWebSocketStatus('offline', 'Offline');
                     scheduleReconnect();
                 };
                 
                 websocket.onerror = function(error) {
                     console.error('WebSocket error:', error);
+                    updateWebSocketStatus('offline', 'Error');
                 };
                 
             } catch (error) {
                 console.error('Error creating WebSocket connection:', error);
+                updateWebSocketStatus('offline', 'Error');
                 scheduleReconnect();
             }
         }
@@ -883,6 +947,9 @@
             const delay = Math.min(100 * Math.pow(2, websocketReconnectAttempts - 1), 10000); // Exponential backoff, min 100ms, max 10s
             
             console.log(`Scheduling WebSocket reconnection attempt ${websocketReconnectAttempts} in ${delay}ms`);
+            
+            // Update status to show reconnecting
+            updateWebSocketStatus('connecting', `Reconnecting... (${websocketReconnectAttempts})`);
             
             if (reconnectTimeout) {
                 clearTimeout(reconnectTimeout);

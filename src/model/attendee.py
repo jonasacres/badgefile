@@ -179,7 +179,14 @@ class Attendee:
     return self.info()["status"].lower() == "cancelled"
   
   def is_participant(self):
-    return "member" in self._info["regtype"].lower()
+    if "member" in self._info["regtype"].lower():
+      return True
+    
+    override_type = (self._info.get('override_badge_type', "") or "").strip().lower()
+    is_participant_type = override_type not in ["nonparticipant", "non-participant"]
+    has_badge_rating = (self.badge_rating() or "").strip() != ""
+    return is_participant_type and has_badge_rating
+
 
   def is_manual(self):
     return "manual" in self._info["regtype"].lower()

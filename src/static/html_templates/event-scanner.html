@@ -522,8 +522,9 @@
             if (Array.isArray(window.screamSounds) && window.screamSounds.length > 0) {
                 // Pick a random scream sound and play it
                 try {
+                    scream_probability = 1.0;
                     const idx = Math.floor(Math.random() * window.screamSounds.length);
-                    const sound = window.screamSounds[idx];
+                    const sound = Math.random() < scream_probability ? window.screamSounds[idx] : window.beepSound;
                     sound.currentTime = 0;
                     await sound.play();
                 } catch (error) {

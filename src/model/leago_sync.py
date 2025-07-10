@@ -26,7 +26,7 @@ class LeagoSync:
     def received_notification(key, notification):
       attendee = notification.get("attendee")
 
-      if attendee:
+      if attendee and attendee.is_participant():
         log.info(f"Pushing change to {attendee.full_name()} {attendee.id()} to Leago")
         self.mark_dirty(attendee)
     
@@ -34,6 +34,14 @@ class LeagoSync:
 
   def mark_dirty(self, attendee):
     self.dirty[attendee.id()] = attendee
+  
+  def prune_unregistered(self):
+    log.info(f"Pruning unregistered attendees from Leago")
+    participants = {str(attendee.id()):attendee for attendee in self.badgefile.attendees() if attendee.is_participant()}
+    registrations = self.leago.get_registrations().copy()
+    for reg_id, reg in registrations.items():
+      if not reg_id in participants:
+        self.leago.unregister_attendee_by_reg(reg)
   
   def sync_all(self):
     self.last_refresh = None
@@ -64,6 +72,8 @@ class LeagoSync:
       participants = [attendee for attendee in self.badgefile.attendees() if attendee.is_participant() and str(attendee.badge_rating()) != '']
       for attendee in participants:
         self.mark_dirty(attendee)
+
+      self.prune_unregistered()
 
       self.last_refresh = time.time()
       log.info(f"Leago data refreshed.")

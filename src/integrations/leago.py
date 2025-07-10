@@ -630,13 +630,22 @@ class Leago:
 
     return registration
   
-  def unregister_attendee(self, attendee):
-    id = str(attendee.id())
-    registrations = self.get_registrations()
-    if not id in registrations or not 'key' in registrations[id]:
+  def unregister_attendee_by_reg(self, reg, force=False):
+    if not force and not reg.get('organizationMemberKey') in self.get_registrations():
       return False
     
-    return self.unregister_by_key(registrations[id]['key'])
+    log.info(f"Unregistering attendee {reg.get('organizationMemberKey')} {reg.get('key')} from Leago")
+    url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations/{reg.get('key')}"
+    response = self.make_authenticated_request('DELETE', url)
+    try:
+      response.raise_for_status()
+      member_key = reg.get('organizationMemberKey', '').lower()
+      if member_key in self.get_registrations():
+        del self.get_registrations()[member_key]
+    except requests.exceptions.HTTPError as e:
+      if e.response.status_code != 404:
+        raise
+    return True
   
   def set_player_tournament_participation(self, attendee, tournament, is_participating, force=False):
     log.debug(f"Setting player {attendee.full_name()} {attendee.id()} participating={is_participating} for tournament {tournament['key']} ({tournament['title']})")
@@ -704,6 +713,17 @@ class Leago:
 
     return registration
 
+  def unregister_attendee(self, attendee):
+    id = str(attendee.id())
+    registrations = self.get_registrations()
+    if not id in registrations or not 'key' in registrations[id]:
+      return False
+    
+    url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations/{registrations[id]['key']}"
+    response = self.make_authenticated_request('DELETE', url)
+    response.raise_for_status()
+    del self.get_registrations()[id]
+    return True
 
 def aga_badge_to_leago(aga_badge_rank):
   rank = int(aga_badge_rank[0:-1])
