@@ -62,7 +62,24 @@ class Attendee:
     try:
       return float(self._info.get('aga_rating', None))
     except TypeError:
-      return None
+      rank = self._info.get('override_badge_rating')
+      if rank:
+        try:
+          type = rank[-1].lower()
+          number = int(rank[:-1])
+          if type == 'p':
+            return 9.0
+          elif type == 'd':
+            return float(number)
+          elif type == 'k':
+            return -float(number)
+          else:
+            log.warn(f"Unexpected player badge rating {rank}")
+            return None
+        except ValueError:
+          return None
+      else:
+        return None
   
   def aga_rating(self):
     return self._info.get('aga_rating', None)
@@ -228,6 +245,8 @@ class Attendee:
         tournaments.append("seniors")
       elif "open" in rt:
         tournaments.append("open")
+      elif rt == "none" or rt == "":
+        pass
       else:
         log.warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)

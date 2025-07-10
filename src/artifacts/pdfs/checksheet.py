@@ -355,7 +355,11 @@ class Checksheet:
 
 
   def layout_tournaments(self, y):
-    if 'masters' in self.attendee.tournaments() and self.attendee.is_in_tournament('masters') and self.attendee.effective_rank() >= 5.0:
+    requested_tournaments = self.attendee.process_tournament_string(str(self.attendee.info().get('tournaments', "")))
+    effective_rank = self.attendee.effective_rank()
+    wanted_masters = 'masters' in requested_tournaments
+    in_masters = self.attendee.is_in_tournament('masters')
+    if effective_rank and wanted_masters and not in_masters and effective_rank >= 5.0:
       needs_stop = True
     elif self.issues_of_type('tournament'):
       # TODO: need to write the issue on here
@@ -614,7 +618,7 @@ class Checksheet:
     
     payments_by_trn = {}
     for payment in payments:
-      if payment['payment_amount'] and float(payment['payment_amount']) > 0:
+      if payment['total_fees'] and float(payment['total_fees']) > 0:
         payments_by_trn[payment['transrefnum']] = payment
 
     line_height = 0.2*inch
@@ -749,12 +753,12 @@ class Checksheet:
       payments_list = list(payments_by_trn.values())
       pay0 = payments_list[0]
       pay1 = payments_list[1]
-      if pay0['payment_amount'] == pay1['payment_amount'] and float(pay0['payment_amount']) == grand_total:
+      if pay0['total_fees'] == pay1['total_fees'] and float(pay0['total_fees']) == grand_total:
         payments_by_trn = {pay0['transrefnum']: pay0}
 
     for trn, payment in payments_by_trn.items():
       count += 1
-      amount = payment['payment_amount'] or 0
+      amount = payment['total_fees'] or 0
       total_payments += float(amount)
       activity_enclosure.add_leaf_text_left(
         f"{trn}",
