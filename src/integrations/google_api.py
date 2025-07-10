@@ -248,11 +248,41 @@ def read_sheet_data(service, file, sheet_name=None, include_formulas=False):
       ).execute()
     )
 
-  # Return empty list if no data
-  if 'values' not in result:
-    return []
+  data = result.get('values', [])
+  cache_data(file, sheet_name, data)
+  
+  return data
 
-  return result['values']
+def cache_data(file, sheet_name, data):
+  import os
+  import csv
+  import hashlib
+  from datetime import datetime
+
+  # Ensure reports/{file}/{sheet_name} directory exists
+  safe_file = str(file)
+  safe_sheet_name = str(sheet_name)
+  reports_dir = os.path.join("reports", safe_file, safe_sheet_name)
+  os.makedirs(reports_dir, exist_ok=True)
+
+  # Serialize data as CSV string
+  from io import StringIO
+  output = StringIO()
+  writer = csv.writer(output)
+  for row in data:
+    writer.writerow(row)
+  data_csv = output.getvalue()
+  output.close()
+
+  # Compute SHA256 hash of data_csv string
+  hash_val = hashlib.sha256(data_csv.encode("utf-8")).hexdigest()
+
+  # Write data as CSV to reports/{file}/{sheet_name}/{sheet_name}-YYYY-MM-DD_HHMMSS_{hash}.csv
+  timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+  filename = f"{safe_sheet_name}-{timestamp}_{hash_val}.csv"
+  filepath = os.path.join(reports_dir, filename)
+  with open(filepath, "w", newline='', encoding="utf-8") as f:
+    f.write(data_csv)
   
 def sync_sheet_table(service, file_name, sheet_header, sheet_data, key_index, sheet_name=None, folder_id=None, valueInputOption='RAW', preserve_columns_after=None):
   file = create_sheet_if_not_exists(service, file_name, folder_id, sheet_name)

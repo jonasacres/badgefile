@@ -8,6 +8,8 @@ class YouthFormResponses:
     self.badgefile = badgefile
     if force_online or self.badgefile.is_online:
       self.read_sheet()
+    else:
+      self.responses = {}
 
   def youth_form(self, attendee):
     return self.responses.get(attendee.id(), None)

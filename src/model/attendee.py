@@ -828,6 +828,9 @@ class Attendee:
   def still_needs_youth_form(self):
     if not self.is_subject_to_youth_form():
       return False
+    if self._info.get('has_youth_form'):
+      return True
+    
     if not hasattr(self, '_youth_response'):
       from datasources.sheets.youth_form_responses import YouthFormResponses
       responses = YouthFormResponses(self._badgefile) # instantiation causes data pull, which should set youth form info for all attendees
@@ -845,7 +848,9 @@ class Attendee:
   
   def set_youth_info(self, response):
     self._youth_response = response
-
+    if response is not None and not self._info.get('has_youth_form'):
+      self._info['has_youth_form'] = True
+      self.sync_to_db()
   
   def set_primary_registrant(self, primary_bfid):
     if primary_bfid != self._info.get("primary_registrant_id"):
