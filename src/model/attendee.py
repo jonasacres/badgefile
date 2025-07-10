@@ -1003,7 +1003,7 @@ class Attendee:
     ]
 
     fi = self.final_info()
-    hash_string = json.dumps({key: fi[key] for key in keys})
+    hash_string = json.dumps({key: fi.get(key) for key in keys})
     return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
   
   def checksheet_hash(self):
