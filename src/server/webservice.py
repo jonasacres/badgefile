@@ -6,7 +6,7 @@ import base64
 import logging
 import time
 
-from flask import Flask, request, redirect, render_template, jsonify, abort
+from flask import Flask, request, redirect, render_template, jsonify, abort, send_file
 from flask_sock import Sock
 from werkzeug.exceptions import NotFound
 
@@ -14,7 +14,9 @@ from log.logger import log
 from util.version import Version
 from util.secrets import secret
 from model.event import Event, AttendeeNotEligible
+from model.local_attendee_overrides import LocalAttendeeOverrides
 from server.socketserver import SocketServer
+from model.notification_manager import NotificationManager
 
 class HTTPError(Exception):
   def __init__(self, status, message=None, data=None):
@@ -36,6 +38,44 @@ class WebService:
     self.sock = Sock(self.app)
     self.websocket_clients = set()
     self._setup_routes()
+    self.recent_scans = {}
+
+    def received_notification(key, notification):
+      if key != "event":
+        return
+      
+      event = notification.get("event")
+      attendee = notification.get("attendee")
+      data = notification.get("data", {})
+
+      num_scanned = event.num_scanned_attendees()
+      num_eligible_attendees = event.num_eligible_attendees()
+
+      response_data = {
+        "attendee": attendee.web_info(),
+        "event": {
+          "name": event.name,
+          "is_reset": data.get("is_reset"),
+          "num_scans_for_attendee": data.get('num_times_attendee_scanned'),
+          "total_attendees_scanned": num_scanned,
+          "total_scannable": num_eligible_attendees,
+        }
+      }
+
+      websocket_message = {
+        "type": "scan", 
+        "data": response_data,
+      }
+
+      self.broadcast_to_websockets(websocket_message)
+
+      if not event.name in self.recent_scans:
+        self.recent_scans[event.name] = []
+      self.recent_scans[event.name].append(websocket_message)
+      while len(self.recent_scans[event.name]) > 20:
+        self.recent_scans[event.name] = self.recent_scans[event.name][1:]
+    
+    NotificationManager.shared().observe(received_notification)
 
   def ip():    
     client_ip = request.remote_addr
@@ -152,6 +192,7 @@ class WebService:
 
   def broadcast_to_websockets(self, message):
     closed_sockets = set()
+    log.debug(f"Broadcasting message of type {message.get('type')} to {len(self.websocket_clients)} websocket clients")
     for ws in self.websocket_clients:
       try:
         ws.send(json.dumps(message))
@@ -227,6 +268,12 @@ class WebService:
     @self.app.route('/version')
     def version():
       return jsonify({'version': Version().hash()})
+    
+    @self.app.route('/reprint', methods=['GET'])
+    def reprint_get():
+      # Force template reload by clearing the template cache
+      self.app.jinja_env.cache.clear()
+      return render_template('checkin_page.html')
     
     @self.app.route('/scanner/<event_name>', methods=['GET'])
     def scanner_get(event_name):
@@ -363,6 +410,16 @@ class WebService:
           "scans": event.scan_counts(),
         }
       })
+
+    @self.app.route('/events/<event_name>/scans/recent', methods=['GET'])
+    def event_scans_recent_get(event_name):
+      # self.require_authentication()
+
+      if not Event.exists(event_name):
+        self.fail_request(404, "Event not found")
+      
+      event = Event(event_name)
+      self.respond(self.recent_scans.get(event_name, []))
     
     @self.app.route('/events/<event_name>/status', methods=['GET'])
     def event_status_get(event_name):
@@ -421,6 +478,222 @@ class WebService:
         
         # Sleep for 100ms before checking again
         time.sleep(0.1)
+
+    @self.app.route('/attendees', methods=['GET'])
+    def attendees_get():
+      # self.require_authentication()
+      
+      # Get all attendees from the badgefile
+      attendees = self.badgefile.attendees()
+      
+      # Convert attendee objects to web-friendly format
+      attendees_data = []
+      for attendee in attendees:
+        attendee_info = attendee.web_info()
+        attendees_data.append(attendee_info)
+      
+      # Sort attendees by family name, then given name
+      attendees_data.sort(key=lambda x: (x.get('name_family', ''), x.get('name_given', '')))
+      
+      self.respond(attendees_data)
+
+    @self.app.route('/attendees', methods=['POST'])
+    def attendees_post():
+      # self.require_authentication()
+      
+      try:
+        data = self.parse_request()
+        
+        # Validate required fields
+        required_fields = ['name_given', 'name_family', 'badge_type']
+        for field in required_fields:
+          if not data.get(field):
+            self.fail_request(400, f"Missing required field: {field}")
+        
+        # Create manual attendee info
+        manual_info = {
+          'name_given': data.get('name_given', ''),
+          'name_family': data.get('name_family', ''),
+          'name_mi': data.get('name_mi', ''),
+          'name_nickname': data.get('name_nickname', ''),
+          'email': data.get('email', ''),
+          'phone_a': data.get('phone', ''),
+          'addr1': data.get('addr1', ''),
+          'addr2': data.get('addr2', ''),
+          'city': data.get('city', ''),
+          'state': data.get('state', ''),
+          'postcode': data.get('postcode', ''),
+          'country': data.get('country', ''),
+          'company': data.get('company', ''),
+          'phone_cell': data.get('phone', ''),
+          'job_title': data.get('title', ''),
+          'is_primary': 'Yes',
+          'is_member': 'Yes',
+          'aga_id': None,
+          'regtype': 'manual',
+          'primary_registrant_name': f"{data.get('name_given')} {data.get('name_family')}".strip(),
+          'seqno': '',
+          'signed_datetime': time.strftime("%m/%d/%Y %H:%M:%S"),
+          'state_comments': '',
+          'country_comments': '',
+          'date_of_birth': '',
+          'date_of_birth_comments': '',
+          'tshirt': '',
+          'tshirt_comments': '',
+          'rank_playing': data.get('badge_rating', ''),
+          'rank_comments': '',
+          'tournaments': ','.join(data.get('tournaments', [])),
+          'tournaments_comments': '',
+          'phone_mobile': data.get('phone', ''),
+          'phone_mobile_comments': '',
+          'emergency_contact_name': '',
+          'emergency_contact_comments': '',
+          'emergency_contact_phone': '',
+          'emergency_contact_phone_comments': '',
+          'emergency_contact_email': '',
+          'emergency_contact_email_comments': '',
+          'emergency_contact_': '',
+          'youth_adult_at_congress': '',
+          'youth_adult_type': '',
+          'youth_adult_type_comments': '',
+          'languages': ','.join(data.get('languages', [])),
+          'languages_comments': '',
+          'translator': '',
+          'translator_comments': '',
+          'admin1': '',
+          'admin1_comments': '',
+          'title': data.get('title', ''),
+          'badge_type': data.get('badge_type', 'player'),
+          'is_attending_banquet': data.get('is_attending_banquet', False),
+          'is_checked_in': data.get('is_checked_in', False),
+          'aga_chapter': data.get('aga_chapter', ''),
+        }
+        
+        # Create the manual attendee
+        attendee = self.badgefile.issue_manual_attendee(manual_info)
+        LocalAttendeeOverrides.shared().set_override(attendee, data)
+        Event("congress").mark_attendee_eligible(attendee, is_eligible=True)
+        if(data.get('is_checked_in', False)):
+          Event("congress").scan_in_attendee(attendee, is_reset=False)
+        
+        # Update the badgefile to include the new attendee
+        # self.badgefile.update_attendees()
+        
+        # Return the created attendee info
+        return jsonify({
+          'status': 200,
+          'response': attendee.web_info()
+        })
+        
+      except HTTPError:
+        raise
+      except Exception as exc:
+        log.error(f"Error creating manual attendee: {str(exc)}", exception=exc)
+        self.fail_request(500, "Internal error creating manual attendee")
+
+    @self.app.route('/attendees/<badgefile_id>', methods=['POST'])
+    def attendee_override_post(badgefile_id):
+      # self.require_authentication()
+      
+      data = self.parse_request()
+
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      if 'is_checked_in' in data:
+        event = Event("congress")
+        checked_in = data['is_checked_in']
+        del data['is_checked_in']
+
+        was_checked_in = event.num_times_attendee_scanned(attendee) != 0
+        if was_checked_in != checked_in:
+          event.scan_in_attendee(attendee, is_reset=not checked_in)
+      
+      override_result = LocalAttendeeOverrides.shared().set_override(attendee, data)
+      log.debug(f"Attendee {attendee.full_name()} {attendee.id()} override result: {override_result}")
+      attendee.badge().generate()
+      attendee.checksheet().generate()
+
+      attendee_info = attendee.web_info()
+
+      websocket_message = {
+        "type": "attendee_update", 
+        "data": attendee_info,
+      }
+
+      self.broadcast_to_websockets(websocket_message)
+      NotificationManager.shared().notify("attendee_update", {"attendee": attendee})
+
+      self.respond(override_result)
+
+    @self.app.route('/attendees/<badgefile_id>/badge', methods=['GET'])
+    def attendee_badge_get(badgefile_id):
+      # self.require_authentication()
+      
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      badge = attendee.badge()
+      if not badge.already_exists():
+        badge.generate()
+      
+      return send_file(os.path.abspath(badge.path()), mimetype='application/pdf')
+
+    @self.app.route('/attendees/<badgefile_id>/checksheet', methods=['GET'])
+    def attendee_checksheet_get(badgefile_id):
+      # self.require_authentication()
+      
+      try:
+        badgefile_id = int(badgefile_id)
+      except ValueError:
+        self.fail_request(400, "Invalid badgefile_id - must be an integer")
+      
+      attendee = self.badgefile.lookup_attendee(badgefile_id)
+      if attendee is None:
+        self.fail_request(404, "Attendee not found")
+      
+      checksheet = attendee.checksheet()
+      if not checksheet.already_exists():
+        checksheet.generate()
+      
+      return send_file(os.path.abspath(checksheet.path()), mimetype='application/pdf')
+    
+    @self.app.route('/media/<filename>', methods=['GET'])
+    def send_media(filename):
+      path = os.path.abspath("src/static/media/" + filename)
+      if not os.path.exists(path):
+        abort(404, description="Media file not found")
+
+      ext = os.path.splitext(filename)[1].lower()
+      if ext == ".png":
+        mimetype = "image/png"
+      elif ext in [".jpg", ".jpeg"]:
+        mimetype = "image/jpeg"
+      elif ext == ".gif":
+        mimetype = "image/gif"
+      elif ext == ".wav":
+        mimetype = "audio/wav"
+      elif ext == ".mp3":
+        mimetype = "audio/mpeg"
+      elif ext == ".pdf":
+        mimetype = "application/pdf"
+      else:
+        # Default to octet-stream for unknown types
+        mimetype = "application/octet-stream"
+
+      return send_file(path, mimetype=mimetype)
 
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)

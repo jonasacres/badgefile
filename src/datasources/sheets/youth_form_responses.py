@@ -4,9 +4,10 @@ from integrations.google_api import read_sheet_data, authenticate_service_accoun
 from log.logger import log
 
 class YouthFormResponses:
-  def __init__(self, badgefile):
+  def __init__(self, badgefile, force_online=False):
     self.badgefile = badgefile
-    self.read_sheet()
+    if force_online or self.badgefile.is_online:
+      self.read_sheet()
 
   def youth_form(self, attendee):
     return self.responses.get(attendee.id(), None)

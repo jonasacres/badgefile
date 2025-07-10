@@ -15,6 +15,8 @@ from datasources.clubexpress.activity_list import ActivityList
 from datasources.clubexpress.activity import Activity
 from util.util import standardize_phone
 from util.secrets import secret
+from model.local_attendee_overrides import LocalAttendeeOverrides
+from model.event import Event
 
 from log.logger import log
 
@@ -60,7 +62,24 @@ class Attendee:
     try:
       return float(self._info.get('aga_rating', None))
     except TypeError:
-      return None
+      rank = self._info.get('override_badge_rating')
+      if rank:
+        try:
+          type = rank[-1].lower()
+          number = int(rank[:-1])
+          if type == 'p':
+            return 9.0
+          elif type == 'd':
+            return float(number)
+          elif type == 'k':
+            return -float(number)
+          else:
+            log.warn(f"Unexpected player badge rating {rank}")
+            return None
+        except ValueError:
+          return None
+      else:
+        return None
   
   def aga_rating(self):
     return self._info.get('aga_rating', None)
@@ -177,19 +196,27 @@ class Attendee:
     return self.info()["status"].lower() == "cancelled"
   
   def is_participant(self):
-    return "member" in self._info["regtype"].lower()
+    if "member" in self._info["regtype"].lower():
+      return True
+    
+    override_type = (self._info.get('override_badge_type', "") or "").strip().lower()
+    is_participant_type = override_type not in ["nonparticipant", "non-participant"]
+    has_badge_rating = (self.badge_rating() or "").strip() != ""
+    return is_participant_type and has_badge_rating
+
 
   def is_manual(self):
     return "manual" in self._info["regtype"].lower()
   
   def languages(self):
     langstr = str(self._info.get("languages", "")).lower()
+    fi = self.final_info()
 
     languages = []
     langs = ["korean", "chinese", "japanese", "spanish"]
     for lang in langs:
       key = "override_speaks_" + lang
-      override_lang = (self._info.get(key, "") or "").lower().strip()
+      override_lang = (fi.get(key, "") or "").lower().strip()
       override_lang_no = override_lang == "no"
       override_lang_yes = override_lang == "yes"
       if (lang in langstr and not override_lang_no) or override_lang_yes:
@@ -208,7 +235,7 @@ class Attendee:
     tournaments = []
 
     for rt in raw_tournaments:
-      if "die hard" in rt:
+      if "die hard" in rt or "diehard" in rt:
         tournaments.append("diehard")
       elif "women" in rt:
         tournaments.append("womens")
@@ -218,6 +245,8 @@ class Attendee:
         tournaments.append("seniors")
       elif "open" in rt:
         tournaments.append("open")
+      elif rt == "none" or rt == "":
+        pass
       else:
         log.warn(f"Unknown tournament option: {rt}")
         tournaments.append(rt)
@@ -315,18 +344,20 @@ class Attendee:
   def is_in_tournament(self, tournament):
     # see if we have a canonical answer based on TD overrides
     key = 'in_' + tournament
-    if key in self._info:
-      return self._info.get(key)
+    dumb_hacky_override = LocalAttendeeOverrides.shared().apply_overrides(self._info)
+
+    if key in dumb_hacky_override:
+      return dumb_hacky_override.get(key)
     
     if tournament == 'masters':
       return False # requesting Masters on your sign-up does not put you into the Masters!
     
     # for some reason we don't have their sign-up requests; assume no tournaments
-    if not self._info.get('tournaments'):
+    if not dumb_hacky_override.get('tournaments'):
       return False
     
     # they have sign-up requests, so go with that
-    sign_up_tournament_str = str(self._info['tournaments'])
+    sign_up_tournament_str = str(dumb_hacky_override['tournaments'])
     sign_up_tournament_list = self.process_tournament_string(sign_up_tournament_str)
     did_request_tournament = tournament in sign_up_tournament_list
     return did_request_tournament
@@ -491,7 +522,7 @@ class Attendee:
     return self._info
   
   # return the attendee's info, with overrides layered on top.
-  def final_info(self):
+  def final_info(self, apply_local_overrides=True):
     final = self.info().copy()
 
     def clean_caps(text):
@@ -539,13 +570,21 @@ class Attendee:
     final['tournaments_list'] = ','.join(enrolled_tournaments)
     final['age_at_congress'] = self.age_at_congress()
     final['is_attending_banquet'] = self.is_attending_banquet()
+    final['badgefile_id'] = self.id()  # Ensure badgefile_id is always present
+    final['is_checked_in'] = self.is_checked_in()
+
+    if apply_local_overrides:
+      final = LocalAttendeeOverrides.shared().apply_overrides(final)
     
     return final
   
   def web_info(self):
-    web_info = self._info.copy()
+    web_info = self.final_info().copy()
     if "json" in web_info:
       del web_info["json"]
+    web_info['badgefile_id'] = self.id()
+    web_info['languages'] = self.languages()
+    web_info['tournaments'] = self.tournaments()
     return web_info
 
   def refresh(self, row=None):
@@ -707,6 +746,12 @@ class Attendee:
   def latest_row(self):
     return self.reglist_rows()[-1]
   
+  def is_checked_in(self):
+    if not Event.exists("congress"):
+      return False
+    scan_count = Event("congress").num_times_attendee_scanned(self)
+    return scan_count > 0
+  
   # boolean: is this the primary registrant?
   def is_primary(self):
     override = self.info().get("override_primary", None)
@@ -762,7 +807,7 @@ class Attendee:
     if primary_registrant_id:
       return self.badgefile().lookup_attendee(primary_registrant_id)
     
-    return None
+    return self
 
   def is_subject_to_youth_form(self):
     age = self.age_at_congress()
@@ -946,7 +991,10 @@ class Attendee:
       'badge_rating',
       'title',
       'badge_type',
-      'languages',
+      'override_speaks_japanese',
+      'override_speaks_korean',
+      'override_speaks_chinese',
+      'override_speaks_spanish',
     ]
 
     fi = self.final_info()
@@ -966,7 +1014,10 @@ class Attendee:
       'email',
       'tshirt',
       'translator',
-      'languages',
+      'override_speaks_japanese',
+      'override_speaks_korean',
+      'override_speaks_chinese',
+      'override_speaks_spanish',
       'title',
       'badge_type',
       'is_primary',

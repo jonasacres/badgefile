@@ -14,7 +14,6 @@ class IdManager:
     return cls._shared
 
   def __init__(self):
-    self.db = Database.shared()
     self.create_tables()
 
   def first_guest_id(self):
@@ -27,7 +26,7 @@ class IdManager:
 
   def create_badgefile_id_maps_table(self):
     # Create the table
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE TABLE IF NOT EXISTS BadgefileIdMaps (
             badgefile_id INTEGER NOT NULL,
             canonical_badgefile_id INTEGER NOT NULL
@@ -35,17 +34,17 @@ class IdManager:
     """)
 
     # Add an index on badgefile_id
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE INDEX IF NOT EXISTS idx_badgefile_id ON BadgefileIdMaps (badgefile_id)
     """)
 
     # Add an index on canonical_badgefile_id
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE INDEX IF NOT EXISTS idx_canonical_badgefile_id ON BadgefileIdMaps (canonical_badgefile_id)
     """)
 
     # Add a uniqueness constraint on badgefile_id
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS unique_badgefile_id ON BadgefileIdMaps (badgefile_id)
     """)
 
@@ -53,7 +52,7 @@ class IdManager:
     starting_value = self.first_guest_id()
 
     # Create the table
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE TABLE IF NOT EXISTS GuestIdMaps (
             guest_id INTEGER PRIMARY KEY AUTOINCREMENT,
             userhash TEXT NOT NULL
@@ -61,23 +60,23 @@ class IdManager:
     """)
 
     # Add an index on guest_id (though unnecessary since guest_id is the PRIMARY KEY)
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_guest_id ON GuestIdMaps (guest_id)
     """)
 
     # Add an index on userhash
-    self.db.execute("""
+    Database.shared().execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_userhash ON GuestIdMaps (userhash)
     """)
 
-    count = self.db.query("SELECT COUNT(*) AS count FROM GuestIdMaps")[0]["count"]
+    count = Database.shared().query("SELECT COUNT(*) AS count FROM GuestIdMaps")[0]["count"]
     if count == 0:
       # The table is empty, so it's probably brand new.
       # We want guest_ids to start with a number way beyond the highest AGA number.
       # If we insert and delete a row with guest_id=x-1, then sqlite3 will issue 'x' as the next guest_id (assuming the table was never used before)
       dummy_id = starting_value - 1
-      self.db.execute("INSERT INTO GuestIdMaps (guest_id, userhash) VALUES (?, 'temp')", [dummy_id])
-      self.db.execute("DELETE FROM GuestIdMaps WHERE guest_id=?", [dummy_id])
+      Database.shared().execute("INSERT INTO GuestIdMaps (guest_id, userhash) VALUES (?, 'temp')", [dummy_id])
+      Database.shared().execute("DELETE FROM GuestIdMaps WHERE guest_id=?", [dummy_id])
 
   def map_aga_id(self, aga_id):
     return self.canonical_id(aga_id)
@@ -98,7 +97,7 @@ class IdManager:
     
     # No AGA number, so digest their info into a hash we can use as a lookup key to see if we've issued a guest ID to this person.
     userhash = self.calculate_userhash(info)
-    rows = self.db.query("SELECT guest_id FROM GuestIdMaps WHERE userhash=?", [userhash])
+    rows = Database.shared().query("SELECT guest_id FROM GuestIdMaps WHERE userhash=?", [userhash])
     if len(rows) > 0:
       # We found a match, so reuse the existing ID.
       return self.canonical_id(rows[0]["guest_id"])
@@ -113,14 +112,14 @@ class IdManager:
   # and also manually identify every alternate ID, and make entries in the BadgefileIdMaps table associating each alternate ID to the canonical ID.
   def canonical_id(self, badgefile_id):
     badgefile_id = int(badgefile_id)
-    rows = self.db.query("SELECT canonical_badgefile_id FROM BadgefileIdMaps WHERE badgefile_id=?", [badgefile_id])
+    rows = Database.shared().query("SELECT canonical_badgefile_id FROM BadgefileIdMaps WHERE badgefile_id=?", [badgefile_id])
     if len(rows) == 0:
       return badgefile_id
     return rows[0]["canonical_badgefile_id"]
   
   def issue_id(self, userhash):
-    self.db.execute("INSERT INTO GuestIdMaps (userhash) VALUES (?)", [userhash])
-    return self.db.last_id()
+    Database.shared().execute("INSERT INTO GuestIdMaps (userhash) VALUES (?)", [userhash])
+    return Database.shared().last_id()
 
   def calculate_userhash(self, info):
     name_given = info.get("name_given").lower()
@@ -134,5 +133,5 @@ class IdManager:
     return hashlib.sha256(hash_input.encode()).hexdigest()
 
   def set_id_alias(self, canonical_id, alias_id):
-    self.db.execute("INSERT INTO BadgefileIdMaps (canonical_badgefile_id, badgefile_id) VALUES (?, ?)", [int(canonical_id), int(alias_id)])
+    Database.shared().execute("INSERT INTO BadgefileIdMaps (canonical_badgefile_id, badgefile_id) VALUES (?, ?)", [int(canonical_id), int(alias_id)])
 

@@ -77,6 +77,7 @@ class Event:
     # Get and return the new scan count
     updated_result = db.query(f"SELECT scan_count FROM {status_table} WHERE badgefile_id = ?", [attendee.id()])
     scan_count = updated_result[0]['scan_count']
+    self.scan_time = current_time
 
     log.debug(f"Scanned attendee {attendee.full_name()} into {self.name}, is_reset={is_reset}; new count {scan_count}")
     NotificationManager.shared().notify("event", {"event": self, "attendee": attendee, "action": "scan", "data": {"is_reset": is_reset, "num_times_attendee_scanned": scan_count}})

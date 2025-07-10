@@ -1,7 +1,8 @@
+from model.event import Event
 from integrations.email import Email
 from model.email_history import EmailHistory
 from log.logger import log
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 class ScheduledEmails:
   @classmethod
@@ -61,6 +62,39 @@ class ScheduledEmails:
         return False # there's only one expiring member in the party, and it's the primary; just send the primary an e-mail a membership_self version
       return len(expiring_members) > 0
     
+    def eligible_for_no_checkin(attendee):
+      # send an e-mail to attendees who intend to play in one of the morning tournaments but didn't check in before registration closed the night before.
+
+      # don't run if we haven't gotten to close of registration yet
+      # (July 12, 2025. wait to 11pm central time to make sure we've processed last-minute stuff)
+      current_time = datetime.now(timezone.utc)
+      reg_close_time = datetime(2025, 7, 12, 23, 0, 0, tzinfo=timezone(timedelta(hours=-5)))
+      
+      if current_time < reg_close_time:
+        return False
+
+      # don't run if we haven't set up the "congress" event
+      # (safeguard against 'live' server blasting everyone Sunday morning before I can sync changes from my laptop)
+      if not Event.exists("congress"):
+        return False
+      
+      # sanity check: if we haven't checked 100 people in, this probably isn't live post-checkin data :)
+      if Event("congress").num_scanned_attendees() < 100:
+        return False
+      
+      # don't send if the player isn't in one of the AM tournaments
+      in_morning_tournament = attendee.is_in_open() or attendee.is_in_masters()
+      if not in_morning_tournament:
+        return False
+      
+      # check if the player is checked in (e.g. scanned into the "congress" event)
+      event = Event("congress")
+      num_scans = event.num_times_attendee_scanned(attendee)
+      has_checked_in = num_scans > 0
+
+      # send if and only if the player is not checked in
+      return not has_checked_in
+    
     # convenience variables to make clear how often each email goes out
     only_send_once = None
     send_every_three_days = 60*60*24*3
@@ -70,9 +104,10 @@ class ScheduledEmails:
     self.run_campaign("1f-leago-yapp",                 always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1g-texas-weather",              always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1h-final-announcement",         always_eligible,                        only_send_once,        allow_nonprimary=True)
-    self.run_campaign("3a-housing-reminder",           eligible_for_housing_reminder,          send_every_three_days, allow_nonprimary=False)
-    self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, only_send_once,        allow_nonprimary=False)
-    self.run_campaign("3b-transportation-survey",      always_eligible,                        only_send_once,        allow_nonprimary=False)
+    self.run_campaign("1i-no-checkin",                 eligible_for_no_checkin,                only_send_once,        allow_nonprimary=True)
+    # self.run_campaign("3a-housing-reminder",           eligible_for_housing_reminder,          send_every_three_days, allow_nonprimary=False)
+    # self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, only_send_once,        allow_nonprimary=False)
+    # self.run_campaign("3b-transportation-survey",      always_eligible,                        only_send_once,        allow_nonprimary=False)
     self.run_campaign("3c-youth-form-reminder",        eligible_for_youth_form_reminder,       send_every_three_days, allow_nonprimary=False)
     self.run_campaign("3d1-membership-self",           eligible_for_membership_self,           send_every_three_days, allow_nonprimary=True)
     self.run_campaign("3d2-membership-party",          eligible_for_membership_party,          send_every_three_days, allow_nonprimary=False)

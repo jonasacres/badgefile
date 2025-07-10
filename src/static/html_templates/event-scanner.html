@@ -7,234 +7,441 @@
     <title>DataMatrix Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --border-primary: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --accent-secondary: #ff0088;
+            --accent-tertiary: #0088ff;
+            --accent-warning: #ffaa00;
+            --accent-error: #ff4444;
+            --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.5);
+            
+            /* Rainbow gradient definitions - compressed spectrum */
+            --rainbow-gradient: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            --rainbow-gradient-slow: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            --rainbow-gradient-vertical: linear-gradient(180deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            --rainbow-gradient-diagonal: linear-gradient(135deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff);
+            --rainbow-glow: 0 0 20px rgba(255, 100, 200, 0.4), 0 0 40px rgba(100, 255, 200, 0.2), 0 0 60px rgba(100, 200, 255, 0.1);
+            --rainbow-border: linear-gradient(90deg, #ff0066, #ff8800, #88ff00, #00ddff, #6600ff, #ff0066);
+        }
         
         body {
-            font-family: 'Rubik', sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0d0d0d 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
             padding: 20px;
-            background-color: #9ED9C3; /* Retro seafoam green */
-            color: #333;
-            background-image: 
-                radial-gradient(ellipse at 75% 20%, #FFCC5F 1%, transparent 4%),
-                radial-gradient(ellipse at 25% 40%, #FF6B65 1%, transparent 4%),
-                radial-gradient(ellipse at 50% 70%, #5DA4EA 1%, transparent 4%);
             position: relative;
             overflow-x: hidden;
         }
         
         body::before {
-            content: "";
-            position: absolute;
+            content: '';
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             background-image: 
-                linear-gradient(45deg, #9ED9C3 25%, transparent 25%),
-                linear-gradient(-45deg, #9ED9C3 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #8CC8B2 75%),
-                linear-gradient(-45deg, transparent 75%, #8CC8B2 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            opacity: 0.3;
+                radial-gradient(ellipse at 25% 25%, rgba(255, 0, 102, 0.1) 1%, transparent 4%),
+                radial-gradient(ellipse at 75% 75%, rgba(0, 255, 136, 0.1) 1%, transparent 4%),
+                radial-gradient(ellipse at 50% 50%, rgba(0, 136, 255, 0.1) 1%, transparent 4%);
             z-index: -1;
         }
         
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: 700;
+            position: relative;
+        }
+        
+        h1 span {
+            display: inline-block;
+            background: var(--rainbow-gradient-slow);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255, 100, 200, 0.8);
+            padding: 10px 20px;
+            border: 2px solid;
+            border-image: var(--rainbow-border) 1;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        h1 span::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--rainbow-gradient);
+        }
+        
         #result-header {
-            background-color: #FF6B65; /* Retro coral */
-            padding: 20px;
-            border-radius: 10px 10px 40px 10px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #1f1f1f 100%);
+            padding: 25px;
+            border-radius: 8px;
             margin-bottom: 30px;
-            min-height: 50px;
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
-            color: white;
-            border: 3px solid white;
+            min-height: 80px;
+            box-shadow: var(--rainbow-glow);
+            color: var(--text-primary);
+            border: 2px solid;
+            border-image: var(--rainbow-border) 1;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         #result-header::before {
-            content: "✶";
+            content: '';
             position: absolute;
-            top: 5px;
-            right: 15px;
-            font-size: 24px;
-            color: #FFCC5F;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--rainbow-gradient);
         }
         
-        #reader {
-            width: 100%;
-            margin-bottom: 30px;
-            border: 4px solid white;
-            border-radius: 10px 50px 10px 10px;
-            overflow: hidden;
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
-            background-color: white;
-        }
-        
-        .timestamp {
-            color: #FFCC5F; /* Retro yellow */
-            font-size: 0.9em;
-            font-weight: bold;
+        #result-header p {
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            letter-spacing: 1px;
         }
         
         .scan-value {
             font-weight: bold;
             word-break: break-all;
-            color: #333;
-            background: #FFCC5F;
-            padding: 3px 8px;
-            border-radius: 10px;
-            border: 2px solid white;
-        }
-        
-        h1 {
-            color: #333;
-            text-align: center;
-            font-size: 2.5em;
-            letter-spacing: 1px;
-            position: relative;
-            margin-bottom: 40px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        
-        h1::after {
-            content: "";
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 5px;
-            background: linear-gradient(90deg, transparent, #FF6B65, transparent);
-        }
-        
-        h1 span {
+            background: var(--rainbow-gradient-slow);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(255, 100, 200, 0.6);
+            padding: 5px 10px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
             display: inline-block;
-            background: #5DA4EA; /* Retro blue */
-            padding: 5px 15px;
-            border-radius: 10px;
-            color: white;
-            font-size: 0.8em;
-            transform: rotate(-2deg);
-            margin-left: 10px;
+            margin: 0 5px;
         }
         
-        button {
-            background-color: #5DA4EA;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 30px 5px 30px 5px;
-            font-family: 'Rubik', sans-serif;
+        .timestamp {
+            color: var(--accent-warning);
+            font-size: 0.9em;
             font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 30px;
-            box-shadow: 4px 4px 0 #3D84CA;
-            transition: all 0.2s;
-            position: relative;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        button:hover {
-            transform: translateY(-3px) rotate(-1deg);
-            box-shadow: 6px 6px 0 #3D84CA;
-        }
-        
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 2px 2px 0 #3D84CA;
-        }
-        
-        /* Atomic age design elements */
-        .atomic-orbit {
-            position: absolute;
-            width: 150px;
-            height: 50px;
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 50%;
-            top: 20px;
-            right: -50px;
-            transform: rotate(-20deg);
-            z-index: -1;
-        }
-        
-        .atomic-orbit::before {
-            content: "•";
-            position: absolute;
-            font-size: 20px;
-            color: white;
-            top: -12px;
-            left: 20px;
-        }
-        
-        .starburst {
-            position: absolute;
-            color: #FF6B65;
-            left: 20px;
-            top: 100px;
-            font-size: 40px;
-            z-index: -1;
-            transform: rotate(20deg);
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
         }
         
         #progress-container {
             margin-bottom: 30px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
-            border: 3px solid #5DA4EA;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #1f1f1f 100%);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-subtle);
+            border: 1px solid var(--border-primary);
+            position: relative;
+        }
+        
+        #progress-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--rainbow-gradient);
         }
         
         .progress-bar-wrapper {
-            background-color: #e0e0e0;
-            height: 30px;
-            border-radius: 15px;
+            background-color: var(--bg-tertiary);
+            height: 20px;
+            border-radius: 10px;
             overflow: hidden;
-            border: 2px solid white;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
+            border: 1px solid var(--border-primary);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+            position: relative;
         }
         
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(to right, #9ED9C3, #1E6954);
-            border-radius: 15px;
+            background: var(--rainbow-gradient);
+            border-radius: 10px;
             transition: width 0.5s ease-in-out;
             position: relative;
+            box-shadow: 0 0 10px rgba(255, 100, 200, 0.5);
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         #progress-text {
             text-align: center;
             font-weight: 500;
-            color: #333;
+            color: var(--text-secondary);
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        
+        #reader {
+            width: 100%;
+            margin-bottom: 30px;
+            border: 2px solid;
+            border-image: var(--rainbow-border) 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--rainbow-glow);
+            background-color: var(--bg-primary);
+            position: relative;
+        }
+        
+        #reader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--rainbow-gradient);
+            z-index: 1;
+        }
+        
+        /* Cyberpunk decorative elements */
+        .cyber-element {
+            position: absolute;
+            opacity: 0.6;
+            z-index: -1;
+        }
+        
+        .cyber-element-1 {
+            top: 10%;
+            right: 5%;
+            width: 100px;
+            height: 2px;
+            background: var(--rainbow-gradient);
+            transform: rotate(45deg);
+        }
+        
+        .cyber-element-2 {
+            bottom: 20%;
+            left: 3%;
+            width: 80px;
+            height: 2px;
+            background: var(--rainbow-gradient);
+            transform: rotate(-30deg);
+        }
+        
+        .cyber-element-3 {
+            top: 60%;
+            right: 2%;
+            width: 2px;
+            height: 60px;
+            background: var(--rainbow-gradient-vertical);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-primary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--rainbow-gradient);
+        }
+        
+        /* Selection styling */
+        ::selection {
+            background: rgba(255, 100, 200, 0.3);
+            color: var(--text-primary);
+        }
+        
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                min-height: 100vh;
+                max-height: 100vh;
+                overflow: hidden;
+            }
+            
+            .container {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+            
+            h1 {
+                font-size: 1.4em;
+                margin-bottom: 15px;
+                letter-spacing: 1px;
+            }
+            
+            h1 span {
+                padding: 5px 10px;
+            }
+            
+            #result-header {
+                padding: 12px;
+                min-height: 40px;
+                margin-bottom: 15px;
+                flex-shrink: 0;
+            }
+            
+            #result-header p {
+                font-size: 14px;
+            }
+            
+            #progress-container {
+                padding: 10px;
+                margin-bottom: 15px;
+                flex-shrink: 0;
+            }
+            
+            .progress-bar-wrapper {
+                height: 16px;
+                margin-bottom: 10px;
+            }
+            
+            #progress-text {
+                font-size: 12px;
+            }
+            
+            #reader {
+                flex: 1;
+                min-height: 200px;
+                max-height: calc(100vh - 200px);
+                margin-bottom: 0;
+            }
+            
+            /* Hide decorative elements on mobile to save space */
+            .cyber-element {
+                display: none;
+            }
+        }
+        
+        /* Even smaller screens (phones in portrait) */
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+            
+            h1 {
+                font-size: 1.2em;
+                margin-bottom: 10px;
+            }
+            
+            #result-header {
+                padding: 10px;
+                min-height: 35px;
+                margin-bottom: 10px;
+            }
+            
+            #result-header p {
+                font-size: 13px;
+            }
+            
+            #progress-container {
+                padding: 8px;
+                margin-bottom: 10px;
+            }
+            
+            .progress-bar-wrapper {
+                height: 14px;
+                margin-bottom: 8px;
+            }
+            
+            #progress-text {
+                font-size: 11px;
+            }
+            
+            #reader {
+                min-height: 180px;
+                max-height: calc(100vh - 160px);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="atomic-orbit"></div>
-    <div class="starburst">✶</div>
-    
-    <h1><span>{{ event_name }}</span></h1>
-    
-    <div id="result-header">
-        <p>Not my circus, not my monkeys.</p>
-    </div>
-    
-    <div id="progress-container">
-        <div class="progress-bar-wrapper">
-            <div id="progress-bar" class="progress-bar"></div>
+    <div class="container">
+        <!-- Cyberpunk decorative elements -->
+        <div class="cyber-element cyber-element-1"></div>
+        <div class="cyber-element cyber-element-2"></div>
+        <div class="cyber-element cyber-element-3"></div>
+        
+        <h1><span>{{ event_name }}</span></h1>
+        
+        <div id="result-header">
+            <p>READY TO SCAN</p>
         </div>
-        <div id="progress-text">Loading attendance data...</div>
+        
+        <div id="progress-container">
+            <div class="progress-bar-wrapper">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="progress-text">Loading attendance data...</div>
+        </div>
+        
+        <div id="reader"></div>
     </div>
-    
-    <div id="reader"></div>
     
     <script>
         async function sendScanToServer(agaid, event) {
@@ -305,11 +512,32 @@
             
             // Update the result header with attendee information and scan count
             resultHeader.innerHTML = `
-                <p>Scanned: <span class="scan-value">${attendee['name_given']} ${attendee['name_family']} (#${attendee['badgefile_id']}), scan count ${event['num_scans_for_attendee']}</span></p>
+                <p><span class="scan-value">${attendee['name_given']} ${attendee['name_family']} (#${attendee['badgefile_id']})</span></p>
             `;
             
             // Update progress bar
             updateProgressBar(event['total_attendees_scanned'], event['total_scannable']);
+            
+            // Play beep sound on successful scan
+            if (Array.isArray(window.screamSounds) && window.screamSounds.length > 0) {
+                // Pick a random scream sound and play it
+                try {
+                    scream_probability = 1.0;
+                    const idx = Math.floor(Math.random() * window.screamSounds.length);
+                    const sound = Math.random() < scream_probability ? window.screamSounds[idx] : window.beepSound;
+                    sound.currentTime = 0;
+                    await sound.play();
+                } catch (error) {
+                    console.log('Could not play scream sound:', error);
+                }
+            } else if (window.beepSound) {
+                try {
+                    window.beepSound.currentTime = 0; // Reset to beginning
+                    await window.beepSound.play();
+                } catch (error) {
+                    console.log('Could not play beep sound:', error);
+                }
+            }
         }
 
         // Add WebSocket connection function
@@ -354,6 +582,27 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            scream_mode = 0;
+            
+            // Preload and cache the beep sound
+            const beepSound = new Audio('/media/beep.mp3');
+            beepSound.preload = 'auto';
+            beepSound.load();
+            
+            let screamSounds = [];
+            if(scream_mode) {
+                for(let i = 0; i < 5; i++) {
+                    scream = new Audio('/media/scream-' + i + ".mp3")
+                    scream.preload = 'auto';
+                    scream.load();
+                    screamSounds.push(scream);
+                }
+            }
+            
+            // Store reference globally for use in scan handler
+            window.beepSound = beepSound;
+            window.screamSounds = screamSounds;
+            
             // Fetch initial event status
             fetchEventStatus("{{ event_name }}");
             
@@ -367,8 +616,8 @@
             
             const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                 // Only process if the decoded text matches the expected format (25GC followed by digits)
-                if(!decodedText || !/^25GC\d+$/.test(decodedText)) return;
-                const agaid = decodedText.substring(4);
+                if(!decodedText || !/^25\.\d+\.(b|c)$/.test(decodedText)) return;
+                const agaid = decodedText.split(".")[1];
 
                 // Get current timestamp
                 const now = new Date();

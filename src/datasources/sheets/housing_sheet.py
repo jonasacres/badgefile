@@ -25,8 +25,8 @@ class HousingSheet:
       dorm_assignments = [self.transform_row({map[i]: val for i, val in enumerate(row)}) for row in data if self.housing_row_looks_legit(row)]
       for assignment in dorm_assignments:
         assignment['building'] = building_name
-        attendee = self.locate_attendee_for_assignment(assignment, tab)
-        if attendee is not None:
+        attendees = self.locate_attendees_for_assignment(assignment, tab)
+        for attendee in attendees:
           if attendee.id() in self.assignments:
             existing = self.assignments[attendee.id()]
             log.notice(f"Attendee {attendee.id()} {attendee.full_name()} has multiple assignments in housing (e.g. {assignment['building']} {assignment['room_assigned']} and {existing['building']} {existing['room_assigned']})")
@@ -38,8 +38,8 @@ class HousingSheet:
     map = self.meal_column_map()
     meal_assignments = [self.transform_row({map[i]: val for i, val in enumerate(row)}) for row in meal_data if self.meal_row_looks_legit(row)]
     for assignment in meal_assignments:
-      attendee = self.locate_attendee_for_assignment(assignment, meal_tab)
-      if attendee is not None:
+      attendees = self.locate_attendees_for_assignment(assignment, meal_tab)
+      for attendee in attendees:
         if attendee.id() in self.assignments:
           existing = self.assignments[attendee.id()]
           log.notice(f"Attendee {attendee.id()} {attendee.full_name()} has multiple assignments including meal plan-only row")
@@ -72,8 +72,13 @@ class HousingSheet:
       return False
     return True
   
-  def locate_attendee_for_assignment(self, response, tab):
+  def locate_attendees_for_assignment(self, response, tab):
+    manual = self.locate_manually_mapped_attendees(response, tab)
+    if manual:
+      return manual
+    
     name_stripped = response['name_assigned'].lower().strip()
+
     for attendee in self.badgefile.attendees():
       ai = attendee.info()
       given = (ai.get("name_given", "") or "").strip()
@@ -91,10 +96,41 @@ class HousingSheet:
         f"{given}, {family} {mi}".lower(),
       ]
       if name_stripped in name_renderings:
-        return attendee
+        return [attendee]
     
     log.notice(f"Cannot find matching registration for housing/meal assignment with name '{response['name_assigned']}', tab {tab}, card {response['card_number']}'")
-    return None
+    return []
+  
+  def locate_manually_mapped_attendees(self, response, tab):
+    import yaml
+    import os
+
+    # Try to load the housing_name_maps.yaml file only once and cache it
+    if not hasattr(self, "_housing_name_map"):
+      housing_name_map_path = "housing_name_maps.yaml"
+      if os.path.exists(housing_name_map_path):
+        with open(housing_name_map_path, "r", encoding="utf-8") as f:
+          self._housing_name_map = yaml.safe_load(f)
+      else:
+        self._housing_name_map = {}
+      
+      print(self._housing_name_map)
+
+    # Check if the assigned name is in the map
+    name_map = self._housing_name_map
+    if response['name_assigned'] in name_map:
+      badgefile_ids = name_map[response['name_assigned']]
+      if isinstance(badgefile_ids, int):
+        badgefile_ids = [badgefile_ids]
+      elif not isinstance(badgefile_ids, list):
+        badgefile_ids = [badgefile_ids]
+      attendees = []
+      for bid in badgefile_ids:
+        attendee = self.badgefile.lookup_attendee(bid)
+        if attendee is not None:
+          attendees.append(attendee)
+      if attendees:
+        return attendees
   
   def transform_row(self, row):
     transformed = row.copy()

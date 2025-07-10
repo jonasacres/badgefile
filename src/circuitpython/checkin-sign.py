@@ -235,7 +235,7 @@ class WifiConnection:
         self.password = password
         
     def connect(self):
-        print(f"WifiConnection: Connecting to SSID {self.ssid}...")
+        print(f"WifiConnection: Connecting to SSID {self.ssid}, pw '{self.password}'...")
         wifi.radio.enabled = True
         wifi.radio.connect(self.ssid, self.password)
         print("WifiConnection: Connected!")
@@ -964,8 +964,8 @@ class Glyph:
                 "██  ██",
                 "██  ██",
                 "██ ██ ",
-                "██ ██ ",
-                " ████ "
+                "██ ███ ",
+                " ███ █"
             ],
             'R': [
                 "█████ ",
