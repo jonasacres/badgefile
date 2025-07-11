@@ -54,13 +54,13 @@ def main():
   
   print(f"Found {len(needs_correction)} attendees who need a youth form correction.")
   
+  Email.override_enable()
+
   # Send correction email to each attendee who received reminder in error
   for attendee in needs_correction:
-    print(f"Sending correction to {attendee.name_given()}")
-    attendee.send_email("youth-form-correction")
-  
-  email = Email("youth-form-correction.txt", attendee)
-  email.send(force=True)
+    print(f"Sending correction to {attendee.full_name()}")  
+    email = Email("youth-form-correction", attendee)
+    email.send(force=True)
 
 if __name__ == "__main__":
   main()
