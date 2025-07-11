@@ -489,6 +489,7 @@ class WebService:
       # Convert attendee objects to web-friendly format
       attendees_data = []
       for attendee in attendees:
+        log.debug(f"attendee: {attendee.full_name()} {attendee.id()}")
         attendee_info = attendee.web_info()
         attendees_data.append(attendee_info)
       

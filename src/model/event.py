@@ -20,6 +20,13 @@ class Event:
   def __init__(self, name):
     self.name = name
     self.ensure_db()
+
+  def nuke(self):
+    db = Database.shared()
+    log.info(f"Nuking event {self.name}")
+    db.execute(f"DELETE FROM event_{self.name}_status")
+    db.execute(f"DELETE FROM event_{self.name}_scans")
+    db.execute(f"DELETE FROM event_{self.name}_enrollments")
   
   def mark_attendee_eligible(self, attendee, is_eligible=True):
     # insert a row into the table for the attendee (if one does not exist for badgefile_id=attendee.id()) with scan_count=0

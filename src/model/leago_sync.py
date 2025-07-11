@@ -15,6 +15,8 @@ class LeagoSync:
   def run(self):
     import threading
 
+    self.leago.login()
+    
     def sync_thread_outer():
       self.sync_thread_body()
 
@@ -79,7 +81,6 @@ class LeagoSync:
       log.info(f"Leago data refreshed.")
       return True
     except Exception as exc:
-      log.error(f"LeagoSync force_refresh encountered exception", exception=exc)
       return False
   
   def sync_thread_body(self):

@@ -51,6 +51,7 @@ class OverviewReport:
     return [
       f"{info['name_family']}, {info['name_given']} {info['name_mi'] if info['name_mi'] else ''}",
       attendee.id(),
+      attendee.is_checked_in(),
       attendee.age_at_congress(),
       info['country'],
       "YES" if attendee.is_primary() else "NO",
@@ -76,6 +77,7 @@ class OverviewReport:
     sheet_header = [
       "Name",
       "AGAID",
+      "Checked In?",
       "Age at Congress",
       "Country of Origin",
       "Is Primary?",

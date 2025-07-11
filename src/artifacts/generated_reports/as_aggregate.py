@@ -66,7 +66,7 @@ class AggregateReport:
     num_dorm_beds_booked = sum([item.num_units() for item in housing if item.is_dorm_double()]) + 2*sum([item.num_units() for item in housing if item.is_dorm_single()])
     num_apt1_beds_booked = sum([item.num_units() for item in housing if item.is_apt1_1room()]) + 2*sum([item.num_units() for item in housing if item.is_apt1_2room()])
     num_apt2_beds_booked = sum([item.num_units() for item in housing if item.is_apt2_1room()]) + 2*sum([item.num_units() for item in housing if item.is_apt2_2room()])
-    num_vip_beds_booked = 0
+    num_vip_beds_booked = sum([item.num_units() for item in housing if item.is_apt3()])
 
     row_defs = [
       ["Registration", real_attendees],

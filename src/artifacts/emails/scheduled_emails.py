@@ -104,13 +104,13 @@ class ScheduledEmails:
     self.run_campaign("1f-leago-yapp",                 always_eligible,                        only_send_once,        allow_nonprimary=True)
     # self.run_campaign("1g-texas-weather",              always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1h-final-announcement",         always_eligible,                        only_send_once,        allow_nonprimary=True)
-    self.run_campaign("1i-no-checkin",                 eligible_for_no_checkin,                only_send_once,        allow_nonprimary=True)
+    # self.run_campaign("1i-no-checkin",                 eligible_for_no_checkin,                only_send_once,        allow_nonprimary=True)
     # self.run_campaign("3a-housing-reminder",           eligible_for_housing_reminder,          send_every_three_days, allow_nonprimary=False)
     # self.run_campaign("3a2-housing-reduction-warning", eligible_for_housing_reduction_warning, only_send_once,        allow_nonprimary=False)
     # self.run_campaign("3b-transportation-survey",      always_eligible,                        only_send_once,        allow_nonprimary=False)
-    self.run_campaign("3c-youth-form-reminder",        eligible_for_youth_form_reminder,       send_every_three_days, allow_nonprimary=False)
-    self.run_campaign("3d1-membership-self",           eligible_for_membership_self,           send_every_three_days, allow_nonprimary=True)
-    self.run_campaign("3d2-membership-party",          eligible_for_membership_party,          send_every_three_days, allow_nonprimary=False)
+    # self.run_campaign("3c-youth-form-reminder",        eligible_for_youth_form_reminder,       send_every_three_days, allow_nonprimary=False)
+    # self.run_campaign("3d1-membership-self",           eligible_for_membership_self,           send_every_three_days, allow_nonprimary=True)
+    #self.run_campaign("3d2-membership-party",          eligible_for_membership_party,          send_every_three_days, allow_nonprimary=False)
 
   def run_test_campaign(self):
     def eligible_for_test_campaign(attendee):
