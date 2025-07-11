@@ -895,6 +895,8 @@ class Attendee:
     
     from datasources.clubexpress.registration_fees_charges_congress import RegistrationFeesChargesCongress
     rfcc = RegistrationFeesChargesCongress.latest()
+    if not rfcc:
+      return []
     btrn = rfcc.by_transrefnum()
     trn = self._info.get('transrefnum', None)
     if trn is None:
@@ -937,8 +939,11 @@ class Attendee:
       trn = activity.info().get('transrefnum')
       if trn is not None:
         housing_trns.add(int(trn))
-    
+
+    if not rfch:
+      return []
     btrn = rfch.by_transrefnum()
+    
     all_payment_lines = []
     for trn in housing_trns:
       if not trn in btrn:

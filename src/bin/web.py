@@ -26,7 +26,6 @@ class OverviewUpdater:
     self.badgefile = badgefile
     self.last_update = None
     self.dirty = False
-
   
     def received_notification(key, notification):
       attendee = notification.get("attendee")
@@ -40,6 +39,7 @@ class OverviewUpdater:
   def run(self):
     log.info(f"Starting overview updater thread")
     while True:
+      time.sleep(0.1)
       try:
         update_ok = self.last_update is None or time.time() - self.last_update > 10
         if self.dirty and update_ok:
@@ -63,16 +63,16 @@ def main():
   
   try:
     badgefile = Badgefile()
-    # leago_sync = LeagoSync(badgefile)
-    # leago_sync.run()
-    # leago_sync.sync_all()
+    leago_sync = LeagoSync(badgefile)
+    leago_sync.run()
+    leago_sync.sync_all()
 
     service = WebService(badgefile, 
                         listen_interface=args.interface, 
                         port=args.port)
     
     SocketServer.shared().listen()
-    # updater = OverviewUpdater(badgefile)
+    updater = OverviewUpdater(badgefile)
 
     print(f"Starting WebService on {args.interface}:{args.port}")
     service.run()
