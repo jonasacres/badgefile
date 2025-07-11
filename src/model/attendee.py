@@ -829,7 +829,7 @@ class Attendee:
     if not self.is_subject_to_youth_form():
       return False
     if self._info.get('has_youth_form'):
-      return True
+      return False
     
     if not hasattr(self, '_youth_response'):
       from datasources.sheets.youth_form_responses import YouthFormResponses

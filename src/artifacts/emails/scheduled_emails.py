@@ -99,10 +99,10 @@ class ScheduledEmails:
     only_send_once = None
     send_every_three_days = 60*60*24*3
 
-    self.run_campaign("1d-excursion-survey",           always_eligible,                        only_send_once,        allow_nonprimary=True)
+    # self.run_campaign("1d-excursion-survey",           always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1e-special-events",             always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1f-leago-yapp",                 always_eligible,                        only_send_once,        allow_nonprimary=True)
-    self.run_campaign("1g-texas-weather",              always_eligible,                        only_send_once,        allow_nonprimary=True)
+    # self.run_campaign("1g-texas-weather",              always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1h-final-announcement",         always_eligible,                        only_send_once,        allow_nonprimary=True)
     self.run_campaign("1i-no-checkin",                 eligible_for_no_checkin,                only_send_once,        allow_nonprimary=True)
     # self.run_campaign("3a-housing-reminder",           eligible_for_housing_reminder,          send_every_three_days, allow_nonprimary=False)
