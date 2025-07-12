@@ -25,7 +25,7 @@ class OverviewUpdater:
   def __init__(self, badgefile):
     self.badgefile = badgefile
     self.last_update = None
-    self.dirty = False
+    self.dirty = True
   
     def received_notification(key, notification):
       attendee = notification.get("attendee")

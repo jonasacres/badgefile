@@ -299,6 +299,10 @@ class Attendee:
     if (self._info.get('override_badge_rating', "") or "").strip() != "":
       return self._info.get('override_badge_rating')
     
+    local_overrides = LocalAttendeeOverrides.shared().apply_overrides(self._info)
+    if 'badge_rating' in local_overrides:
+      return local_overrides['badge_rating']
+    
     rating = self.effective_rank()
     if rating is None:
       return ""

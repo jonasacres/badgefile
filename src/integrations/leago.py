@@ -688,7 +688,18 @@ class Leago:
       return None # already matches what's in Leago
     
     log.debug(f"Attendee {attendee.full_name()} {attendee.id()} updating status to {status} in Leago")
-    return self.update_attendee(attendee, {'status': status})
+    result = self.update_attendee(attendee, {'status': status})
+
+    if status == 1 and result:
+      log.debug(f"Sending invite email via Leago to {attendee.full_name()} {attendee.id()}")
+      self.send_invite_email(attendee)
+
+    return result
+
+  def send_invite_email(self, attendee):
+    key = self.get_registrations()[str(attendee.id())]['key']
+    url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations/{key}/invite-email"
+    self.make_authenticated_request('POST', url)
 
   def update_attendee(self, attendee, extra = {}):
     if not str(attendee.id()) in self.get_registrations():

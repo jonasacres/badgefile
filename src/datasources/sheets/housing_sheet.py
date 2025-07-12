@@ -22,6 +22,7 @@ class HousingSheet:
     for tab, building_name in badge_tabs.items():
       data = read_sheet_data(service, file_id, sheet_name=tab)
       map = self.housing_column_map()
+      data = [row[0:len(map)] for row in data]
       dorm_assignments = [self.transform_row({map[i]: val for i, val in enumerate(row)}) for row in data if self.housing_row_looks_legit(row)]
       for assignment in dorm_assignments:
         assignment['building'] = building_name
