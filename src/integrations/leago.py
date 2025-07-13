@@ -619,6 +619,9 @@ class Leago:
 
 
   def register_attendee(self, attendee):
+    log.error(f"We tried to register attendee {reg.get('key')} {reg.get('organizationMemberKey')}")
+    return
+  
     reg_payload = self.registration_payload_for_attendee(attendee)
 
     url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations"
@@ -631,6 +634,9 @@ class Leago:
     return registration
   
   def unregister_attendee_by_reg(self, reg, force=False):
+    log.error(f"We tried to unregistered attendee {reg.get('key')} {reg.get('organizationMemberKey')}")
+    return
+  
     if not force and not reg.get('organizationMemberKey') in self.get_registrations():
       return False
     
@@ -648,6 +654,9 @@ class Leago:
     return True
   
   def set_player_tournament_participation(self, attendee, tournament, is_participating, force=False):
+    log.error(f"We tried to set tournament enrollment for attendee {attendee.full_name()} {attendee.id()}")
+    return
+  
     log.debug(f"Setting player {attendee.full_name()} {attendee.id()} participating={is_participating} for tournament {tournament['key']} ({tournament['title']})")
     str_id = str(attendee.id())
 
@@ -689,7 +698,7 @@ class Leago:
     
     log.debug(f"Attendee {attendee.full_name()} {attendee.id()} updating status to {status} in Leago")
     result = self.update_attendee(attendee, {'status': status})
-
+    
     # if status == 1 and result:
     #   log.debug(f"Sending invite email via Leago to {attendee.full_name()} {attendee.id()}")
     #   self.send_invite_email(attendee)
@@ -697,11 +706,17 @@ class Leago:
     return result
 
   def send_invite_email(self, attendee):
+    log.error(f"Tried to send Leago invite to attendee {attendee.full_name()} {attendee.id()}")
+    return
+  
     key = self.get_registrations()[str(attendee.id())]['key']
     url = f"{self.leago_url}/api/v1/events/{self.event_key}/registrations/{key}/invite-email"
     self.make_authenticated_request('POST', url)
 
   def update_attendee(self, attendee, extra = {}):
+    log.error(f"oh fuck we tried to update Leago: attendee {attendee.full_name()} {attendee.id()}, {extra}")
+    return
+  
     if not str(attendee.id()) in self.get_registrations():
       if not str(attendee.id()) in self.get_registrations(force=True):
         log.warn(f"Cannot update attendee {attendee.full_name()} (#{attendee.id()}) in Leago, since this member is not registered to event {self.event_key}")
@@ -725,6 +740,9 @@ class Leago:
     return registration
 
   def unregister_attendee(self, attendee):
+    log.error(f"we tried to delete attendee {attendee.full_name()} {attendee.id()} from Leago")
+    return
+  
     id = str(attendee.id())
     registrations = self.get_registrations()
     if not id in registrations or not 'key' in registrations[id]:
