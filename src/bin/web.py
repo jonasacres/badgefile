@@ -63,9 +63,9 @@ def main():
   
   try:
     badgefile = Badgefile()
-    leago_sync = LeagoSync(badgefile)
-    leago_sync.run()
-    leago_sync.sync_all()
+    # leago_sync = LeagoSync(badgefile)
+    # leago_sync.run()
+    # leago_sync.sync_all()
 
     service = WebService(badgefile, 
                         listen_interface=args.interface, 

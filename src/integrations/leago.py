@@ -438,7 +438,7 @@ class Leago:
         response = requests.request(method, url, **kwargs)
     
     elif response.status_code // 100 != 2:
-      log.warn(f"Leago {method} {url} returned HTTP {response.status_code}.\nPayload: {json.dumps(kwargs['json'])}\nResponse: {response.text}")
+      log.warn(f"Leago {method} {url} returned HTTP {response.status_code}.\nPayload: {json.dumps(kwargs)}\nResponse: {response.text}")
     
     return response
 
@@ -690,9 +690,9 @@ class Leago:
     log.debug(f"Attendee {attendee.full_name()} {attendee.id()} updating status to {status} in Leago")
     result = self.update_attendee(attendee, {'status': status})
 
-    if status == 1 and result:
-      log.debug(f"Sending invite email via Leago to {attendee.full_name()} {attendee.id()}")
-      self.send_invite_email(attendee)
+    # if status == 1 and result:
+    #   log.debug(f"Sending invite email via Leago to {attendee.full_name()} {attendee.id()}")
+    #   self.send_invite_email(attendee)
 
     return result
 
