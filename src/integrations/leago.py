@@ -508,7 +508,7 @@ class Leago:
 
     for title, tournament in self.get_tournaments().items():
       sanitized_title = title.lower().strip()
-      if sanitized_title in valid_titles[our_name]:
+      if our_name in valid_titles and sanitized_title in valid_titles[our_name]:
         return tournament
     
     log.notice(f"Can't find tournament '{our_name}' in leago")

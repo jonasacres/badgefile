@@ -88,6 +88,9 @@ class LeagoWatcher:
     current_round = self.current_round(tournament_name)
     tournament = self.leago.tournament_by_badgefile_name(tournament_name)
 
+    if not tournament:
+      return { "tournament_name": None, "total_matches": 0, "completed": 0, "in_progress": 0 }
+
     matches = self.leago.get_matches(tournament['key'], current_round)
     num_matches = len(matches)
     num_completed = len([match for match in matches if match["players"][0]["outcome"] != 0])
