@@ -207,10 +207,23 @@ class Badgefile:
     if info.get('badgefile_id'):
       row['badgefile_id'] = info.get('badgefile_id')
 
-    self.clear_attendees()
-    att = Attendee(self).load_reglist_row(row)    
-    att.set_manual_override(info)
-    return att
+    attendee = None
+    for existing_att in self.attendees():  
+      if existing_att.id() == info.get('badgefile_id'):
+        attendee = existing_att
+        break
+    
+    needs_refresh = not attendee
+    if needs_refresh:
+      attendee = Attendee(self)
+
+    attendee.load_reglist_row(row)
+    attendee.set_manual_override(info)
+
+    if needs_refresh:
+      self.clear_attendees()
+
+    return attendee
     
   def generate_json(self):
     # Create artifacts directory if it doesn't exist
@@ -292,7 +305,7 @@ class Badgefile:
     self._parties = None
     self._override_map = None
   
-  def parties(self, force=True):
+  def parties(self, force=False):
     if self._parties is None or force:
       log.debug("badgefile: Organizing party lists")
       parties = {}

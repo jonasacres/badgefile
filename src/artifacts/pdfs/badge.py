@@ -190,6 +190,7 @@ class BadgeRenderer:
 
     city = str(info.get('city') or "")
     state = str(info.get('state') or "")
+    id_num = str(info.get('real_aga_id') or self.attendee.id())
 
     city_state = ", ".join(filter(lambda x: x and x.strip(), [city, state]))
 
@@ -197,7 +198,7 @@ class BadgeRenderer:
     info_enclosure.add_leaf_rounded_rect(colors.white, colors.gray, 0.05, 4.0)
     info_enclosure.add_leaf_text_centered(name_given, style(36, colors.black, bold=True), y=3.5*inch)
     info_enclosure.add_leaf_text_centered(name_family, style(28, colors.black, bold=True), y=3.0*inch)
-    info_enclosure.add_leaf_text_centered("#" + str(self.attendee.id()), style(24, colors.red, bold=True), y=2.25*inch)
+    info_enclosure.add_leaf_text_centered("#" + str(id_num), style(24, colors.red, bold=True), y=2.25*inch)
     info_enclosure.add_leaf_text_centered(city_state, style(20, colors.black), y=1.65*inch)
     info_enclosure.add_leaf_text_centered(info['badge_rating'], style(48, colors.black, bold=True), y=0.25*inch)
 
