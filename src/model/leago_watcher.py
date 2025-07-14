@@ -26,7 +26,7 @@ class LeagoWatcher:
           if new_data != last_data:
             last_data = new_data
             log.debug(f"Broadcasting tournament update: {new_data['tournament_name']} {new_data['in_progress']}/{new_data['total_matches']}")
-            NotificationManager.shared().notify("tournament_data", last_data)
+            NotificationManager.shared().notify("tournament_data", {"tournament_data":last_data})
         except Exception as exc:
           log.error("Error in LeagoWatcher background thread", exception=exc)
           time.sleep(10)
