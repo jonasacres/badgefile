@@ -1562,7 +1562,12 @@
 
                     // Add AGA number for manual badges, real_aga_id for existing badges
                     if (selectedAttendee.is_manual) {
-                        formData.badgefile_id = document.getElementById('aga-number').value;
+                        const agaNumberValue = document.getElementById('aga-number').value.trim();
+                        if (agaNumberValue === '') {
+                            formData.badgefile_id = null;
+                        } else {
+                            formData.badgefile_id = agaNumberValue;
+                        }
                     } else {
                         formData.real_aga_id = document.getElementById('real-aga-id').value;
                     }

@@ -204,10 +204,12 @@ class Badgefile:
       "title": info.get("title", "")
     }
 
+    if info.get('badgefile_id'):
+      row['badgefile_id'] = info.get('badgefile_id')
+
+    self.clear_attendees()
     att = Attendee(self).load_reglist_row(row)    
     att.set_manual_override(info)
-    if self._attendees:
-      self._attendees.append(att)
     return att
     
   def generate_json(self):
@@ -285,8 +287,13 @@ class Badgefile:
       return [att for att in self._attendees if not att.is_cancelled()]
     return self._attendees
   
-  def parties(self):
-    if self._parties is None:
+  def clear_attendees(self):
+    self._attendees = None
+    self._parties = None
+    self._override_map = None
+  
+  def parties(self, force=True):
+    if self._parties is None or force:
       log.debug("badgefile: Organizing party lists")
       parties = {}
       for attendee in self._attendees:
