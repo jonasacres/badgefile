@@ -24,27 +24,40 @@ class SocketServer:
     self.last_broadcast = None
 
     def received_notification(key, notification):
-      if key != "event":
-        return
-      
       event = notification.get("event")
-      num_scanned = event.num_scanned_attendees()
-      num_eligible_attendees = event.num_eligible_attendees()
+      tournament_data = notification.get("tournament_data")
 
-      self.broadcast(
-        {
-          'type': 'event',
-          'data': {
-            'event': {
-              'name': event.name if hasattr(event, 'name') else None,
-              'total_attendees_scanned': num_scanned,
-              'total_scannable': num_eligible_attendees,
-            }
-         }
-        }
-      )
+      if event:
+        self.broadcast_scan_event(event)
+      if tournament_data:
+        self.broadcast_tournament_data(tournament_data)
     
     NotificationManager.shared().observe(received_notification)
+  
+  def broadcast_scan_event(self, event):
+    num_scanned = event.num_scanned_attendees()
+    num_eligible_attendees = event.num_eligible_attendees()
+
+    self.broadcast(
+      {
+        'type': 'event',
+        'data': {
+          'event': {
+            'name': event.name if hasattr(event, 'name') else None,
+            'total_attendees_scanned': num_scanned,
+            'total_scannable': num_eligible_attendees,
+          }
+        }
+      }
+    )
+
+  def broadcast_tournament_data(self, tournament_data):
+    self.broadcast(
+      {
+        'type': 'tournament_data',
+        'data': tournament_data
+      }
+    )
 
   def broadcast(self, msg):
     json_str = json.dumps(msg)

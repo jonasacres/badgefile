@@ -44,6 +44,7 @@ class Leago:
     self._token_data = None
     self.state = secrets.token_hex(32)
     self._session = None  # Store authenticated session
+    self.matches = {}
     
     # OAuth2 configuration
     self.client_id = secret('leago_client_id', "Leago.WebClient")
@@ -441,6 +442,36 @@ class Leago:
       log.warn(f"Leago {method} {url} returned HTTP {response.status_code}.\nPayload: {json.dumps(kwargs)}\nResponse: {response.text}")
     
     return response
+  
+  def get_matches(self, tournament_id, round_id, force=False):
+    if tournament_id not in self.matches:
+      self.matches[tournament_id] = {}
+    
+    is_expired = True
+    if round_id in self.matches[tournament_id] and not force:
+      last_check = self.matches[tournament_id][round_id]["last_check"]
+      is_expired = time.time() - last_check >= 60
+    
+    if not is_expired:
+      return self.matches[tournament_id][round_id]["matches"]
+
+    url = f"{self.leago_url}/api/v1/tournaments/{tournament_id}/rounds/{round_id}/matches"
+    response = self.make_authenticated_request('GET', url)
+    response.raise_for_status()
+
+    self.matches[tournament_id][round_id] = {
+      "last_check": time.time(),
+      "matches": response.json()
+    }
+    return response.json()
+  
+  def get_active_matches(self, tournament_id, round_id, force=False):
+    matches = self.get_matches(tournament_id, round_id, force)
+    return [match for match in matches if match["players"][0]["outcome"] != 0]
+  
+  def get_completed_matches(self, tournament_id, round_id, force=False):
+    matches = self.get_matches(tournament_id, round_id, force)
+    return [match for match in matches if match["players"][0]["outcome"] == 0]
 
   def get_tournaments(self, force=False):
     if self.tournaments is not None and not force:
@@ -459,6 +490,7 @@ class Leago:
     self.tournaments_by_name = {tourney_name: tournament for tourney_name in our_tournaments 
                                if (tournament := self.tournament_by_badgefile_name(tourney_name)) is not None}
 
+    log.debug(f"Found tournaments: {self.tournaments_by_name.keys()}")
     return self.tournaments
   
   def tournament_by_badgefile_name(self, our_name):
@@ -479,6 +511,7 @@ class Leago:
       if sanitized_title in valid_titles[our_name]:
         return tournament
     
+    log.notice(f"Can't find tournament '{our_name}' in leago")
     return None
       
   

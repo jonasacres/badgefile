@@ -17,6 +17,7 @@ from model.event import Event, AttendeeNotEligible
 from model.local_attendee_overrides import LocalAttendeeOverrides
 from server.socketserver import SocketServer
 from model.notification_manager import NotificationManager
+from model.leago_watcher import LeagoWatcher
 
 class HTTPError(Exception):
   def __init__(self, status, message=None, data=None):
@@ -39,6 +40,8 @@ class WebService:
     self.websocket_clients = set()
     self._setup_routes()
     self.recent_scans = {}
+    self.leago_watcher = LeagoWatcher()
+    self.leago_watcher.run()
 
     def received_notification(key, notification):
       if key != "event":
@@ -611,6 +614,9 @@ class WebService:
         checked_in = data['is_checked_in']
         del data['is_checked_in']
 
+        if not event.is_attendee_eligible(attendee):
+          event.mark_attendee_eligible(attendee, is_eligible=True)
+
         was_checked_in = event.num_times_attendee_scanned(attendee) != 0
         if was_checked_in != checked_in:
           event.scan_in_attendee(attendee, is_reset=not checked_in)
@@ -694,6 +700,10 @@ class WebService:
         mimetype = "application/octet-stream"
 
       return send_file(path, mimetype=mimetype)
+    
+    @self.app.route('/tournaments/current', methods=['GET'])
+    def get_tournaments_current():
+      return self.leago_watcher.current_stats()
 
   def run(self):
     self.app.run(host=self.listen_interface, port=self.port)
