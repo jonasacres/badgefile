@@ -723,6 +723,12 @@
                                 <input type="text" id="aga-number" readonly>
                             </div>
                             <div class="form-group">
+                                <label for="real-aga-id">Real AGA ID</label>
+                                <input type="text" id="real-aga-id">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="badge-rating">Badge Rating</label>
                                 <input type="text" id="badge-rating">
                             </div>
@@ -1311,17 +1317,39 @@
             const badgeBtn = document.getElementById('badge-btn');
             const checksheetBtn = document.getElementById('checksheet-btn');
             const regenerateBtn = document.getElementById('regenerate-btn');
+            const agaNumberField = document.getElementById('aga-number');
+            const realAgaIdField = document.getElementById('real-aga-id');
             
             if (attendee.is_manual) {
                 // For manual badges, disable badge and checksheet buttons
                 badgeBtn.disabled = true;
                 checksheetBtn.disabled = true;
                 regenerateBtn.textContent = 'Generate';
+                
+                // Enable AGA number field, disable real_aga_id field
+                agaNumberField.readOnly = false;
+                agaNumberField.style.backgroundColor = 'var(--bg-primary)';
+                agaNumberField.style.color = 'var(--text-primary)';
+                agaNumberField.style.cursor = 'text';
+                realAgaIdField.readOnly = true;
+                realAgaIdField.style.backgroundColor = 'var(--bg-tertiary)';
+                realAgaIdField.style.color = 'var(--text-muted)';
+                realAgaIdField.style.cursor = 'not-allowed';
             } else {
                 // For regular attendees, enable all buttons
                 badgeBtn.disabled = false;
                 checksheetBtn.disabled = false;
                 regenerateBtn.textContent = 'Regenerate';
+                
+                // Disable AGA number field, enable real_aga_id field
+                agaNumberField.readOnly = true;
+                agaNumberField.style.backgroundColor = 'var(--bg-tertiary)';
+                agaNumberField.style.color = 'var(--text-muted)';
+                agaNumberField.style.cursor = 'not-allowed';
+                realAgaIdField.readOnly = false;
+                realAgaIdField.style.backgroundColor = 'var(--bg-primary)';
+                realAgaIdField.style.color = 'var(--text-primary)';
+                realAgaIdField.style.cursor = 'text';
             }
         }
 
@@ -1329,6 +1357,7 @@
             document.getElementById('given-name').value = attendee.name_given || '';
             document.getElementById('family-name').value = attendee.name_family || '';
             document.getElementById('aga-number').value = attendee.badgefile_id || '';
+            document.getElementById('real-aga-id').value = attendee.real_aga_id || '';
             document.getElementById('badge-rating').value = attendee.badge_rating || '';
             document.getElementById('city').value = attendee.city || '';
             document.getElementById('state').value = attendee.state || '';
@@ -1530,6 +1559,13 @@
                         email: document.getElementById('email').value,
                         phone: document.getElementById('phone').value
                     };
+
+                    // Add AGA number for manual badges, real_aga_id for existing badges
+                    if (selectedAttendee.is_manual) {
+                        formData.badgefile_id = document.getElementById('aga-number').value;
+                    } else {
+                        formData.real_aga_id = document.getElementById('real-aga-id').value;
+                    }
 
                     // Collect language checkboxes
                     const languages = [];
