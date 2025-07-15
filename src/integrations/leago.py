@@ -411,7 +411,11 @@ class Leago:
     """Get headers with valid access token"""
     token = self.get_access_token()
     if not token:
-      raise Exception("No valid access token available. Please authenticate first.")
+      try:
+        self.login()
+      except Exception as exc:
+        log.warn("Caught exception authenticated to Leago", exception=exc)
+        raise Exception("No valid access token available. Please authenticate first.")
     
     return {
       "Accept": "application/json",
