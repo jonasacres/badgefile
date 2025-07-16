@@ -94,13 +94,17 @@ class LeagoWatcher:
       return None
   
   def current_stats(self, tournament_name=None):
+    blank_result = { "tournament_name": None, "total_matches": 0, "completed": 0, "in_progress": 0 }
     if not tournament_name:
       tournament_name = self.current_tournament()
+    if not tournament_name:
+      return blank_result
+    
     current_round = self.current_round(tournament_name)
     tournament = self.leago.tournament_by_badgefile_name(tournament_name)
 
     if not tournament:
-      return { "tournament_name": None, "total_matches": 0, "completed": 0, "in_progress": 0 }
+      return blank_result
 
     matches = self.leago.get_matches(tournament['key'], current_round)
     num_matches = len(matches)
