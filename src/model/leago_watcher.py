@@ -69,7 +69,7 @@ class LeagoWatcher:
         return 1
       elif time_int <= 1345:
         return 2
-      elif time_int <= 1745:
+      elif time_int <= 1700:
         return 3
       else:
         return 4
