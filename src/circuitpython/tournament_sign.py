@@ -1245,11 +1245,13 @@ class SignApp:
                 
                 while keep_going:
                     tick += 1
-                    print(tick)
                     last_update = self.data_source.current_data()
                     if last_update is not None:
                         self.show_msg(last_update['in_progress'], draw=False)
-                        self.progress_bar.set_progress(last_update['in_progress']/last_update['total_matches'])
+                        if last_update['total_matches'] == 0:
+                            self.progress_bar.set_progress(0)
+                        else:
+                            self.progress_bar.set_progress(last_update['completed']/last_update['total_matches'])
                         self.shimmering_sign.render()
                         self.led_sign.display.refresh()
                     else:

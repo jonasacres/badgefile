@@ -62,6 +62,17 @@ class LeagoWatcher:
     
     # If tournament is "diehard", return round 1
     if tournament == "diehard":
+      current_time = now.strftime("%H%M")
+      time_int = int(current_time)
+      
+      if time_int < 1100:
+        return 1
+      elif time_int <= 1330:
+        return 2
+      elif time_int <= 1530:
+        return 3
+      else:
+        return 4
       return 1
     
     # For other tournaments, check the date
