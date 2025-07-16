@@ -47,11 +47,11 @@ class LeagoWatcher:
     # For other dates, check time ranges
     time_int = int(current_time)
     
-    if 0 <= time_int <= 1245:
+    if 0 <= time_int <= 1230:
       return "open"
-    elif 1245 < time_int <= 1445:
+    elif time_int <= 1445:
       return "seniors"
-    elif 1445 < time_int <= 1800:
+    elif time_int <= 1800:
       return "womens"
     else:
       return None
@@ -65,11 +65,11 @@ class LeagoWatcher:
       current_time = now.strftime("%H%M")
       time_int = int(current_time)
       
-      if time_int < 1100:
+      if time_int < 1045:
         return 1
-      elif time_int <= 1330:
+      elif time_int <= 1345:
         return 2
-      elif time_int <= 1530:
+      elif time_int <= 1545:
         return 3
       else:
         return 4
