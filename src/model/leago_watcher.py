@@ -113,6 +113,7 @@ class LeagoWatcher:
 
     return {
       "tournament_name": tournament_name,
+      "round": current_round,
       "total_matches": num_matches,
       "completed": num_completed,
       "in_progress": num_in_progress,
